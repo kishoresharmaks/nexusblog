@@ -100,6 +100,13 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      return {
+        user: null,
+        accessToken: null,
+      };
+    }
+
     const ip = req.ip || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
 
