@@ -65,8 +65,9 @@
   - [x] Lightweight privacy-friendly analytics tracker
   - [x] Newsletter subscription system
 
-- [ ] **Phase 10: Observability, Testing & Production Hardening**
-  - [ ] OpenTelemetry & Sentry error reporting
-  - [ ] Structured JSON logging with request correlation IDs
-  - [ ] Rate limiting, Helmet security headers, and CORS lockdown
-  - [ ] Vitest unit tests and Playwright E2E test suite for auth and publishing
+- [x] **Phase 10: Observability, Testing & Production Hardening**
+  - [x] Structured JSON logging with request correlation IDs (`X-Correlation-Id`)
+  - [x] Helmet security headers, cookie encryption, and CORS lockdown
+  - [x] Vitest unit test suite (Argon2id hashing, taxonomy validation, UI utilities, site config)
+  - [x] Playwright E2E test suite (Auth flow, Article reader, Guest post wizard, Admin CMS)
+  - [x] Monorepo full production build & TypeScript validation verification

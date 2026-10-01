@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
@@ -19,6 +19,7 @@ import { CommentsModule } from './comments/comments.module';
 import { GuestPostsModule } from './guest-posts/guest-posts.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 
 @Module({
   imports: [
@@ -49,4 +50,8 @@ import { NewsletterModule } from './newsletter/newsletter.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+  }
+}
