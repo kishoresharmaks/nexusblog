@@ -50,13 +50,13 @@
   - [x] Guest post submission wizard (`/guest-post/submit`) with draft autosave and live MDX preview
   - [x] Contributor submissions tracker (`/dashboard/guest-posts`) with feedback viewing and resubmission
 
-- [ ] **Phase 8: Admin Panel & Editorial CMS**
-  - [ ] Admin Shell with collapsible sidebar, command palette, and metric overview
-  - [ ] Article management with TanStack Table and server pagination
-  - [ ] CodeMirror 6 MDX editor with live synchronized preview
-  - [ ] Guest post moderation queue with review status transitions & editorial feedback notes
-  - [ ] Media Library UI with drag-and-drop and usage inspection
-  - [ ] Comment moderation, SEO diagnostics (`/admin/seo`), and Audit log viewer
+- [x] **Phase 8: Admin Panel & Editorial CMS**
+  - [x] Admin Shell with collapsible sidebar, command palette, and metric overview
+  - [x] Article management with server pagination, search, and status controls
+  - [x] Dual-mode MDX editor (`/admin/articles/new` & `[id]/edit`) with live synchronized preview
+  - [x] Guest post moderation queue with review status transitions & editorial feedback notes
+  - [x] Media Library UI with drag-and-drop, WebP variants, and usage inspection
+  - [x] Comment moderation, SEO diagnostics (`/admin/seo`), and Security Audit log viewer
 
 - [ ] **Phase 9: SEO Engine, Analytics & Performance**
   - [ ] Dynamic OpenGraph image generator (`@vercel/og`)

@@ -166,4 +166,88 @@ export class GuestPostsService {
 
     return { message: 'Submission deleted successfully' };
   }
+
+  async findAllForModeration(status?: GuestPostStatus) {
+    return this.prisma.guestPost.findMany({
+      where: status ? { status } : undefined,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        category: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+  }
+
+  async moderateSubmission(
+    id: string,
+    action: 'APPROVE' | 'REQUEST_CHANGES' | 'REJECT',
+    feedback?: string,
+    reviewerId?: string,
+  ) {
+    const post = await this.prisma.guestPost.findUnique({
+      where: { id },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Guest post not found');
+    }
+
+    let status: GuestPostStatus;
+    if (action === 'APPROVE') status = GuestPostStatus.APPROVED;
+    else if (action === 'REQUEST_CHANGES') status = GuestPostStatus.CHANGES_REQUESTED;
+    else status = GuestPostStatus.REJECTED;
+
+    const updated = await this.prisma.guestPost.update({
+      where: { id },
+      data: {
+        status,
+        editorialFeedback: feedback,
+        reviewedById: reviewerId,
+        reviewedAt: new Date(),
+      },
+      include: {
+        category: true,
+        author: true,
+      },
+    });
+
+    // If approved, create a published article from the guest post
+    if (action === 'APPROVE') {
+      const article = await this.prisma.article.create({
+        data: {
+          title: post.title,
+          slug: post.slug,
+          excerpt: post.excerpt,
+          content: post.content,
+          coverImage: post.coverImage,
+          status: 'PUBLISHED',
+          difficulty: post.difficulty,
+          type: post.type,
+          authorId: post.authorId,
+          categoryId: post.categoryId,
+          tagIds: post.tagIds,
+          technologyIds: post.technologyIds,
+          references: post.references,
+          seoTitle: post.seoTitle,
+          seoDescription: post.seoDescription,
+          publishedAt: new Date(),
+        },
+      });
+
+      await this.prisma.guestPost.update({
+        where: { id },
+        data: { publishedArticleId: article.id },
+      });
+    }
+
+    return updated;
+  }
 }

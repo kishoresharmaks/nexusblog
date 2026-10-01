@@ -15,6 +15,8 @@ import { CreateGuestPostDto } from './dto/create-guest-post.dto';
 import { UpdateGuestPostDto } from './dto/update-guest-post.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { GuestPostStatus } from '@prisma/client';
 
 @ApiTags('Guest Posts')
@@ -23,6 +25,28 @@ import { GuestPostStatus } from '@prisma/client';
 @Controller('guest-posts')
 export class GuestPostsController {
   constructor(private readonly guestPostsService: GuestPostsService) {}
+
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR')
+  @Get('admin/queue')
+  @ApiOperation({ summary: 'List all guest posts for moderation (Staff only)' })
+  @ApiQuery({ name: 'status', enum: GuestPostStatus, required: false })
+  getModerationQueue(@Query('status') status?: GuestPostStatus) {
+    return this.guestPostsService.findAllForModeration(status);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR')
+  @Patch('admin/:id/moderate')
+  @ApiOperation({ summary: 'Moderate a guest post (Approve, Request Changes, Reject)' })
+  moderateSubmission(
+    @Param('id') id: string,
+    @Body('action') action: 'APPROVE' | 'REQUEST_CHANGES' | 'REJECT',
+    @Body('feedback') feedback?: string,
+    @CurrentUser('id') reviewerId?: string,
+  ) {
+    return this.guestPostsService.moderateSubmission(id, action, feedback, reviewerId);
+  }
 
   @Get('me')
   @ApiOperation({ summary: "Get current contributor's guest post submissions" })

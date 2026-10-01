@@ -17,6 +17,8 @@ import { BookmarksModule } from './bookmarks/bookmarks.module';
 import { ReadingHistoryModule } from './reading-history/reading-history.module';
 import { CommentsModule } from './comments/comments.module';
 import { GuestPostsModule } from './guest-posts/guest-posts.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 
 @Module({
   imports: [
@@ -41,6 +43,8 @@ import { GuestPostsModule } from './guest-posts/guest-posts.module';
     ReadingHistoryModule,
     CommentsModule,
     GuestPostsModule,
+    AuditLogsModule,
+    NewsletterModule,
   ],
   controllers: [AppController],
   providers: [AppService],
