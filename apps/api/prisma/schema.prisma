@@ -1,0 +1,404 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  AUTHOR
+  MODERATOR
+  ANALYST
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+  DEACTIVATED
+}
+
+enum ArticleStatus {
+  DRAFT
+  IN_REVIEW
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum ArticleType {
+  TUTORIAL
+  SYSTEM_DESIGN
+  DEEP_DIVE
+  CASE_STUDY
+  GUIDE
+  HOW_TO
+  COMPARISON
+  REFERENCE
+  OPINION
+}
+
+enum GuestPostStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  CHANGES_REQUESTED
+  APPROVED
+  SCHEDULED
+  PUBLISHED
+  REJECTED
+}
+
+enum StorageProviderType {
+  local
+  r2
+  s3
+  cloudinary
+}
+
+model User {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  username      String      @unique
+  email         String      @unique
+  passwordHash  String
+  avatar        String?
+  bio           String?
+  website       String?
+  github        String?
+  linkedin      String?
+  role          Role        @default(USER)
+  status        UserStatus  @default(ACTIVE)
+  emailVerified Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  sessions           Session[]
+  emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
+  articles           Article[]
+  guestPosts         GuestPost[]
+  comments           Comment[]
+  bookmarks          Bookmark[]
+  readingHistories   ReadingHistory[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String    @db.ObjectId
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  lastUsedAt       DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  revokedAt        DateTime?
+
+  @@index([userId])
+  @@index([refreshTokenHash])
+  @@map("sessions")
+}
+
+model EmailVerification {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("email_verifications")
+}
+
+model PasswordReset {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_resets")
+}
+
+model Category {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  slug           String    @unique
+  description    String?
+  image          String?
+  seoTitle       String?
+  seoDescription String?
+  order          Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  articles   Article[]
+  guestPosts GuestPost[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  articleIds String[]  @db.ObjectId
+  articles   Article[] @relation(fields: [articleIds], references: [id])
+
+  @@map("tags")
+}
+
+model Technology {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String   @unique
+  description String?
+  logo        String?
+  officialUrl String?
+  docsUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  articleIds String[]  @db.ObjectId
+  articles   Article[] @relation(fields: [articleIds], references: [id])
+
+  @@map("technologies")
+}
+
+model Series {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String    @unique
+  description String?
+  coverImage  String?
+  published   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  articles Article[]
+
+  @@map("series")
+}
+
+model Article {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String          @unique
+  excerpt     String
+  content     String
+  coverImage  String?
+  thumbnail   String?
+  ogImage     String?
+
+  status      ArticleStatus   @default(DRAFT)
+  difficulty  DifficultyLevel @default(INTERMEDIATE)
+  type        ArticleType     @default(SYSTEM_DESIGN)
+  featured    Boolean         @default(false)
+  readingTime Int             @default(5)
+
+  authorId    String          @db.ObjectId
+  author      User            @relation(fields: [authorId], references: [id])
+
+  categoryId  String          @db.ObjectId
+  category    Category        @relation(fields: [categoryId], references: [id])
+
+  tagIds      String[]        @db.ObjectId
+  tags        Tag[]           @relation(fields: [tagIds], references: [id])
+
+  technologyIds String[]      @db.ObjectId
+  technologies  Technology[]  @relation(fields: [technologyIds], references: [id])
+
+  seriesId    String?         @db.ObjectId
+  series      Series?         @relation(fields: [seriesId], references: [id])
+  seriesOrder Int?
+
+  prerequisites   String[]
+  keyTakeaways    String[]
+  references      String[]
+
+  seoTitle        String?
+  seoDescription  String?
+  canonicalUrl    String?
+  noIndex         Boolean     @default(false)
+
+  viewsCount      Int         @default(0)
+  likesCount      Int         @default(0)
+  bookmarksCount  Int         @default(0)
+  commentsCount   Int         @default(0)
+
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  comments         Comment[]
+  bookmarks        Bookmark[]
+  readingHistories ReadingHistory[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId, publishedAt])
+  @@index([authorId, publishedAt])
+  @@map("articles")
+}
+
+model GuestPost {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String          @unique
+  excerpt     String
+  content     String
+  coverImage  String?
+
+  status      GuestPostStatus @default(DRAFT)
+  difficulty  DifficultyLevel @default(INTERMEDIATE)
+  type        ArticleType     @default(TUTORIAL)
+
+  authorId    String          @db.ObjectId
+  author      User            @relation(fields: [authorId], references: [id])
+
+  authorBio   String?
+  authorAvatar String?
+  socialLinks Json?
+
+  categoryId  String          @db.ObjectId
+  category    Category        @relation(fields: [categoryId], references: [id])
+
+  tagIds        String[]      @db.ObjectId
+  technologyIds String[]      @db.ObjectId
+
+  references     String[]
+  seoTitle       String?
+  seoDescription String?
+
+  editorialFeedback  String?
+  reviewedById       String?   @db.ObjectId
+  reviewedAt         DateTime?
+  submittedAt        DateTime?
+  publishedArticleId String?   @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId, status])
+  @@index([status, submittedAt])
+  @@map("guest_posts")
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  articleId String   @db.ObjectId
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?  @db.ObjectId
+  status    String   @default("APPROVED") // APPROVED, PENDING, REPORTED, SPAM, DELETED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([articleId, status])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Bookmark {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String   @db.ObjectId
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, articleId])
+  @@map("bookmarks")
+}
+
+model ReadingHistory {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String   @db.ObjectId
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId            String   @db.ObjectId
+  article              Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  completionPercentage Int      @default(0)
+  lastPosition         Float    @default(0)
+  lastViewedAt         DateTime @default(now())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([userId, articleId])
+  @@map("reading_histories")
+}
+
+model Media {
+  id           String              @id @default(auto()) @map("_id") @db.ObjectId
+  storageKey   String              @unique
+  provider     StorageProviderType @default(local)
+  originalName String
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  alt          String?
+  caption      String?
+  blurHash     String?
+  variants     Json                @default("[]")
+  url          String
+  createdBy    String              @db.ObjectId
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@map("media")
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String?  @db.ObjectId
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model NewsletterSubscriber {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  email        String    @unique
+  active       Boolean   @default(true)
+  subscribedAt DateTime  @default(now())
+  unsubscribedAt DateTime?
+
+  @@map("newsletter_subscribers")
+}
