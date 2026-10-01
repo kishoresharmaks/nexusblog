@@ -1,9 +1,11 @@
+import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryProvider } from '@/components/query-provider';
 import { AuthProvider } from '@/context/auth-context';
+import { PageTracker } from '@/components/analytics/page-tracker';
 import { Toaster } from 'sonner';
 import { siteConfig } from '@nexus/config';
 
@@ -44,6 +46,9 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthProvider>
+              <Suspense fallback={null}>
+                <PageTracker />
+              </Suspense>
               {children}
               <Toaster position="bottom-right" richColors />
             </AuthProvider>

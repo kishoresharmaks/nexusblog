@@ -58,12 +58,12 @@
   - [x] Media Library UI with drag-and-drop, WebP variants, and usage inspection
   - [x] Comment moderation, SEO diagnostics (`/admin/seo`), and Security Audit log viewer
 
-- [ ] **Phase 9: SEO Engine, Analytics & Performance**
-  - [ ] Dynamic OpenGraph image generator (`@vercel/og`)
-  - [ ] JSON-LD Article and Breadcrumb schemas
-  - [ ] Automatic Sitemap, Robots.txt, and RSS feed generators
-  - [ ] Lightweight privacy-friendly analytics tracker
-  - [ ] Newsletter subscription system
+- [x] **Phase 9: SEO Engine, Analytics & Performance**
+  - [x] Dynamic OpenGraph image generator (`@vercel/og`)
+  - [x] JSON-LD Article and Breadcrumb schemas
+  - [x] Automatic Sitemap, Robots.txt, and RSS feed generators
+  - [x] Lightweight privacy-friendly analytics tracker
+  - [x] Newsletter subscription system
 
 - [ ] **Phase 10: Observability, Testing & Production Hardening**
   - [ ] OpenTelemetry & Sentry error reporting

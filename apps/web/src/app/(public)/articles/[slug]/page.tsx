@@ -19,6 +19,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { ArticleJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld';
 
 export const revalidate = 60;
 
@@ -220,6 +221,22 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
 
   return (
     <div className="relative pb-20">
+      <ArticleJsonLd
+        title={article.title}
+        description={article.excerpt}
+        slug={article.slug}
+        datePublished={new Date(article.publishedAt).toISOString()}
+        authorName={article.author.name}
+        category={article.category.name}
+      />
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', item: 'https://nexusblog.dev' },
+          { name: 'Articles', item: 'https://nexusblog.dev/articles' },
+          { name: article.category.name, item: `https://nexusblog.dev/categories/${article.category.slug}` },
+          { name: article.title, item: `https://nexusblog.dev/articles/${article.slug}` },
+        ]}
+      />
       <ReadingProgress />
 
       {/* Hero / Header Section */}
