@@ -110,7 +110,9 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
   const [title, setTitle] = useState(isNew ? '' : initialData?.title || '');
   const [slug, setSlug] = useState(isNew ? '' : initialData?.slug || '');
   const [excerpt, setExcerpt] = useState(isNew ? '' : initialData?.excerpt || '');
-  const [content, setContent] = useState(initialData?.content || (isNew ? '## Introduction\n\nStart writing your technical article here...\n' : DEFAULT_STARTER));
+  const [content, setContent] = useState(
+    initialData?.content || (isNew ? '## Introduction\n\nStart writing your technical article here...\n' : DEFAULT_STARTER),
+  );
   const [category, setCategory] = useState(initialData?.categoryId || 'system-design');
   const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'ADVANCED');
   const [type, setType] = useState(initialData?.type || 'SYSTEM_DESIGN');
@@ -163,9 +165,9 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans flex flex-col -m-4 sm:-m-8 lg:-m-10">
+    <div className="h-full w-full flex flex-col overflow-hidden bg-background text-foreground font-sans">
       {/* CMS Top Navigation Bar */}
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-card/95 backdrop-blur-md px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
+      <header className="shrink-0 border-b border-border/70 bg-card/95 backdrop-blur-md px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 z-20">
         {/* Left: Back & Title */}
         <div className="flex items-center space-x-3 min-w-0">
           <Link
@@ -176,7 +178,7 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
           </Link>
           <div className="h-4 w-px bg-border/60 shrink-0" />
           <div className="flex items-center gap-2 min-w-0">
-            <span className="font-bold text-sm text-foreground truncate max-w-[200px] sm:max-w-md">
+            <span className="font-bold text-sm text-foreground truncate max-w-[180px] sm:max-w-md">
               {title || 'Untitled Article'}
             </span>
             <span
@@ -215,7 +217,9 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
             <button
               onClick={() => setViewMode('edit')}
               className={`p-1.5 rounded-md flex items-center gap-1 transition-all ${
-                viewMode === 'edit' ? 'bg-background text-foreground font-semibold shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                viewMode === 'edit'
+                  ? 'bg-background text-foreground font-semibold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
               title="Editor Only"
             >
@@ -224,7 +228,9 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
             <button
               onClick={() => setViewMode('split')}
               className={`p-1.5 rounded-md flex items-center gap-1 transition-all ${
-                viewMode === 'split' ? 'bg-background text-foreground font-semibold shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                viewMode === 'split'
+                  ? 'bg-background text-foreground font-semibold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
               title="Split View"
             >
@@ -233,7 +239,9 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
             <button
               onClick={() => setViewMode('preview')}
               className={`p-1.5 rounded-md flex items-center gap-1 transition-all ${
-                viewMode === 'preview' ? 'bg-background text-foreground font-semibold shadow-xs' : 'text-muted-foreground hover:text-foreground'
+                viewMode === 'preview'
+                  ? 'bg-background text-foreground font-semibold shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
               title="Preview Only"
             >
@@ -261,15 +269,19 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
         </div>
       </header>
 
-      {/* Editor Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Editor Main Content Area */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Editor Panes */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden min-h-0">
           {/* Left: MDX Code Editor */}
           {(viewMode === 'edit' || viewMode === 'split') && (
-            <div className={`flex flex-col h-full overflow-y-auto p-4 sm:p-6 space-y-4 border-r border-border/60 ${viewMode === 'split' ? 'w-full lg:w-1/2' : 'w-full'}`}>
+            <div
+              className={`flex flex-col h-full overflow-hidden border-r border-border/60 min-w-0 ${
+                viewMode === 'split' ? 'w-full lg:w-1/2' : 'w-full'
+              }`}
+            >
               {/* Snippet Insertion Toolbar */}
-              <div className="flex flex-wrap items-center gap-1.5 border-b border-border/40 pb-3">
+              <div className="shrink-0 px-4 py-2 bg-muted/20 border-b border-border/40 flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] font-mono text-muted-foreground mr-1">Insert:</span>
                 <button
                   type="button"
@@ -278,7 +290,7 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                       `<Callout type="tip" title="Production Tip">\nEnter actionable engineering advice here.\n</Callout>`,
                     )
                   }
-                  className="px-2 py-1 rounded bg-muted/40 hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1"
+                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
                 >
                   <Sparkles className="h-3 w-3 text-primary" /> Callout
                 </button>
@@ -289,7 +301,7 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                       `\`\`\`mermaid\ngraph TD\n    A[API Gateway] --> B[Service A]\n    A --> C[Service B]\n\`\`\``,
                     )
                   }
-                  className="px-2 py-1 rounded bg-muted/40 hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1"
+                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
                 >
                   <Layers className="h-3 w-3 text-sky-500" /> Mermaid
                 </button>
@@ -297,10 +309,10 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                   type="button"
                   onClick={() =>
                     insertSnippet(
-                      `<Terminal title="benchmark.sh" output="100,000 requests in 840ms (119k req/sec)\np99: 1.1ms" />`,
+                      `<Terminal title="benchmark.sh" command="pnpm test" />`,
                     )
                   }
-                  className="px-2 py-1 rounded bg-muted/40 hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1"
+                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
                 >
                   <Terminal className="h-3 w-3 text-emerald-500" /> Terminal
                 </button>
@@ -311,18 +323,29 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                       `<Benchmark\n  title="Performance Benchmark"\n  description="Measured over 100k requests"\n  metrics={[\n    { label: "Throughput", value: "119k req/sec", change: "+40%", trend: "up" }\n  ]}\n/>`,
                     )
                   }
-                  className="px-2 py-1 rounded bg-muted/40 hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1"
+                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
                 >
                   <Activity className="h-3 w-3 text-amber-500" /> Benchmark
                 </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    insertSnippet(
+                      `<DatabaseSchema\n  tableName="rate_limit_buckets"\n  columns={[\n    { name: "id", type: "UUID", primaryKey: true },\n    { name: "key", type: "VARCHAR(255)", indexed: true },\n    { name: "tokens", type: "INTEGER" }\n  ]}\n/>`,
+                    )
+                  }
+                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
+                >
+                  <Database className="h-3 w-3 text-violet-500" /> Schema
+                </button>
               </div>
 
-              {/* Textarea */}
-              <div className="flex-1 flex flex-col min-h-[500px]">
+              {/* Textarea Container */}
+              <div className="flex-1 p-4 overflow-hidden flex flex-col min-h-0">
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full flex-1 min-h-[550px] rounded-xl border border-border bg-card/60 p-4 font-mono text-xs sm:text-sm text-foreground leading-relaxed focus:border-primary focus:outline-none resize-none shadow-inner"
+                  className="w-full h-full flex-1 rounded-xl border border-border bg-card/60 p-4 font-mono text-xs sm:text-sm text-foreground leading-relaxed focus:border-primary focus:outline-none resize-none shadow-inner overflow-y-auto"
                   placeholder="Write your technical article in MDX..."
                 />
               </div>
@@ -331,7 +354,11 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
 
           {/* Right: Live Preview */}
           {(viewMode === 'preview' || viewMode === 'split') && (
-            <div className={`h-full overflow-y-auto p-6 sm:p-10 bg-background/50 ${viewMode === 'split' ? 'hidden lg:block lg:w-1/2' : 'w-full'}`}>
+            <div
+              className={`h-full overflow-y-auto p-6 sm:p-10 bg-background/50 min-w-0 ${
+                viewMode === 'split' ? 'hidden lg:block lg:w-1/2' : 'w-full'
+              }`}
+            >
               <div className="max-w-2xl mx-auto space-y-8">
                 {/* Article Header Preview */}
                 <div className="space-y-3 border-b border-border/60 pb-6">
@@ -360,14 +387,14 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
 
         {/* Right Drawer: Article Metadata & SEO Configuration */}
         {showMetadata && (
-          <aside className="w-80 border-l border-border/70 bg-card p-5 space-y-6 overflow-y-auto shrink-0 shadow-xl">
+          <aside className="w-80 border-l border-border/70 bg-card p-5 space-y-6 overflow-y-auto shrink-0 shadow-xl h-full z-10">
             <div className="flex items-center justify-between border-b border-border/40 pb-3">
               <h3 className="font-bold text-xs font-mono uppercase tracking-wider text-foreground">
                 Article Configuration
               </h3>
               <button
                 onClick={() => setShowMetadata(false)}
-                className="text-xs font-mono text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted"
+                className="text-xs font-mono text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -381,7 +408,12 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value);
-                    setSlug(e.target.value.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-'));
+                    setSlug(
+                      e.target.value
+                        .toLowerCase()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/\s+/g, '-'),
+                    );
                   }}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                 />

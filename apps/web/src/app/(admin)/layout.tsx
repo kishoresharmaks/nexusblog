@@ -55,6 +55,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [isLoading, isAuthenticated, isStaff, pathname, router]);
 
+  const isEditorPage =
+    pathname?.includes('/admin/articles/') &&
+    (pathname.endsWith('/edit') || pathname.endsWith('/new'));
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background text-foreground font-mono text-sm">
@@ -166,9 +170,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto min-h-screen bg-background p-4 sm:p-8 lg:p-10">
-        <div className="max-w-6xl mx-auto space-y-8">{children}</div>
-      </main>
+      {isEditorPage ? (
+        <main className="flex-1 overflow-hidden h-screen bg-background flex flex-col min-w-0">
+          {children}
+        </main>
+      ) : (
+        <main className="flex-1 overflow-y-auto min-h-screen bg-background p-4 sm:p-8 lg:p-10">
+          <div className="max-w-6xl mx-auto space-y-8">{children}</div>
+        </main>
+      )}
     </div>
   );
 }
