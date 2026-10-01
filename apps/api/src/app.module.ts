@@ -4,6 +4,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { CategoriesModule } from './categories/categories.module';
+import { TagsModule } from './tags/tags.module';
+import { TechnologiesModule } from './technologies/technologies.module';
+import { SeriesModule } from './series/series.module';
 
 @Module({
   imports: [
@@ -13,6 +17,10 @@ import { AuthModule } from './auth/auth.module';
     }),
     PrismaModule,
     AuthModule,
+    CategoriesModule,
+    TagsModule,
+    TechnologiesModule,
+    SeriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
