@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
-import { MdxRenderer } from '@/components/mdx/mdx-renderer';
+import { ClientMdxRenderer } from '@/components/mdx/client-mdx-renderer';
 import {
   PenTool,
   Save,
@@ -374,7 +374,7 @@ export default function GuestPostSubmitPage() {
 
               {/* Rendered MDX Output */}
               <div className="prose prose-neutral dark:prose-invert max-w-none">
-                <MdxRenderer content={content} />
+                <ClientMdxRenderer content={content} />
               </div>
             </div>
           </div>

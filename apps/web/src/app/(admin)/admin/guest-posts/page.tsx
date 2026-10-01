@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { MdxRenderer } from '@/components/mdx/mdx-renderer';
+import { ClientMdxRenderer } from '@/components/mdx/client-mdx-renderer';
 import {
   Inbox,
   CheckCircle2,
@@ -265,7 +265,7 @@ export default function AdminGuestPostsQueuePage() {
                 </div>
 
                 <div className="prose prose-zinc dark:prose-invert max-w-none text-xs">
-                  <MdxRenderer content={inspectingItem.content} />
+                  <ClientMdxRenderer content={inspectingItem.content} />
                 </div>
               </div>
 
