@@ -212,7 +212,53 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
             ))}
           </nav>
 
-          {!isAuthenticated && (
+          {isAuthenticated && user ? (
+            <div className="border-t border-border/40 pt-3 flex flex-col space-y-2">
+              <div className="px-1 py-1">
+                <p className="text-xs font-semibold text-foreground">{user.name}</p>
+                <p className="text-[11px] font-mono text-muted-foreground">
+                  @{user.username} • {user.role}
+                </p>
+              </div>
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 rounded-md py-1.5 text-xs text-foreground hover:text-primary font-medium"
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                <span>Reader Dashboard</span>
+              </Link>
+              <Link
+                href="/guest-post/submit"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 rounded-md py-1.5 text-xs text-foreground hover:text-primary font-medium"
+              >
+                <PenTool className="h-3.5 w-3.5" />
+                <span>Submit Guest Post</span>
+              </Link>
+              {isStaff && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-md py-1.5 text-xs text-emerald-500 hover:text-emerald-400 font-semibold"
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  <span>Admin CMS Portal</span>
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout();
+                }}
+                className="flex items-center gap-2 text-xs text-destructive hover:text-destructive/80 font-medium py-1.5 text-left"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          ) : (
             <div className="border-t border-border/40 pt-3 flex flex-col space-y-2">
               <Link
                 href="/login"

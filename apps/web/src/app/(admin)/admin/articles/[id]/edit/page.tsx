@@ -1,21 +1,14 @@
-'use client';
-
 import React from 'react';
 import { ArticleEditor } from '@/components/admin/article-editor';
+import { getArticleById } from '@/lib/articles-data';
 
-export default function EditArticlePage() {
-  const sampleArticle = {
-    id: '1',
-    title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-    slug: 'designing-distributed-rate-limiter',
-    excerpt:
-      'A deep dive into sub-millisecond sliding window counter algorithms, token buckets, and coordinating distributed rate limiting across multi-region API gateways.',
-    categoryId: 'system-design',
-    difficulty: 'ADVANCED' as const,
-    type: 'SYSTEM_DESIGN',
-    status: 'PUBLISHED' as const,
-    featured: true,
-  };
+interface EditArticlePageProps {
+  params: Promise<{ id: string }>;
+}
 
-  return <ArticleEditor initialData={sampleArticle} isNew={false} />;
+export default async function EditArticlePage({ params }: EditArticlePageProps) {
+  const { id } = await params;
+  const article = getArticleById(id);
+
+  return <ArticleEditor initialData={article} isNew={false} />;
 }

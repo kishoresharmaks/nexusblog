@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
-import { Lock, Mail, ArrowRight, Loader2, KeyRound } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Loader2, KeyRound, ShieldAlert } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
   const { login } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -21,14 +23,27 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
-      router.push('/dashboard');
+      const user = await login(email, password);
+
+      // Determine target destination based on redirect param or staff role
+      if (redirectUrl && redirectUrl.startsWith('/')) {
+        router.push(redirectUrl);
+      } else if (
+        user &&
+        ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(user.role)
+      ) {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err) {
       setErrorMessage((err as Error).message || 'Invalid email or password');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const isAdminRedirect = redirectUrl && redirectUrl.startsWith('/admin');
 
   return (
     <div className="space-y-6 rounded-xl border border-border/80 bg-card/60 p-6 sm:p-8 backdrop-blur-md shadow-xl">
@@ -38,9 +53,16 @@ export default function LoginPage() {
         </div>
         <h1 className="text-2xl font-bold tracking-tight">Sign In</h1>
         <p className="text-sm text-muted-foreground">
-          Enter your credentials to access your engineering dashboard.
+          Enter your credentials to access your engineering dashboard or administrative CMS.
         </p>
       </div>
+
+      {isAdminRedirect && (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 p-3 text-xs text-primary font-mono">
+          <ShieldAlert className="h-4 w-4 shrink-0" />
+          <span>Staff credentials required to access the requested CMS route.</span>
+        </div>
+      )}
 
       {errorMessage && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive font-medium">
@@ -59,7 +81,7 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="engineer@company.com"
+            placeholder="engineer@company.com or admin@nexusblog.dev"
             className="w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
@@ -111,5 +133,19 @@ export default function LoginPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-center font-mono text-xs text-muted-foreground">
+          Loading authentication portal...
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

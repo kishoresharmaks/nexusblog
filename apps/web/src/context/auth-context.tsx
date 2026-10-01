@@ -9,14 +9,14 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (data: {
     name: string;
     username: string;
     email: string;
     password: string;
     bio?: string;
-  }) => Promise<void>;
+  }) => Promise<User>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -48,12 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshUser();
   }, [refreshUser]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true);
     try {
       const result = await authClient.login({ email, password });
       setUser(result.user);
       toast.success(`Welcome back, ${result.user.name}!`);
+      return result.user;
     } catch (error) {
       toast.error((error as Error).message || 'Failed to log in');
       throw error;
@@ -68,12 +69,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string;
     password: string;
     bio?: string;
-  }) => {
+  }): Promise<User> => {
     setIsLoading(true);
     try {
       const result = await authClient.register(data);
       setUser(result.user);
       toast.success(`Account created! Welcome to NexusBlog, ${result.user.name}`);
+      return result.user;
     } catch (error) {
       toast.error((error as Error).message || 'Registration failed');
       throw error;

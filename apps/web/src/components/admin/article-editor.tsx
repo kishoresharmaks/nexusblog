@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ClientMdxRenderer } from '@/components/mdx/client-mdx-renderer';
@@ -107,18 +107,36 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
   const [isSaving, setIsSaving] = useState(false);
 
   // Form State
-  const [title, setTitle] = useState(initialData?.title || 'Designing a Distributed Rate Limiter with Redis and Lua Scripts');
-  const [slug, setSlug] = useState(initialData?.slug || 'designing-distributed-rate-limiter');
-  const [excerpt, setExcerpt] = useState(initialData?.excerpt || 'A deep dive into sub-millisecond sliding window counter algorithms, token buckets, and coordinating distributed rate limiting across multi-region API gateways.');
-  const [content, setContent] = useState(initialData?.content || DEFAULT_STARTER);
+  const [title, setTitle] = useState(isNew ? '' : initialData?.title || '');
+  const [slug, setSlug] = useState(isNew ? '' : initialData?.slug || '');
+  const [excerpt, setExcerpt] = useState(isNew ? '' : initialData?.excerpt || '');
+  const [content, setContent] = useState(initialData?.content || (isNew ? '## Introduction\n\nStart writing your technical article here...\n' : DEFAULT_STARTER));
   const [category, setCategory] = useState(initialData?.categoryId || 'system-design');
   const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'ADVANCED');
   const [type, setType] = useState(initialData?.type || 'SYSTEM_DESIGN');
   const [status, setStatus] = useState(initialData?.status || 'DRAFT');
   const [coverImage, setCoverImage] = useState(initialData?.coverImage || '');
-  const [featured, setFeatured] = useState(initialData?.featured || false);
+  const [featured, setFeatured] = useState(initialData?.featured ?? false);
   const [seoTitle, setSeoTitle] = useState(initialData?.seoTitle || '');
   const [seoDescription, setSeoDescription] = useState(initialData?.seoDescription || '');
+
+  // Synchronize state when initialData changes dynamically
+  useEffect(() => {
+    if (initialData && !isNew) {
+      if (initialData.title !== undefined) setTitle(initialData.title);
+      if (initialData.slug !== undefined) setSlug(initialData.slug);
+      if (initialData.excerpt !== undefined) setExcerpt(initialData.excerpt);
+      if (initialData.content !== undefined) setContent(initialData.content);
+      if (initialData.categoryId !== undefined) setCategory(initialData.categoryId);
+      if (initialData.difficulty !== undefined) setDifficulty(initialData.difficulty);
+      if (initialData.type !== undefined) setType(initialData.type);
+      if (initialData.status !== undefined) setStatus(initialData.status);
+      if (initialData.coverImage !== undefined) setCoverImage(initialData.coverImage);
+      if (initialData.featured !== undefined) setFeatured(initialData.featured);
+      if (initialData.seoTitle !== undefined) setSeoTitle(initialData.seoTitle);
+      if (initialData.seoDescription !== undefined) setSeoDescription(initialData.seoDescription);
+    }
+  }, [initialData, isNew]);
 
   // Calculate estimated reading time
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
