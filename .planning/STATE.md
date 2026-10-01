@@ -2,12 +2,14 @@
 
 ## Current Position
 - **Active Milestone**: Milestone 1 (MVP Core Platform)
-- **Active Phase**: Phase 5 — Storage Provider & Media Pipeline
-- **Status**: READY_TO_START
+- **Active Phase**: Phase 7 — User Dashboard & Guest Post Workflow
+- **Status**: IN_PROGRESS
 
 ## Phase History
 - Phase 1: Foundation Monorepo & UI Architecture [COMPLETED]
 - Phase 2: Custom NestJS Auth & Session Engine [COMPLETED]
 - Phase 3: Database & Taxonomy Data Layer [COMPLETED]
 - Phase 4: MDX & Diagram Rendering Pipeline [COMPLETED]
-- Phase 5: Storage Provider & Media Pipeline [NEXT]
+- Phase 5: Storage Provider & Media Pipeline [COMPLETED]
+- Phase 6: Public Website & Reading Experience [COMPLETED]
+- Phase 7: User Dashboard & Guest Post Workflow [ACTIVE]

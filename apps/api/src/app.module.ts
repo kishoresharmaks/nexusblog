@@ -11,6 +11,7 @@ import { TagsModule } from './tags/tags.module';
 import { TechnologiesModule } from './technologies/technologies.module';
 import { SeriesModule } from './series/series.module';
 import { MediaModule } from './media/media.module';
+import { ArticlesModule } from './articles/articles.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MediaModule } from './media/media.module';
     TechnologiesModule,
     SeriesModule,
     MediaModule,
+    ArticlesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

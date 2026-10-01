@@ -10,6 +10,7 @@ export type ArticleType =
   | 'SYSTEM_DESIGN'
   | 'DEEP_DIVE'
   | 'CASE_STUDY'
+  | 'BENCHMARK'
   | 'GUIDE'
   | 'HOW_TO'
   | 'COMPARISON'
