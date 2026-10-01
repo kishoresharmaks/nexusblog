@@ -7,11 +7,13 @@ import rehypeSlug from 'rehype-slug';
 import { mdxComponents } from './mdx-components';
 
 interface MdxRendererProps {
-  source: string;
+  source?: string;
+  content?: string;
   customComponents?: Record<string, React.ComponentType<any>>;
 }
 
-export function MdxRenderer({ source, customComponents }: MdxRendererProps) {
+export function MdxRenderer({ source, content, customComponents }: MdxRendererProps) {
+  const mdxSource = source || content || '';
   const mergedComponents = {
     ...mdxComponents,
     ...(customComponents || {}),
@@ -20,7 +22,7 @@ export function MdxRenderer({ source, customComponents }: MdxRendererProps) {
   return (
     <div className="prose prose-zinc dark:prose-invert max-w-none text-foreground leading-relaxed">
       <MDXRemote
-        source={source}
+        source={mdxSource}
         components={mergedComponents}
         options={{
           mdxOptions: {

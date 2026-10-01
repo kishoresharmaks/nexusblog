@@ -12,6 +12,11 @@ import { TechnologiesModule } from './technologies/technologies.module';
 import { SeriesModule } from './series/series.module';
 import { MediaModule } from './media/media.module';
 import { ArticlesModule } from './articles/articles.module';
+import { UsersModule } from './users/users.module';
+import { BookmarksModule } from './bookmarks/bookmarks.module';
+import { ReadingHistoryModule } from './reading-history/reading-history.module';
+import { CommentsModule } from './comments/comments.module';
+import { GuestPostsModule } from './guest-posts/guest-posts.module';
 
 @Module({
   imports: [
@@ -25,12 +30,17 @@ import { ArticlesModule } from './articles/articles.module';
     }),
     PrismaModule,
     AuthModule,
+    UsersModule,
     CategoriesModule,
     TagsModule,
     TechnologiesModule,
     SeriesModule,
     MediaModule,
     ArticlesModule,
+    BookmarksModule,
+    ReadingHistoryModule,
+    CommentsModule,
+    GuestPostsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

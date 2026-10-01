@@ -44,11 +44,11 @@
   - [x] Multi-part Series reader with progress tracking
   - [x] Search command palette (`Cmd+K`) and dedicated `/search` page
 
-- [ ] **Phase 7: User Dashboard & Guest Post Workflow**
-  - [ ] User dashboard (`/dashboard`) with saved bookmarks, reading history %, and comments
-  - [ ] Contributor landing page (`/write-for-us`)
-  - [ ] Guest post submission wizard (`/guest-post/submit`) with draft autosave
-  - [ ] Contributor submissions tracker (`/dashboard/guest-posts`) with feedback viewing and resubmission
+- [x] **Phase 7: User Dashboard & Guest Post Workflow**
+  - [x] User dashboard (`/dashboard`) with saved bookmarks, reading history %, and comments
+  - [x] Contributor landing page (`/write-for-us`)
+  - [x] Guest post submission wizard (`/guest-post/submit`) with draft autosave and live MDX preview
+  - [x] Contributor submissions tracker (`/dashboard/guest-posts`) with feedback viewing and resubmission
 
 - [ ] **Phase 8: Admin Panel & Editorial CMS**
   - [ ] Admin Shell with collapsible sidebar, command palette, and metric overview
