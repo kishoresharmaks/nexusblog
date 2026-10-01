@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   FileText,
@@ -17,12 +17,28 @@ import {
   ShieldCheck,
   AlertTriangle,
 } from 'lucide-react';
+import { getAllArticles, ArticleData } from '@/lib/articles-data';
 
 export default function AdminOverviewPage() {
+  const [articles, setArticles] = useState<ArticleData[]>([]);
+
+  const refresh = useCallback(() => {
+    setArticles(getAllArticles());
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    window.addEventListener('nexus_articles_updated', refresh);
+    return () => window.removeEventListener('nexus_articles_updated', refresh);
+  }, [refresh]);
+
+  const publishedCount = articles.filter((a) => a.status === 'PUBLISHED').length;
+  const totalViews = articles.reduce((acc, a) => acc + (a.views || 0), 0);
+
   const metrics = [
     {
       title: 'Published Articles',
-      value: '28',
+      value: String(publishedCount || 28),
       change: '+4 this month',
       href: '/admin/articles',
       icon: FileText,
@@ -30,7 +46,7 @@ export default function AdminOverviewPage() {
     },
     {
       title: 'Monthly Page Views',
-      value: '184.2K',
+      value: totalViews > 0 ? `${(totalViews / 1000).toFixed(1)}K` : '184.2K',
       change: '+18.4% vs last month',
       href: '/admin/articles',
       icon: Eye,
@@ -54,35 +70,7 @@ export default function AdminOverviewPage() {
     },
   ];
 
-  const recentArticles = [
-    {
-      id: '1',
-      title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-      slug: 'designing-distributed-rate-limiter',
-      category: 'System Design',
-      status: 'PUBLISHED',
-      views: 14200,
-      publishedAt: '2 days ago',
-    },
-    {
-      id: '2',
-      title: 'Zero-Downtime PostgreSQL Schema Migrations at Scale',
-      slug: 'zero-downtime-postgresql-migrations',
-      category: 'Databases',
-      status: 'PUBLISHED',
-      views: 22400,
-      publishedAt: '5 days ago',
-    },
-    {
-      id: '3',
-      title: 'Kafka Partitioning Strategies for Zero-Data-Loss Architectures',
-      slug: 'kafka-partitioning-zero-data-loss',
-      category: 'Distributed Systems',
-      status: 'PUBLISHED',
-      views: 9800,
-      publishedAt: '1 week ago',
-    },
-  ];
+  const recentArticles = articles.slice(0, 4);
 
   const pendingSubmissions = [
     {
@@ -187,7 +175,17 @@ export default function AdminOverviewPage() {
                     <span>•</span>
                     <span>{art.publishedAt}</span>
                     <span>•</span>
-                    <span>{art.views.toLocaleString()} views</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded font-semibold ${
+                        art.status === 'PUBLISHED'
+                          ? 'text-emerald-400 bg-emerald-500/10'
+                          : 'text-amber-400 bg-amber-500/10'
+                      }`}
+                    >
+                      {art.status}
+                    </span>
+                    <span>•</span>
+                    <span>{(art.views || 0).toLocaleString()} views</span>
                   </div>
                   <h3 className="text-xs font-bold text-foreground truncate">{art.title}</h3>
                 </div>

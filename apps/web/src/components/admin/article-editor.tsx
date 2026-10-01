@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ClientMdxRenderer } from '@/components/mdx/client-mdx-renderer';
+import { saveArticle } from '@/lib/articles-data';
 import {
   Save,
   Send,
@@ -151,9 +152,40 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
 
   const handleSave = async (publishStatus: 'DRAFT' | 'PUBLISHED') => {
     setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setIsSaving(false);
+    await new Promise((r) => setTimeout(r, 400));
+
+    const categoryNames: Record<string, string> = {
+      'system-design': 'System Design',
+      'backend-engineering': 'Backend Engineering',
+      'distributed-systems': 'Distributed Systems',
+      'databases': 'Databases',
+      'apis': 'APIs',
+      'devops': 'DevOps',
+      'cloud': 'Cloud',
+      'performance': 'Performance',
+      'observability': 'Observability',
+      'ai-engineering': 'AI Engineering',
+    };
+
+    saveArticle({
+      id: initialData?.id,
+      title: title || 'Untitled Article',
+      slug: slug || (title ? title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-') : 'untitled-article'),
+      excerpt,
+      content,
+      categoryId: category,
+      category: categoryNames[category] || 'System Design',
+      difficulty: difficulty as any,
+      type,
+      status: publishStatus,
+      featured,
+      coverImage,
+      seoTitle,
+      seoDescription,
+    });
+
     setStatus(publishStatus);
+    setIsSaving(false);
     toast.success(
       publishStatus === 'PUBLISHED'
         ? 'Article published successfully!'

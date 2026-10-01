@@ -21,7 +21,7 @@ export interface ArticleData {
   noIndex?: boolean;
 }
 
-export const ARTICLES_CATALOG: ArticleData[] = [
+export const INITIAL_ARTICLES: ArticleData[] = [
   {
     id: '1',
     title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
@@ -311,9 +311,48 @@ Avoid \`synchronized\` methods or blocks around blocking I/O operations as this 
   },
 ];
 
+const STORAGE_KEY = 'nexus_articles_store';
+
+// In-memory cache synced with localStorage
+let articlesCache: ArticleData[] = [...INITIAL_ARTICLES];
+
+function initFromStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        articlesCache = parsed;
+        return;
+      }
+    }
+    // Initialize storage if empty
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ARTICLES));
+  } catch (err) {
+    console.error('Failed to read from localStorage:', err);
+  }
+}
+
+function persistToStorage() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(articlesCache));
+    window.dispatchEvent(new CustomEvent('nexus_articles_updated', { detail: articlesCache }));
+  } catch (err) {
+    console.error('Failed to write to localStorage:', err);
+  }
+}
+
+export function getAllArticles(): ArticleData[] {
+  initFromStorage();
+  return [...articlesCache];
+}
+
 export function getArticleById(id: string): ArticleData {
-  const found = ARTICLES_CATALOG.find((a) => a.id === id || a.slug === id);
-  if (found) return found;
+  initFromStorage();
+  const found = articlesCache.find((a) => a.id === id || a.slug === id);
+  if (found) return { ...found };
 
   // Fallback if custom ID is requested
   return {
@@ -329,12 +368,90 @@ export function getArticleById(id: string): ArticleData {
     featured: false,
     views: 0,
     bookmarks: 0,
-    publishedAt: new Date().toISOString().split('T')[0],
+    publishedAt: 'Unpublished',
     author: 'Alex Rivera',
     content: `## Technical Overview\n\nStart writing your technical article #${id} here.\n\n\`\`\`typescript\nconsole.log('Hello NexusBlog #${id}');\n\`\`\`\n`,
   };
 }
 
 export function getArticleBySlug(slug: string): ArticleData | undefined {
-  return ARTICLES_CATALOG.find((a) => a.slug === slug);
+  initFromStorage();
+  const item = articlesCache.find((a) => a.slug === slug);
+  return item ? { ...item } : undefined;
+}
+
+export function saveArticle(data: Partial<ArticleData> & { id?: string; title: string }): ArticleData {
+  initFromStorage();
+
+  const existingIndex = articlesCache.findIndex(
+    (a) => (data.id && a.id === data.id) || (data.slug && a.slug === data.slug),
+  );
+
+  let updatedArticle: ArticleData;
+
+  if (existingIndex >= 0) {
+    const existing = articlesCache[existingIndex];
+    updatedArticle = {
+      ...existing,
+      ...data,
+      id: existing.id,
+      title: data.title || existing.title,
+      slug: data.slug || existing.slug,
+      excerpt: data.excerpt !== undefined ? data.excerpt : existing.excerpt,
+      content: data.content !== undefined ? data.content : existing.content,
+      status: data.status || existing.status,
+      publishedAt:
+        data.status === 'PUBLISHED' && existing.status !== 'PUBLISHED'
+          ? new Date().toISOString().split('T')[0]
+          : data.publishedAt || existing.publishedAt,
+    };
+    articlesCache[existingIndex] = updatedArticle;
+  } else {
+    const newId = data.id || String(Date.now());
+    updatedArticle = {
+      id: newId,
+      title: data.title,
+      slug: data.slug || data.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-'),
+      excerpt: data.excerpt || 'Technical guide and architecture overview.',
+      content: data.content || '## Introduction\n\nStart writing here...',
+      categoryId: data.categoryId || 'system-design',
+      category: data.category || 'System Design',
+      difficulty: data.difficulty || 'ADVANCED',
+      type: data.type || 'SYSTEM_DESIGN',
+      status: data.status || 'DRAFT',
+      featured: data.featured ?? false,
+      views: data.views || 0,
+      bookmarks: data.bookmarks || 0,
+      publishedAt:
+        data.status === 'PUBLISHED'
+          ? new Date().toISOString().split('T')[0]
+          : 'Unpublished',
+      author: data.author || 'Alex Rivera',
+      coverImage: data.coverImage,
+      seoTitle: data.seoTitle,
+      seoDescription: data.seoDescription,
+    };
+    articlesCache.unshift(updatedArticle);
+  }
+
+  persistToStorage();
+  return updatedArticle;
+}
+
+export function deleteArticle(id: string): void {
+  initFromStorage();
+  articlesCache = articlesCache.filter((a) => a.id !== id);
+  persistToStorage();
+}
+
+export function togglePublishArticle(id: string): ArticleData {
+  initFromStorage();
+  const existing = getArticleById(id);
+  const nextStatus: ArticleData['status'] = existing.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
+  const updated = saveArticle({
+    ...existing,
+    status: nextStatus,
+    publishedAt: nextStatus === 'PUBLISHED' ? new Date().toISOString().split('T')[0] : 'Unpublished',
+  });
+  return updated;
 }

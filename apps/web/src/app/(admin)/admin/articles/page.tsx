@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   FileText,
@@ -18,80 +18,27 @@ import {
   Archive,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface ArticleItem {
-  id: string;
-  title: string;
-  slug: string;
-  category: string;
-  difficulty: string;
-  type: string;
-  status: 'PUBLISHED' | 'DRAFT' | 'SCHEDULED' | 'ARCHIVED';
-  views: number;
-  bookmarks: number;
-  publishedAt: string;
-  author: string;
-}
-
-const INITIAL_ARTICLES: ArticleItem[] = [
-  {
-    id: '1',
-    title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-    slug: 'designing-distributed-rate-limiter',
-    category: 'System Design',
-    difficulty: 'ADVANCED',
-    type: 'SYSTEM_DESIGN',
-    status: 'PUBLISHED',
-    views: 14200,
-    bookmarks: 340,
-    publishedAt: '2026-09-28',
-    author: 'Alex Rivera',
-  },
-  {
-    id: '2',
-    title: 'Zero-Downtime PostgreSQL Schema Migrations at Scale',
-    slug: 'zero-downtime-postgresql-migrations',
-    category: 'Databases',
-    difficulty: 'ADVANCED',
-    type: 'DEEP_DIVE',
-    status: 'PUBLISHED',
-    views: 22400,
-    bookmarks: 512,
-    publishedAt: '2026-09-25',
-    author: 'Alex Rivera',
-  },
-  {
-    id: '3',
-    title: 'Kafka Partitioning Strategies for Zero-Data-Loss Architectures',
-    slug: 'kafka-partitioning-zero-data-loss',
-    category: 'Distributed Systems',
-    difficulty: 'ADVANCED',
-    type: 'SYSTEM_DESIGN',
-    status: 'PUBLISHED',
-    views: 9800,
-    bookmarks: 180,
-    publishedAt: '2026-09-20',
-    author: 'Alex Rivera',
-  },
-  {
-    id: '4',
-    title: 'Benchmarking Reactive WebFlux vs Virtual Threads in Spring Boot 3.3',
-    slug: 'benchmarking-webflux-vs-virtual-threads',
-    category: 'Performance',
-    difficulty: 'ADVANCED',
-    type: 'DEEP_DIVE',
-    status: 'DRAFT',
-    views: 0,
-    bookmarks: 0,
-    publishedAt: 'Unpublished',
-    author: 'Alex Rivera',
-  },
-];
+import {
+  getAllArticles,
+  deleteArticle,
+  togglePublishArticle,
+  ArticleData,
+} from '@/lib/articles-data';
 
 export default function AdminArticlesPage() {
-  const [articles, setArticles] = useState<ArticleItem[]>(INITIAL_ARTICLES);
+  const [articles, setArticles] = useState<ArticleData[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  const refreshArticles = useCallback(() => {
+    setArticles(getAllArticles());
+  }, []);
+
+  useEffect(() => {
+    refreshArticles();
+    window.addEventListener('nexus_articles_updated', refreshArticles);
+    return () => window.removeEventListener('nexus_articles_updated', refreshArticles);
+  }, [refreshArticles]);
 
   const filtered = articles.filter((art) => {
     const matchSearch =
@@ -105,21 +52,15 @@ export default function AdminArticlesPage() {
   });
 
   const handleDelete = (id: string, title: string) => {
-    setArticles((prev) => prev.filter((a) => a.id !== id));
+    deleteArticle(id);
+    refreshArticles();
     toast.success(`Deleted article: ${title}`);
   };
 
   const handleTogglePublish = (id: string) => {
-    setArticles((prev) =>
-      prev.map((a) => {
-        if (a.id === id) {
-          const nextStatus = a.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
-          toast.success(`Article status changed to ${nextStatus}`);
-          return { ...a, status: nextStatus };
-        }
-        return a;
-      }),
-    );
+    const updated = togglePublishArticle(id);
+    refreshArticles();
+    toast.success(`Article status changed to ${updated.status}`);
   };
 
   return (
@@ -235,9 +176,10 @@ export default function AdminArticlesPage() {
                       onClick={() => handleTogglePublish(item.id)}
                       className={`px-2 py-0.5 rounded font-mono text-[10px] font-semibold transition-all ${
                         item.status === 'PUBLISHED'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-muted text-muted-foreground border border-border'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
+                          : 'bg-muted text-muted-foreground border border-border hover:text-foreground'
                       }`}
+                      title="Click to toggle status"
                     >
                       {item.status}
                     </button>
