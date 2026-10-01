@@ -11,7 +11,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         db: {
           url:
             process.env.DATABASE_URL ||
-            'mongodb://localhost:27017/nexusblog?authSource=admin',
+            'mongodb+srv://krishkishoreks_db_user:NEH0AePPKevyWWNS@cluster0.u3idvmr.mongodb.net/nexusblog?retryWrites=true&w=majority&appName=Cluster0',
         },
       },
     });
