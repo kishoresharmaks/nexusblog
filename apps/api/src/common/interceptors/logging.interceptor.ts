@@ -42,22 +42,26 @@ export class LoggingInterceptor implements NestInterceptor {
         },
         error: (error) => {
           const duration = Date.now() - now;
-          const status = error?.status || 500;
-          this.logger.error(
-            JSON.stringify({
-              level: 'error',
-              timestamp: new Date().toISOString(),
-              correlationId,
-              method,
-              path: originalUrl,
-              statusCode: status,
-              durationMs: duration,
-              errorName: error?.name || 'Error',
-              errorMessage: error?.message || 'Unknown error',
-              ip,
-              userAgent,
-            }),
-          );
+          const status = error?.status || error?.statusCode || 500;
+          const logPayload = JSON.stringify({
+            level: status >= 500 ? 'error' : 'warn',
+            timestamp: new Date().toISOString(),
+            correlationId,
+            method,
+            path: originalUrl,
+            statusCode: status,
+            durationMs: duration,
+            errorName: error?.name || 'Error',
+            errorMessage: error?.message || 'Unknown error',
+            ip,
+            userAgent,
+          });
+
+          if (status >= 500) {
+            this.logger.error(logPayload);
+          } else {
+            this.logger.warn(logPayload);
+          }
         },
       }),
     );

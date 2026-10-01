@@ -41,8 +41,7 @@ The following sequence outlines how incoming API requests are evaluated by the g
 
 <MermaidDiagram
   caption="Distributed Rate Limiting Gateway Request Flow"
-  code={\`
-sequenceDiagram
+  code="sequenceDiagram
     autonumber
     actor Client as Client App
     participant GW as API Gateway (NestJS)
@@ -58,8 +57,7 @@ sequenceDiagram
         GW-->>Client: 200 OK + Rate-Limit Headers
     else Rate Limited
         GW-->>Client: 429 Too Many Requests + Retry-After
-    end
-\`}
+    end"
 />
 
 ---
@@ -80,8 +78,9 @@ Below is an interactive view of the multi-tier microservice cluster coordinating
 Here is how rate limiting interceptors are implemented across different server frameworks:
 
 <CodeTabs defaultValue="TypeScript">
-  <CodeTab title="TypeScript" language="typescript" filename="rate-limiter.guard.ts">
-{\`import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
+  <CodeTab title="TypeScript" filename="rate-limiter.guard.ts">
+\`\`\`typescript
+import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
 import { RedisService } from './redis.service';
 
 @Injectable()
@@ -103,11 +102,13 @@ export class DistributedRateLimitGuard implements CanActivate {
     }
     return true;
   }
-}\`}
+}
+\`\`\`
   </CodeTab>
 
-  <CodeTab title="Java" language="java" filename="RateLimiterFilter.java">
-{\`@Component
+  <CodeTab title="Java" filename="RateLimiterFilter.java">
+\`\`\`java
+@Component
 public class DistributedRateLimitFilter implements WebFilter {
     private final ReactiveRedisTemplate<String, String> redisTemplate;
 
@@ -123,7 +124,8 @@ public class DistributedRateLimitFilter implements WebFilter {
         return redisTemplate.execute(new RedisLuaScript(), Collections.singletonList(key))
             .flatMap(allowed -> allowed ? chain.filter(exchange) : Mono.error(new RateLimitException()));
     }
-}\`}
+}
+\`\`\`
   </CodeTab>
 </CodeTabs>
 
@@ -163,11 +165,9 @@ We tested our Redis Lua script implementation under 100,000 requests/sec concurr
 
 ## Mathematical Formulation
 
-The sliding window log algorithm computes the weighted request count \\( C \\) as:
+The sliding window log algorithm computes the weighted request count:
 
-<KaTeX block={true}>
-{\`C = \\text{count}(\\text{current window}) + \\text{count}(\\text{previous window}) \\times \\left(1 - \\frac{\\text{time in current window}}{\\text{window size}}\\right)\`}
-</KaTeX>
+<KaTeX block math="C = \text{count}(\text{current window}) + \text{count}(\text{previous window}) \times \left(1 - \frac{\text{time in current window}}{\text{window size}}\right)" />
 
 ---
 
@@ -175,7 +175,7 @@ The sliding window log algorithm computes the weighted request count \\( C \\) a
 
 1. **Avoid In-Memory State on Gateways**: State must live in a centralized, low-latency datastore like Redis.
 2. **Atomic Lua Execution**: Executing window checks inside Redis Lua scripts eliminates race conditions without distributed locks.
-3. **Graceful 429 Responses**: Always send \`Retry-After\` headers to prevent clients from aggressive retry loops.
+3. **Graceful 429 Responses**: Always send Retry-After headers to prevent clients from aggressive retry loops.
 `;
 
 interface ArticlePageProps {
