@@ -2,24 +2,43 @@ import React from 'react';
 import { Gauge, Zap } from 'lucide-react';
 
 export interface BenchmarkRow {
-  name: string;
-  metric: string; // e.g. "1.2 ms" or "85,000 req/sec"
-  percentage?: number; // 0 to 100
+  name?: string;
+  label?: string;
+  metric?: string;
+  value?: string;
+  percentage?: number;
   status?: 'optimal' | 'acceptable' | 'slow';
   note?: string;
+  change?: string;
+  trend?: string;
 }
 
 interface BenchmarkProps {
   title?: string;
   description?: string;
-  rows: BenchmarkRow[];
+  rows?: BenchmarkRow[] | string;
+  metrics?: BenchmarkRow[] | string;
 }
 
 export function Benchmark({
   title = 'Performance Benchmark',
   description,
-  rows = [],
+  rows,
+  metrics,
 }: BenchmarkProps) {
+  let parsedItems: BenchmarkRow[] = [];
+
+  try {
+    const source = rows || metrics || [];
+    if (typeof source === 'string') {
+      parsedItems = JSON.parse(source);
+    } else if (Array.isArray(source)) {
+      parsedItems = source;
+    }
+  } catch {
+    parsedItems = [];
+  }
+
   return (
     <div className="my-6 rounded-lg border border-border/80 bg-card/60 overflow-hidden shadow-sm">
       {/* Header */}
@@ -42,8 +61,12 @@ export function Benchmark({
 
       {/* Rows */}
       <div className="divide-y divide-border/30">
-        {rows.map((row, idx) => {
-          const percentage = row.percentage ?? 50;
+        {parsedItems.map((row, idx) => {
+          const rowName = row.name || row.label || `Metric ${idx + 1}`;
+          const rowMetric = row.metric || row.value || 'N/A';
+          const rowNote = row.note || row.change || (row.trend ? `Trend: ${row.trend}` : undefined);
+          const percentage = row.percentage ?? (idx === 0 ? 95 : idx === 1 ? 75 : 50);
+
           const statusColors = {
             optimal: 'bg-emerald-500 text-emerald-500',
             acceptable: 'bg-amber-500 text-amber-500',
@@ -55,10 +78,10 @@ export function Benchmark({
               <div className="flex items-center justify-between text-xs sm:text-sm">
                 <div className="font-medium text-foreground flex items-center gap-2">
                   <span className="font-mono text-xs text-muted-foreground">{idx + 1}.</span>
-                  <span>{row.name}</span>
+                  <span>{rowName}</span>
                 </div>
                 <div className="font-mono font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">
-                  {row.metric}
+                  {rowMetric}
                 </div>
               </div>
 
@@ -70,9 +93,9 @@ export function Benchmark({
                 />
               </div>
 
-              {row.note && (
+              {rowNote && (
                 <div className="text-[11px] text-muted-foreground font-mono">
-                  {row.note}
+                  {rowNote}
                 </div>
               )}
             </div>
