@@ -172,9 +172,10 @@ class AuthClient {
           return false;
         }
 
-        const data: ApiResponse<AuthResponse> = await response.json();
-        if (data.success && data.data?.accessToken) {
-          this.setAccessToken(data.data.accessToken);
+        const data: any = await response.json().catch(() => ({}));
+        const newAccessToken = data?.data?.accessToken || data?.accessToken;
+        if (newAccessToken) {
+          this.setAccessToken(newAccessToken);
           return true;
         }
         return false;

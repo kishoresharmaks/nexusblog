@@ -7,18 +7,32 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {},
   requireAuth = false,
+  retryOnAuthFailure = true,
 ): Promise<T> {
+  const isServer = typeof window === 'undefined';
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  const token = authClient.getAccessToken();
+  let token = authClient.getAccessToken();
+
+  // If auth is required on client side but no token in memory, attempt refresh before sending
+  if (!token && requireAuth && !isServer && retryOnAuthFailure) {
+    try {
+      const refreshed = await authClient.refreshToken();
+      if (refreshed) {
+        token = authClient.getAccessToken();
+      }
+    } catch {
+      // silent
+    }
+  }
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const isServer = typeof window === 'undefined';
   const url = `${API_BASE}${endpoint}`;
 
   const fetchOptions: RequestInit = {
@@ -43,6 +57,18 @@ async function request<T>(
       }
     } else {
       throw err;
+    }
+  }
+
+  // Handle 401 Unauthorized by attempting session refresh and retrying once
+  if (res.status === 401 && !isServer && retryOnAuthFailure) {
+    try {
+      const refreshed = await authClient.refreshToken();
+      if (refreshed) {
+        return request<T>(endpoint, options, requireAuth, false);
+      }
+    } catch {
+      // Refresh failed
     }
   }
 
@@ -422,8 +448,13 @@ export const mediaApi = {
     if (alt) formData.append('alt', alt);
     if (caption) formData.append('caption', caption);
 
-    const token = authClient.getAccessToken();
-    const res = await fetch(`${API_BASE}/media/upload`, {
+    let token = authClient.getAccessToken();
+    if (!token && typeof window !== 'undefined') {
+      await authClient.refreshToken();
+      token = authClient.getAccessToken();
+    }
+
+    let res = await fetch(`${API_BASE}/media/upload`, {
       method: 'POST',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -431,6 +462,21 @@ export const mediaApi = {
       credentials: 'include',
       body: formData,
     });
+
+    if (res.status === 401 && typeof window !== 'undefined') {
+      const refreshed = await authClient.refreshToken();
+      if (refreshed) {
+        const freshToken = authClient.getAccessToken();
+        res = await fetch(`${API_BASE}/media/upload`, {
+          method: 'POST',
+          headers: {
+            ...(freshToken ? { Authorization: `Bearer ${freshToken}` } : {}),
+          },
+          credentials: 'include',
+          body: formData,
+        });
+      }
+    }
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

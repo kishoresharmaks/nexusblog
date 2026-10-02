@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { commentsApi } from '@/lib/api-client';
+import { authClient } from '@/lib/auth-client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -128,6 +129,21 @@ export function ArticleComments({
       toast.success('Comment posted successfully!');
       await loadComments();
     } catch (err: any) {
+      // If auth token expired, attempt one refresh and retry
+      if (err.message?.includes('Authentication required') || err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+        try {
+          const refreshed = await authClient.refreshToken();
+          if (refreshed) {
+            await commentsApi.create(articleId, content);
+            setNewCommentText('');
+            toast.success('Comment posted successfully!');
+            await loadComments();
+            return;
+          }
+        } catch {
+          // Fall through
+        }
+      }
       toast.error(err.message || 'Failed to post comment. Please try again.');
     } finally {
       setSubmitting(false);
@@ -154,6 +170,21 @@ export function ArticleComments({
       toast.success('Reply posted successfully!');
       await loadComments();
     } catch (err: any) {
+      if (err.message?.includes('Authentication required') || err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+        try {
+          const refreshed = await authClient.refreshToken();
+          if (refreshed) {
+            await commentsApi.create(articleId, content, parentId);
+            setReplyText('');
+            setReplyingToId(null);
+            toast.success('Reply posted successfully!');
+            await loadComments();
+            return;
+          }
+        } catch {
+          // Fall through
+        }
+      }
       toast.error(err.message || 'Failed to post reply.');
     } finally {
       setSubmittingReply(false);
@@ -176,6 +207,21 @@ export function ArticleComments({
       toast.success('Comment updated successfully');
       await loadComments();
     } catch (err: any) {
+      if (err.message?.includes('Authentication required') || err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+        try {
+          const refreshed = await authClient.refreshToken();
+          if (refreshed) {
+            await commentsApi.update(commentId, content);
+            setEditingId(null);
+            setEditText('');
+            toast.success('Comment updated successfully');
+            await loadComments();
+            return;
+          }
+        } catch {
+          // Fall through
+        }
+      }
       toast.error(err.message || 'Failed to update comment.');
     } finally {
       setSubmittingEdit(false);
@@ -191,6 +237,19 @@ export function ArticleComments({
       toast.success('Comment deleted.');
       await loadComments();
     } catch (err: any) {
+      if (err.message?.includes('Authentication required') || err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+        try {
+          const refreshed = await authClient.refreshToken();
+          if (refreshed) {
+            await commentsApi.delete(commentId);
+            toast.success('Comment deleted.');
+            await loadComments();
+            return;
+          }
+        } catch {
+          // Fall through
+        }
+      }
       toast.error(err.message || 'Failed to delete comment.');
     }
   };
