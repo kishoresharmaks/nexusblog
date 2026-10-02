@@ -17,6 +17,8 @@ interface AuthContextType {
     password: string;
     bio?: string;
   }) => Promise<User>;
+  verifyEmail: (token: string) => Promise<{ success: boolean; message: string }>;
+  resendVerification: (email: string) => Promise<{ message: string }>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -98,6 +100,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const verifyEmail = async (token: string) => {
+    try {
+      const res = await authClient.verifyEmail(token);
+      toast.success(res.message || 'Email verified successfully!');
+      await refreshUser();
+      return res;
+    } catch (error) {
+      toast.error((error as Error).message || 'Email verification failed');
+      throw error;
+    }
+  };
+
+  const resendVerification = async (email: string) => {
+    try {
+      const res = await authClient.resendVerification(email);
+      toast.success(res.message || 'Verification link sent!');
+      return res;
+    } catch (error) {
+      toast.error((error as Error).message || 'Failed to resend verification email');
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       await authClient.logout();
@@ -127,6 +152,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        verifyEmail,
+        resendVerification,
         logout,
         updateProfile,
         refreshUser,

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { siteConfig } from '@nexus/config';
+import { BrandLogo } from '@/components/common/brand-logo';
 import {
   Send,
   Rss,
@@ -18,6 +19,10 @@ import {
   Bookmark,
   Activity,
   FileCode2,
+  ChevronUp,
+  Globe,
+  Lock,
+  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { newsletterApi } from '@/lib/api-client';
@@ -55,45 +60,56 @@ export function Footer() {
     }
   };
 
-  return (
-    <footer className="border-t border-border/50 bg-background text-foreground/80 font-sans relative overflow-hidden">
-      {/* Background Decorative Gradient */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-48 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none -z-10" />
+  const scrollToTop = () => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-12 md:py-16 space-y-12">
+  return (
+    <footer className="border-t border-border/60 bg-background text-foreground/90 font-sans relative overflow-hidden">
+      {/* Background Decorative Ambient Gradient */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-64 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none -z-10" />
+
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 md:py-16 space-y-10 md:space-y-12">
         {/* Top Feature: Engineering Dispatch Newsletter Card */}
-        <div className="rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-primary/5 p-6 sm:p-8 md:p-10 shadow-xs relative overflow-hidden">
-          <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+        <div className="rounded-2xl sm:rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card/90 to-primary/5 p-5 sm:p-8 md:p-10 shadow-lg relative overflow-hidden">
+          {/* Ambient Glow */}
+          <div className="absolute -right-12 -bottom-12 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -left-12 -top-12 w-72 h-72 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
             <div className="lg:col-span-7 space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-mono text-primary font-semibold">
-                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
                 <span>Weekly Technical Dispatch</span>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-tight">
+
+              <h3 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground leading-tight">
                 Distributed Systems Blueprints in Your Inbox
               </h3>
+
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl">
                 Weekly deep dives into consensus protocols, low-latency cache architectures, lock-free database migrations, and real-world benchmarks. Zero marketing fluff.
               </p>
-              <div className="flex flex-wrap items-center gap-4 text-[11px] font-mono text-muted-foreground pt-1">
-                <span className="flex items-center gap-1">
+
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] font-mono text-muted-foreground pt-0.5">
+                <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> 100% Free
                 </span>
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> 1-Click Unsubscribe
                 </span>
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> No Spam, Ever
+                <span className="flex items-center gap-1.5">
+                  <Lock className="h-3.5 w-3.5 text-emerald-500" /> No Spam, Ever
                 </span>
               </div>
             </div>
 
             <div className="lg:col-span-5">
               {isSubscribed ? (
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center space-y-2 animate-in fade-in zoom-in-95">
-                  <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto" />
+                <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-5 sm:p-6 text-center space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto" />
                   <p className="text-sm font-bold text-foreground font-mono">You&apos;re on the Dispatch list!</p>
                   <p className="text-xs text-muted-foreground">
                     Watch your inbox every Thursday for new architecture case studies.
@@ -103,20 +119,20 @@ export function Footer() {
                 <form onSubmit={handleSubscribe} className="space-y-2.5">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <div className="relative flex-1">
-                      <Mail className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
+                      <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="architect@tech.io"
-                        className="w-full rounded-xl border border-border bg-background/90 py-2.5 pl-10 pr-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none shadow-xs font-mono"
+                        className="w-full rounded-xl sm:rounded-2xl border border-border bg-background/90 py-2.5 sm:py-3 pl-10 pr-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none shadow-xs"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-foreground text-background px-5 py-2.5 text-xs font-semibold font-mono hover:bg-foreground/90 transition-all disabled:opacity-50 shadow shrink-0"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-foreground text-background px-5 py-2.5 sm:py-3 text-xs font-bold font-mono hover:bg-foreground/90 transition-all disabled:opacity-50 shadow-md shrink-0 cursor-pointer hover:scale-[1.02]"
                     >
                       {isSubmitting ? (
                         <>
@@ -131,8 +147,9 @@ export function Footer() {
                       )}
                     </button>
                   </div>
-                  <p className="text-[10px] font-mono text-muted-foreground text-center sm:text-left">
-                    Join 25,000+ backend architects and systems engineers.
+                  <p className="text-[11px] font-mono text-muted-foreground text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5">
+                    <Zap className="h-3 w-3 text-amber-400" />
+                    <span>Join 25,000+ backend architects and systems engineers.</span>
                   </p>
                 </form>
               )}
@@ -140,29 +157,24 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Main 5-Column Navigation Directory */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6 pt-4">
-          {/* Column 1: Brand & Operational Status */}
-          <div className="space-y-4 sm:col-span-2 lg:col-span-1">
+        {/* Multi-Column Directory: 2-Columns on Mobile, 3-Columns on Tablet, 5-Columns on Desktop */}
+        <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-6 sm:gap-y-8 md:grid-cols-3 lg:grid-cols-5 pt-2">
+          {/* Section 1: Brand & Operational Status (Spans 2-columns on mobile for clean top placement) */}
+          <div className="col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-1 space-y-3.5 pb-2 lg:pb-0 border-b lg:border-b-0 border-border/40">
             <Link
               href="/"
               className="inline-flex items-center gap-2.5 font-bold text-lg tracking-tight text-foreground group"
             >
-              <div className="h-7 w-7 rounded-lg bg-foreground text-background flex items-center justify-center font-mono font-bold text-xs group-hover:scale-105 transition-transform">
-                N
-              </div>
-              <span className="font-mono font-bold text-foreground">
-                {siteConfig.name}
-              </span>
+              <BrandLogo variant="footer" size="sm" />
             </Link>
 
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Production-grade technical publishing platform & developer knowledge portal for distributed systems engineering.
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-sm lg:max-w-none">
+              Production-grade technical publishing platform &amp; developer knowledge portal for distributed systems engineering.
             </p>
 
             {/* Live Operational Status */}
             <div className="pt-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-mono text-emerald-400">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -170,26 +182,15 @@ export function Footer() {
                 <span>All Systems Operational</span>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 pt-2">
-              <Link
-                href="https://github.com"
-                target="_blank"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[11px] font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-2xs"
-              >
-                <GithubIcon className="h-3.5 w-3.5" />
-                <span>Star on GitHub</span>
-              </Link>
-            </div>
           </div>
 
-          {/* Column 2: Architecture Topics */}
-          <div className="space-y-3 text-xs">
+          {/* Section 2: Architecture Topics (Left Column on Mobile) */}
+          <div className="col-span-1 space-y-3 text-xs">
             <span className="font-mono font-bold uppercase tracking-wider text-foreground text-[11px] flex items-center gap-1.5">
               <Layers className="h-3.5 w-3.5 text-primary" />
               <span>Taxonomy</span>
             </span>
-            <ul className="space-y-2 text-muted-foreground font-sans">
+            <ul className="space-y-1.5 text-muted-foreground font-sans">
               <li>
                 <Link href="/categories/system-design" className="hover:text-primary transition-colors block py-0.5">
                   System Design
@@ -197,45 +198,45 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/categories/backend-engineering" className="hover:text-primary transition-colors block py-0.5">
-                  Backend Engineering
+                  Backend
                 </Link>
               </li>
               <li>
                 <Link href="/categories/distributed-systems" className="hover:text-primary transition-colors block py-0.5">
-                  Distributed Systems
+                  Distributed
                 </Link>
               </li>
               <li>
                 <Link href="/categories/databases" className="hover:text-primary transition-colors block py-0.5">
-                  Databases & Sharding
+                  Databases
                 </Link>
               </li>
               <li>
                 <Link href="/categories/apis" className="hover:text-primary transition-colors block py-0.5">
-                  APIs & Microservices
+                  APIs
                 </Link>
               </li>
               <li>
                 <Link href="/categories/devops" className="hover:text-primary transition-colors block py-0.5">
-                  DevOps & CI/CD
+                  DevOps
                 </Link>
               </li>
               <li>
-                <Link href="/categories" className="text-primary hover:underline font-mono text-[11px] pt-1 inline-flex items-center gap-1">
-                  <span>View all categories</span>
+                <Link href="/categories" className="text-primary hover:underline font-mono text-[10px] sm:text-[11px] pt-1 inline-flex items-center gap-0.5 font-semibold">
+                  <span>View all</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 3: Technology Hubs */}
-          <div className="space-y-3 text-xs">
+          {/* Section 3: Technology Hubs (Right Column on Mobile) */}
+          <div className="col-span-1 space-y-3 text-xs">
             <span className="font-mono font-bold uppercase tracking-wider text-foreground text-[11px] flex items-center gap-1.5">
               <Cpu className="h-3.5 w-3.5 text-primary" />
               <span>Infrastructure</span>
             </span>
-            <ul className="space-y-2 text-muted-foreground font-sans">
+            <ul className="space-y-1.5 text-muted-foreground font-sans">
               <li>
                 <Link href="/technologies/redis" className="hover:text-primary transition-colors block py-0.5 font-mono text-[11px]">
                   #redis
@@ -267,23 +268,23 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/technologies" className="text-primary hover:underline font-mono text-[11px] pt-1 inline-flex items-center gap-1">
-                  <span>View all stacks</span>
+                <Link href="/technologies" className="text-primary hover:underline font-mono text-[10px] sm:text-[11px] pt-1 inline-flex items-center gap-0.5 font-semibold">
+                  <span>All stacks</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Knowledge Hub */}
-          <div className="space-y-3 text-xs">
+          {/* Section 4: Knowledge Hub (Left Column on Mobile) */}
+          <div className="col-span-1 space-y-3 text-xs">
             <span className="font-mono font-bold uppercase tracking-wider text-foreground text-[11px] flex items-center gap-1.5">
               <Bookmark className="h-3.5 w-3.5 text-primary" />
               <span>Knowledge Hub</span>
             </span>
-            <ul className="space-y-2 text-muted-foreground font-sans">
+            <ul className="space-y-1.5 text-muted-foreground font-sans">
               <li>
-                <Link href="/articles" className="hover:text-primary transition-colors block py-0.5">
+                <Link href="/case-studies" className="hover:text-primary transition-colors block py-0.5">
                   All Case Studies
                 </Link>
               </li>
@@ -299,7 +300,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/guest-post/submit" className="hover:text-primary transition-colors block py-0.5">
-                  Submit Guest Post
+                  Submit Blueprint
                 </Link>
               </li>
               <li>
@@ -308,7 +309,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/rss.xml" className="hover:text-primary transition-colors block py-0.5 inline-flex items-center gap-1">
+                <Link href="/rss.xml" target="_blank" className="hover:text-amber-500 transition-colors block py-0.5 inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px]">
                   <Rss className="h-3 w-3 text-amber-500" />
                   <span>RSS Atom Feed</span>
                 </Link>
@@ -316,41 +317,36 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Column 5: Portal & Platform */}
-          <div className="space-y-3 text-xs">
+          {/* Section 5: Platform & Tools (Right Column on Mobile) */}
+          <div className="col-span-1 space-y-3 text-xs">
             <span className="font-mono font-bold uppercase tracking-wider text-foreground text-[11px] flex items-center gap-1.5">
               <Terminal className="h-3.5 w-3.5 text-primary" />
               <span>Platform</span>
             </span>
-            <ul className="space-y-2 text-muted-foreground font-sans">
+            <ul className="space-y-1.5 text-muted-foreground font-sans">
               <li>
                 <Link href="/dashboard" className="hover:text-primary transition-colors block py-0.5">
                   Reader Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="/articles" className="hover:text-primary transition-colors block py-0.5 font-mono text-[11px]">
-                  Command Search ⌘K
-                </Link>
-              </li>
-              <li>
-                <Link href="/write-for-us" className="hover:text-primary transition-colors block py-0.5">
-                  Write For Us
+                <Link href="/series" className="hover:text-primary transition-colors block py-0.5">
+                  Learning Series
                 </Link>
               </li>
               <li>
                 <Link href="/login" className="hover:text-primary transition-colors block py-0.5">
-                  Sign In / Portal
+                  Sign In
                 </Link>
               </li>
               <li>
                 <Link href="/register" className="hover:text-primary transition-colors block py-0.5">
-                  Create Free Account
+                  Create Account
                 </Link>
               </li>
               <li>
-                <span className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground/80 pt-1">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono text-muted-foreground/80 pt-1">
+                  <ShieldCheck className="h-3 w-3 text-emerald-500" />
                   <span>Production Ready</span>
                 </span>
               </li>
@@ -359,8 +355,8 @@ export function Footer() {
         </div>
 
         {/* Bottom Sub-Footer Bar */}
-        <div className="pt-8 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-muted-foreground">
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
+        <div className="pt-6 sm:pt-8 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 text-center sm:text-left">
             <p>© {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
             <span className="hidden sm:inline-block text-border">•</span>
             <p className="text-[11px] text-muted-foreground/80">
@@ -368,13 +364,13 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Social Icons with Themed Round Containers */}
+          {/* Social Icons & Back to Top */}
           <div className="flex items-center space-x-2">
             <Link
               href="https://github.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 w-8 rounded-lg border border-border/80 bg-card/80 hover:bg-muted hover:text-foreground flex items-center justify-center text-muted-foreground transition-colors shadow-2xs"
+              className="h-8 w-8 rounded-xl border border-border/80 bg-card/80 hover:bg-muted hover:text-foreground flex items-center justify-center text-muted-foreground transition-colors shadow-2xs"
               title="GitHub"
             >
               <GithubIcon className="h-3.5 w-3.5" />
@@ -383,7 +379,7 @@ export function Footer() {
               href="https://twitter.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 w-8 rounded-lg border border-border/80 bg-card/80 hover:bg-muted hover:text-foreground flex items-center justify-center text-muted-foreground transition-colors shadow-2xs"
+              className="h-8 w-8 rounded-xl border border-border/80 bg-card/80 hover:bg-muted hover:text-foreground flex items-center justify-center text-muted-foreground transition-colors shadow-2xs"
               title="X / Twitter"
             >
               <TwitterIcon className="h-3.5 w-3.5" />
@@ -392,7 +388,7 @@ export function Footer() {
               href="https://linkedin.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="h-8 w-8 rounded-lg border border-border/80 bg-card/80 hover:bg-muted hover:text-foreground flex items-center justify-center text-muted-foreground transition-colors shadow-2xs"
+              className="h-8 w-8 rounded-xl border border-border/80 bg-card/80 hover:bg-muted hover:text-foreground flex items-center justify-center text-muted-foreground transition-colors shadow-2xs"
               title="LinkedIn"
             >
               <LinkedinIcon className="h-3.5 w-3.5" />
@@ -400,15 +396,24 @@ export function Footer() {
             <Link
               href="/rss.xml"
               target="_blank"
-              className="h-8 w-8 rounded-lg border border-border/80 bg-card/80 hover:bg-amber-500/10 hover:text-amber-500 flex items-center justify-center text-muted-foreground transition-colors shadow-2xs"
-              title="RSS Feed"
+              className="h-8 w-8 rounded-xl border border-border/80 bg-card/80 hover:bg-amber-500/10 hover:text-amber-500 flex items-center justify-center text-muted-foreground transition-colors shadow-2xs"
+              title="RSS Atom Feed"
             >
               <Rss className="h-3.5 w-3.5" />
             </Link>
+
+            {/* Scroll to Top button */}
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="h-8 w-8 rounded-xl border border-border/80 bg-card/80 hover:bg-muted hover:text-foreground flex items-center justify-center text-muted-foreground transition-colors shadow-2xs cursor-pointer ml-1"
+              title="Back to Top"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
     </footer>
   );
 }
-

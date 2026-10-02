@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -15,15 +15,52 @@ import {
   Eye,
   Layers,
   Cpu,
+  Save,
+  Loader2,
+  ShieldAlert,
+  ShieldCheck,
+  RefreshCw,
+  Copy,
+  Check,
+  Code2,
+  Terminal,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-import { articlesApi } from '@/lib/api-client';
+import { articlesApi, systemSettingsApi } from '@/lib/api-client';
 
 export default function AdminSeoDiagnosticsPage() {
-  const [activeTab, setActiveTab] = useState<'diagnostics' | 'social-preview'>('diagnostics');
+  const [activeTab, setActiveTab] = useState<'diagnostics' | 'robots' | 'social-preview'>('diagnostics');
   const [articles, setArticles] = useState<any[]>([]);
   const [selectedArticleSlug, setSelectedArticleSlug] = useState<string>('');
   const [socialPlatform, setSocialPlatform] = useState<'twitter' | 'linkedin' | 'discord'>('twitter');
+
+  // Robots.txt & Indexing State
+  const [loadingRobots, setLoadingRobots] = useState(false);
+  const [isSavingRobots, setIsSavingRobots] = useState(false);
+  const [robotsIndexingMode, setRobotsIndexingMode] = useState<'allow' | 'disallow_all' | 'custom'>('allow');
+  const [robotsCustomContent, setRobotsCustomContent] = useState<string>('');
+  const [siteUrl, setSiteUrl] = useState<string>('');
+  const [copiedRobots, setCopiedRobots] = useState(false);
+
+  const loadRobotsConfig = useCallback(async () => {
+    try {
+      setLoadingRobots(true);
+      const data = await systemSettingsApi.getAll();
+      if (data) {
+        setRobotsIndexingMode((data.robotsIndexingMode?.value as any) || 'allow');
+        setRobotsCustomContent(
+          data.robotsCustomContent?.value ||
+            '# Custom robots.txt directives\nUser-Agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /api/*',
+        );
+        setSiteUrl(data.siteUrl?.value || 'http://localhost:3000');
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setLoadingRobots(false);
+    }
+  }, []);
 
   useEffect(() => {
     articlesApi
@@ -36,9 +73,90 @@ export default function AdminSeoDiagnosticsPage() {
         }
       })
       .catch(() => {});
-  }, []);
+
+    loadRobotsConfig();
+  }, [loadRobotsConfig]);
 
   const selectedArticle = articles.find((a) => a.slug === selectedArticleSlug) || articles[0];
+
+  const handleSaveRobots = async () => {
+    setIsSavingRobots(true);
+    try {
+      await systemSettingsApi.updateBatch({
+        robotsIndexingMode,
+        robotsCustomContent: robotsCustomContent.trim(),
+      });
+      toast.success('Robots.txt & search engine indexing rules updated successfully!');
+      await loadRobotsConfig();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update robots.txt configuration');
+    } finally {
+      setIsSavingRobots(false);
+    }
+  };
+
+  const getComputedRobotsPreview = () => {
+    const cleanUrl = (siteUrl || 'https://nexusblog.dev').replace(/\/+$/, '');
+    if (robotsIndexingMode === 'disallow_all') {
+      return `# ==========================================
+# Robots.txt - Search Engine Indexing Disabled
+# Development / Staging / Testing Mode Active
+# ==========================================
+User-Agent: *
+Disallow: /`;
+    }
+    if (robotsIndexingMode === 'custom') {
+      return robotsCustomContent.trim() || 'User-Agent: *\nDisallow: /';
+    }
+    return `User-Agent: *
+Allow: /
+Allow: /articles
+Allow: /categories
+Allow: /technologies
+Allow: /series
+Allow: /tags
+Allow: /write-for-us
+Allow: /api/og
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /api/*
+
+Sitemap: ${cleanUrl}/sitemap.xml`;
+  };
+
+  const handleCopyPreview = () => {
+    navigator.clipboard.writeText(getComputedRobotsPreview());
+    setCopiedRobots(true);
+    toast.success('Robots.txt directives copied to clipboard');
+    setTimeout(() => setCopiedRobots(false), 2000);
+  };
+
+  const applyPreset = (type: 'dev' | 'prod' | 'strict') => {
+    const cleanUrl = (siteUrl || 'https://nexusblog.dev').replace(/\/+$/, '');
+    if (type === 'dev') {
+      setRobotsIndexingMode('disallow_all');
+      toast.info('Switched to Development / Testing mode (All indexing blocked)');
+    } else if (type === 'prod') {
+      setRobotsIndexingMode('allow');
+      toast.info('Switched to Standard Production mode (Public indexed, Admin protected)');
+    } else if (type === 'strict') {
+      setRobotsIndexingMode('custom');
+      setRobotsCustomContent(`# Strict Custom Indexing Policy
+User-Agent: *
+Allow: /articles$
+Allow: /categories$
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /guest-post/
+Crawl-delay: 10
+
+Sitemap: ${cleanUrl}/sitemap.xml`);
+      toast.info('Applied Strict Custom crawl template');
+    }
+  };
 
   const seoItems = [
     {
@@ -50,8 +168,13 @@ export default function AdminSeoDiagnosticsPage() {
     {
       name: 'Robots.txt Crawler Directives',
       endpoint: '/robots.txt',
-      status: 'HEALTHY',
-      details: 'Allowed /articles, /categories, /series. Disallowed /admin and /dashboard private paths.',
+      status: robotsIndexingMode === 'disallow_all' ? 'DEV / NO-INDEX' : 'HEALTHY',
+      details:
+        robotsIndexingMode === 'disallow_all'
+          ? 'Strict Disallow: / enabled. Search crawlers blocked for development and staging testing.'
+          : robotsIndexingMode === 'custom'
+            ? 'Custom robots.txt directives active.'
+            : 'Allowed /articles, /categories, /series. Disallowed /admin and /dashboard private paths.',
     },
     {
       name: 'JSON-LD Structured Data Schema',
@@ -87,11 +210,11 @@ export default function AdminSeoDiagnosticsPage() {
           <div className="flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              SEO Diagnostics & Social Card Engine
+              SEO &amp; Indexing Engine
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Monitor search engine indexing health, sitemap generation, OpenGraph previews, and canonical integrity.
+            Manage search engine crawlers, robots.txt directives, sitemap verification, and social previews.
           </p>
         </div>
 
@@ -99,7 +222,7 @@ export default function AdminSeoDiagnosticsPage() {
         <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/60 text-xs font-mono self-start sm:self-auto">
           <button
             onClick={() => setActiveTab('diagnostics')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeTab === 'diagnostics'
                 ? 'bg-primary text-primary-foreground font-bold shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
@@ -108,8 +231,22 @@ export default function AdminSeoDiagnosticsPage() {
             System Diagnostics
           </button>
           <button
+            onClick={() => setActiveTab('robots')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'robots'
+                ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <FileCode2 className="h-3.5 w-3.5" />
+            <span>Robots.txt &amp; Indexing</span>
+            {robotsIndexingMode === 'disallow_all' && (
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab('social-preview')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeTab === 'social-preview'
                 ? 'bg-primary text-primary-foreground font-bold shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
@@ -120,18 +257,18 @@ export default function AdminSeoDiagnosticsPage() {
         </div>
       </div>
 
-      {activeTab === 'diagnostics' ? (
+      {activeTab === 'diagnostics' && (
         /* Health Overview */
         <div className="rounded-2xl border border-border bg-card p-6 space-y-6 shadow-xs">
           <div className="flex items-center justify-between border-b border-border/40 pb-4">
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
               <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
-                Search Indexing Diagnostics (100% Score)
+                Search Indexing Diagnostics
               </h2>
             </div>
             <span className="font-mono text-xs text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-md font-semibold border border-emerald-500/30">
-              ALL SYSTEMS PASSING
+              ACTIVE &amp; MONITORED
             </span>
           </div>
 
@@ -155,7 +292,13 @@ export default function AdminSeoDiagnosticsPage() {
                 </div>
 
                 <div className="shrink-0 self-end sm:self-center pl-6 sm:pl-0 flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/30">
+                  <span
+                    className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded border ${
+                      item.status.includes('DEV')
+                        ? 'text-amber-400 bg-amber-500/10 border-amber-500/30'
+                        : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                    }`}
+                  >
                     {item.status}
                   </span>
                   {item.endpoint.startsWith('/') && (
@@ -173,7 +316,245 @@ export default function AdminSeoDiagnosticsPage() {
             ))}
           </div>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'robots' && (
+        /* Robots.txt & Dynamic Indexing Tab */
+        <div className="space-y-6">
+          {/* Status Alert Banner */}
+          {robotsIndexingMode === 'disallow_all' ? (
+            <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5 space-y-2 text-amber-200">
+              <div className="flex items-center gap-2.5 font-bold font-mono text-sm text-amber-400">
+                <ShieldAlert className="h-5 w-5" />
+                <span>SEARCH ENGINE INDEXING BLOCKED (Development / Testing Mode)</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                All web crawlers (Google, Bing, Yandex, DuckDuckGo) are currently blocked with{' '}
+                <code className="bg-amber-950/60 text-amber-300 px-1.5 py-0.5 rounded font-mono">Disallow: /</code>.
+                No development, staging, or test content will be indexed in public search results.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-2 text-emerald-200">
+              <div className="flex items-center gap-2.5 font-bold font-mono text-sm text-emerald-400">
+                <ShieldCheck className="h-5 w-5" />
+                <span>SEARCH ENGINE INDEXING ACTIVE (Production Mode)</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Public content is indexed for maximum SEO discoverability while private paths (
+                <code className="bg-emerald-950/60 text-emerald-300 px-1.5 py-0.5 rounded font-mono">/admin</code>,{' '}
+                <code className="bg-emerald-950/60 text-emerald-300 px-1.5 py-0.5 rounded font-mono">/dashboard</code>,{' '}
+                <code className="bg-emerald-950/60 text-emerald-300 px-1.5 py-0.5 rounded font-mono">/api/*</code>) are strictly protected.
+              </p>
+            </div>
+          )}
+
+          {/* Mode Selector Cards */}
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-6 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
+              <div className="space-y-1">
+                <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+                  Robots Indexing Mode Selection
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Select how search engine bots and web crawlers should handle your application.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/robots.txt"
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-muted/40 hover:bg-muted text-xs font-mono text-foreground transition-colors cursor-pointer"
+                >
+                  <span>Inspect Live /robots.txt</span>
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Option 1: Allow Indexing (Production) */}
+              <div
+                onClick={() => setRobotsIndexingMode('allow')}
+                className={`p-5 rounded-2xl border cursor-pointer transition-all space-y-3 ${
+                  robotsIndexingMode === 'allow'
+                    ? 'border-emerald-500/70 bg-emerald-500/10 shadow-sm ring-1 ring-emerald-500/50'
+                    : 'border-border/60 bg-muted/20 hover:bg-muted/40'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4" /> Production Indexing
+                  </span>
+                  <span
+                    className={`h-3 w-3 rounded-full border ${
+                      robotsIndexingMode === 'allow' ? 'bg-emerald-500 border-emerald-400' : 'border-border'
+                    }`}
+                  />
+                </div>
+                <p className="text-xs font-bold text-foreground">Allow Public Pages (Standard)</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Allows search engines to crawl public articles, categories, and series. Automatically blocks admin/dashboard paths and includes dynamic sitemap.
+                </p>
+              </div>
+
+              {/* Option 2: Disallow All (Dev / Testing) */}
+              <div
+                onClick={() => setRobotsIndexingMode('disallow_all')}
+                className={`p-5 rounded-2xl border cursor-pointer transition-all space-y-3 ${
+                  robotsIndexingMode === 'disallow_all'
+                    ? 'border-amber-500/70 bg-amber-500/10 shadow-sm ring-1 ring-amber-500/50'
+                    : 'border-border/60 bg-muted/20 hover:bg-muted/40'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1.5">
+                    <ShieldAlert className="h-4 w-4" /> Block All (Dev/Testing)
+                  </span>
+                  <span
+                    className={`h-3 w-3 rounded-full border ${
+                      robotsIndexingMode === 'disallow_all' ? 'bg-amber-500 border-amber-400' : 'border-border'
+                    }`}
+                  />
+                </div>
+                <p className="text-xs font-bold text-foreground">Prevent Indexing</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Serves <code className="text-amber-300 font-mono">Disallow: /</code>. Ideal for development, staging, QA, and local testing to prevent search engines from indexing test content.
+                </p>
+              </div>
+
+              {/* Option 3: Custom Directives */}
+              <div
+                onClick={() => setRobotsIndexingMode('custom')}
+                className={`p-5 rounded-2xl border cursor-pointer transition-all space-y-3 ${
+                  robotsIndexingMode === 'custom'
+                    ? 'border-primary/70 bg-primary/10 shadow-sm ring-1 ring-primary/50'
+                    : 'border-border/60 bg-muted/20 hover:bg-muted/40'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-primary flex items-center gap-1.5">
+                    <Code2 className="h-4 w-4" /> Custom Directives
+                  </span>
+                  <span
+                    className={`h-3 w-3 rounded-full border ${
+                      robotsIndexingMode === 'custom' ? 'bg-primary border-primary' : 'border-border'
+                    }`}
+                  />
+                </div>
+                <p className="text-xs font-bold text-foreground">Advanced Custom Rules</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Write bespoke robots.txt directives, custom User-Agents, crawl-delay directives, and custom path rules with template presets.
+                </p>
+              </div>
+            </div>
+
+            {/* Custom Directives Textarea if Custom mode */}
+            {robotsIndexingMode === 'custom' && (
+              <div className="space-y-3 pt-4 border-t border-border/40">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Terminal className="h-3.5 w-3.5 text-primary" />
+                    <span>Custom Robots.txt Content</span>
+                  </label>
+
+                  {/* Preset Buttons */}
+                  <div className="flex items-center gap-2 text-[11px] font-mono">
+                    <span className="text-muted-foreground">Apply Preset:</span>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset('prod')}
+                      className="px-2 py-0.5 rounded border border-border bg-muted/30 hover:bg-muted text-foreground transition-colors cursor-pointer"
+                    >
+                      Production
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset('dev')}
+                      className="px-2 py-0.5 rounded border border-border bg-muted/30 hover:bg-muted text-amber-400 transition-colors cursor-pointer"
+                    >
+                      Dev Block
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPreset('strict')}
+                      className="px-2 py-0.5 rounded border border-border bg-muted/30 hover:bg-muted text-sky-400 transition-colors cursor-pointer"
+                    >
+                      Strict
+                    </button>
+                  </div>
+                </div>
+
+                <textarea
+                  rows={8}
+                  value={robotsCustomContent}
+                  onChange={(e) => setRobotsCustomContent(e.target.value)}
+                  placeholder="User-Agent: *&#10;Disallow: /admin&#10;..."
+                  className="w-full rounded-xl border border-border bg-background p-4 text-xs font-mono text-foreground focus:border-primary focus:outline-none leading-relaxed"
+                />
+              </div>
+            )}
+
+            {/* Live Real-time Robots.txt Preview */}
+            <div className="space-y-2 pt-4 border-t border-border/40">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                  <FileCode2 className="h-3.5 w-3.5" />
+                  <span>Real-time Live /robots.txt Output</span>
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleCopyPreview}
+                  className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground hover:text-foreground px-2 py-1 rounded border border-border/60 hover:bg-muted transition-colors cursor-pointer"
+                >
+                  {copiedRobots ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                  <span>{copiedRobots ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-border bg-muted/30 p-4 font-mono text-xs text-foreground overflow-x-auto whitespace-pre">
+                {getComputedRobotsPreview()}
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="pt-4 border-t border-border/40 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={loadRobotsConfig}
+                disabled={loadingRobots}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card hover:bg-muted text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loadingRobots ? 'animate-spin' : ''}`} />
+                <span>Reload</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveRobots}
+                disabled={isSavingRobots || loadingRobots}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-mono font-bold hover:opacity-90 transition-opacity shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {isSavingRobots ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-3.5 w-3.5" />
+                    <span>Save Robots.txt Configuration</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'social-preview' && (
         /* Social Media Card Tester */
         <div className="space-y-6">
           <div className="rounded-2xl border border-border bg-card p-6 space-y-6 shadow-xs">
@@ -191,7 +572,7 @@ export default function AdminSeoDiagnosticsPage() {
               <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/60 text-xs font-mono">
                 <button
                   onClick={() => setSocialPlatform('twitter')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                     socialPlatform === 'twitter'
                       ? 'bg-sky-500 text-white font-bold shadow-xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -204,7 +585,7 @@ export default function AdminSeoDiagnosticsPage() {
                 </button>
                 <button
                   onClick={() => setSocialPlatform('linkedin')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                     socialPlatform === 'linkedin'
                       ? 'bg-blue-600 text-white font-bold shadow-xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -217,7 +598,7 @@ export default function AdminSeoDiagnosticsPage() {
                 </button>
                 <button
                   onClick={() => setSocialPlatform('discord')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                     socialPlatform === 'discord'
                       ? 'bg-indigo-600 text-white font-bold shadow-xs'
                       : 'text-muted-foreground hover:text-foreground'
@@ -227,7 +608,6 @@ export default function AdminSeoDiagnosticsPage() {
                   <span>Slack / Discord</span>
                 </button>
               </div>
-
             </div>
 
             {/* Article Selector */}

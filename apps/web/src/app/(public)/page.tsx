@@ -71,31 +71,31 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="space-y-16 pb-16">
+    <div className="space-y-8 sm:space-y-12 pb-12 sm:pb-16">
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-16 md:py-24 border-b border-border/30 bg-muted/5">
+      <section className="relative overflow-hidden pt-6 pb-8 sm:pt-10 sm:pb-12 md:pt-14 md:pb-16 border-b border-border/30 bg-muted/5">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="max-w-3xl space-y-5">
+          <div className="max-w-3xl space-y-3.5 sm:space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs font-mono text-muted-foreground">
               <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Architecture Blueprints & Engineering Deep Dives
+              Architecture Blueprints &amp; Engineering Deep Dives
             </div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.15]">
               Production-grade systems engineering.
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed">
               In-depth technical guides, distributed systems blueprints, benchmark studies, and real-world architectures written with code and interactive diagrams.
             </p>
-            <div className="flex flex-wrap items-center gap-3 pt-3">
+            <div className="flex flex-wrap items-center gap-3 pt-1.5 sm:pt-2">
               <Link
                 href="/articles"
-                className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-2.5 rounded-md font-medium text-sm hover:bg-foreground/90 transition-colors shadow"
+                className="inline-flex items-center gap-2 bg-foreground text-background px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm hover:bg-foreground/90 transition-colors shadow-xs"
               >
                 Explore Articles <ChevronRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/guest-post/submit"
-                className="inline-flex items-center gap-2 border border-border bg-card/60 text-foreground px-5 py-2.5 rounded-md font-medium text-sm hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-2 border border-border bg-card/60 text-foreground px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm hover:bg-muted transition-colors"
               >
                 Submit Guest Post <ArrowRight className="h-4 w-4" />
               </Link>
@@ -106,7 +106,7 @@ export default async function HomePage() {
 
       {/* Featured Articles Section */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-5 sm:mb-6">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1">
               <Sparkles className="h-3.5 w-3.5 text-amber-500" />
@@ -140,9 +140,9 @@ export default async function HomePage() {
       </section>
 
       {/* Architecture Pillars Grid */}
-      <section className="container mx-auto max-w-7xl px-4 sm:px-6 py-6">
-        <div className="rounded-2xl border border-border/80 bg-card/40 p-6 sm:p-10 shadow-sm">
-          <div className="max-w-2xl mb-8 space-y-2">
+      <section className="container mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="rounded-2xl border border-border/80 bg-card/40 p-5 sm:p-8 md:p-10 shadow-sm">
+          <div className="max-w-2xl mb-6 space-y-1.5">
             <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
               Core Technical Categories
             </h3>
@@ -151,15 +151,15 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {categories.map((cat: any) => (
               <Link
                 key={cat.slug}
                 href={`/categories/${cat.slug}`}
-                className="group flex items-center justify-between p-4 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/50 hover:border-border transition-all"
+                className="group flex items-center justify-between p-3.5 sm:p-4 rounded-xl border border-border/60 bg-muted/20 hover:bg-muted/50 hover:border-border transition-all"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center font-mono font-bold text-xs p-1.5">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-mono font-bold text-xs p-1.5">
                     <IconRenderer value={cat.image} defaultIcon="Layers" className="h-4 w-4 text-primary" />
                   </div>
                   <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
@@ -175,7 +175,7 @@ export default async function HomePage() {
 
       {/* Trending Technologies Hub */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-5">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1">
               <Cpu className="h-3.5 w-3.5 text-primary" />

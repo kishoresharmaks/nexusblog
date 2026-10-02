@@ -491,6 +491,8 @@ export const systemSettingsApi = {
       maintenanceMode: boolean;
       siteName: string;
       siteUrl: string;
+      robotsIndexingMode?: 'allow' | 'disallow_all' | 'custom';
+      robotsCustomContent?: string;
     }>('/system-settings/public');
   },
   async getAll() {

@@ -226,6 +226,28 @@ class AuthClient {
       false,
     );
   }
+
+  async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
+    return this.fetchWithAuth<{ success: boolean; message: string }>(
+      '/verify-email',
+      {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      },
+      false,
+    );
+  }
+
+  async resendVerification(email: string): Promise<{ message: string }> {
+    return this.fetchWithAuth<{ message: string }>(
+      '/resend-verification',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      },
+      false,
+    );
+  }
 }
 
 export const authClient = new AuthClient();

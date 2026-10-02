@@ -1,7 +1,11 @@
 export const siteConfig = {
   name: 'NexusBlog',
   description: 'Production-Grade Technical Publishing Platform & Developer Knowledge Portal',
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  url:
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.SITE_URL ||
+    'http://localhost:3000',
   apiUrl:
     typeof window === 'undefined'
       ? process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000/api'

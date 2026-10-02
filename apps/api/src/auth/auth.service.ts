@@ -11,12 +11,15 @@ import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { Role, User } from '@prisma/client';
 
 @Injectable()
@@ -27,6 +30,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   private hashToken(token: string): string {
@@ -63,14 +67,17 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto, ipAddress?: string, userAgent?: string) {
+    const normalizedEmail = dto.email.trim().toLowerCase();
+    const normalizedUsername = dto.username.trim().toLowerCase();
+
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: dto.email.toLowerCase() }, { username: dto.username.toLowerCase() }],
+        OR: [{ email: normalizedEmail }, { username: normalizedUsername }],
       },
     });
 
     if (existingUser) {
-      if (existingUser.email === dto.email.toLowerCase()) {
+      if (existingUser.email === normalizedEmail) {
         throw new ConflictException('An account with this email already exists');
       }
       throw new ConflictException('Username is already taken');
@@ -85,20 +92,46 @@ export class AuthService {
 
     // Count existing users to assign SUPER_ADMIN to the very first user
     const userCount = await this.prisma.user.count();
-    const initialRole: Role = userCount === 0 ? 'SUPER_ADMIN' : 'USER';
+    const isFirstUser = userCount === 0;
+    const initialRole: Role = isFirstUser ? 'SUPER_ADMIN' : 'USER';
 
     const user = await this.prisma.user.create({
       data: {
-        name: dto.name,
-        username: dto.username.toLowerCase(),
-        email: dto.email.toLowerCase(),
+        name: dto.name.trim(),
+        username: normalizedUsername,
+        email: normalizedEmail,
         passwordHash,
         avatar: dto.avatar,
         bio: dto.bio,
         role: initialRole,
-        emailVerified: userCount === 0, // Auto-verify first super admin
+        emailVerified: isFirstUser, // Auto-verify first super admin
+        status: isFirstUser ? 'ACTIVE' : 'PENDING_VERIFICATION',
       },
     });
+
+    // Generate email verification token for non-superadmins
+    if (!user.emailVerified) {
+      const rawVerificationToken = this.generateSecureToken();
+      const verificationTokenHash = this.hashToken(rawVerificationToken);
+
+      const verificationExpiresAt = new Date();
+      verificationExpiresAt.setHours(verificationExpiresAt.getHours() + 24); // 24-hour validity
+
+      await this.prisma.emailVerification.create({
+        data: {
+          userId: user.id,
+          tokenHash: verificationTokenHash,
+          expiresAt: verificationExpiresAt,
+        },
+      });
+
+      // Dispatch verification email via Brevo asynchronously (non-blocking)
+      this.mailService
+        .sendVerificationEmail(user.email, user.name, rawVerificationToken)
+        .catch((err) => {
+          this.logger.error(`[AuthService] Failed to dispatch verification email to ${user.email}: ${err.message}`);
+        });
+    }
 
     const { accessToken, rawRefreshToken, refreshTokenHash } = await this.generateTokens(user);
 
@@ -346,15 +379,118 @@ export class AuthService {
     return { message: 'Password updated successfully. Please log in with your new password.' };
   }
 
-  async forgotPassword(dto: ForgotPasswordDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() },
+  async verifyEmail(token: string) {
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      throw new BadRequestException('Verification token is required');
+    }
+
+    const tokenHash = this.hashToken(token.trim());
+
+    const verification = await this.prisma.emailVerification.findUnique({
+      where: { tokenHash },
+      include: { user: true },
     });
 
-    // Always return success to prevent email enumeration
-    if (!user) {
-      return { message: 'If that email address exists in our system, a password reset link has been sent.' };
+    if (!verification || verification.usedAt || verification.expiresAt < new Date()) {
+      throw new BadRequestException('Email verification link is invalid, expired, or has already been used.');
     }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: verification.userId },
+        data: {
+          emailVerified: true,
+          status: verification.user.status === 'PENDING_VERIFICATION' ? 'ACTIVE' : verification.user.status,
+        },
+      }),
+      this.prisma.emailVerification.update({
+        where: { id: verification.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    await this.recordAuditLog(
+      verification.userId,
+      'EMAIL_VERIFIED',
+      'User',
+      verification.userId,
+      { email: verification.user.email },
+    );
+
+    return {
+      success: true,
+      message: 'Your email address has been successfully verified! You now have full access to NexusBlog.',
+    };
+  }
+
+  async resendVerification(dto: ResendVerificationDto) {
+    const email = dto.email.trim().toLowerCase();
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    // Always return generic success message to prevent user enumeration
+    const genericResponse = {
+      message: 'If an unverified account exists for this email address, a new verification link has been sent.',
+    };
+
+    if (!user || user.status === 'SUSPENDED' || user.emailVerified) {
+      return genericResponse;
+    }
+
+    // Invalidate previous unused verification tokens
+    await this.prisma.emailVerification.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    // Generate new secure verification token
+    const rawVerificationToken = this.generateSecureToken();
+    const verificationTokenHash = this.hashToken(rawVerificationToken);
+
+    const verificationExpiresAt = new Date();
+    verificationExpiresAt.setHours(verificationExpiresAt.getHours() + 24);
+
+    await this.prisma.emailVerification.create({
+      data: {
+        userId: user.id,
+        tokenHash: verificationTokenHash,
+        expiresAt: verificationExpiresAt,
+      },
+    });
+
+    // Dispatch email via Brevo
+    this.mailService
+      .sendVerificationEmail(user.email, user.name, rawVerificationToken)
+      .catch((err) => {
+        this.logger.error(`[AuthService] Failed to dispatch resend verification email to ${user.email}: ${err.message}`);
+      });
+
+    return genericResponse;
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const email = dto.email.trim().toLowerCase();
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    // Always return generic message to prevent email enumeration
+    const genericResponse = {
+      message: 'If that email address exists in our system, a password reset link has been sent.',
+    };
+
+    if (!user || user.status === 'SUSPENDED') {
+      return genericResponse;
+    }
+
+    // Invalidate previous unused password reset tokens
+    await this.prisma.passwordReset.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
 
     const rawToken = this.generateSecureToken();
     const tokenHash = this.hashToken(rawToken);
@@ -370,13 +506,22 @@ export class AuthService {
       },
     });
 
-    this.logger.log(`🔑 Password Reset Token for ${user.email}: ${rawToken}`);
+    // Dispatch password reset email via Brevo
+    this.mailService
+      .sendPasswordResetEmail(user.email, user.name, rawToken)
+      .catch((err) => {
+        this.logger.error(`[AuthService] Failed to dispatch password reset email to ${user.email}: ${err.message}`);
+      });
 
-    return { message: 'If that email address exists in our system, a password reset link has been sent.' };
+    return genericResponse;
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    const tokenHash = this.hashToken(dto.token);
+    if (!dto.token || dto.token.trim().length === 0) {
+      throw new BadRequestException('Reset token is required');
+    }
+
+    const tokenHash = this.hashToken(dto.token.trim());
 
     const resetRequest = await this.prisma.passwordReset.findUnique({
       where: { tokenHash },
@@ -387,6 +532,10 @@ export class AuthService {
       throw new BadRequestException('Password reset token is invalid or has expired');
     }
 
+    if (dto.newPassword.length < 8) {
+      throw new BadRequestException('Password must be at least 8 characters long');
+    }
+
     const newPasswordHash = await argon2.hash(dto.newPassword, {
       type: argon2.argon2id,
       memoryCost: 65536,
@@ -394,18 +543,34 @@ export class AuthService {
       parallelism: 4,
     });
 
-    await this.prisma.user.update({
-      where: { id: resetRequest.userId },
-      data: { passwordHash: newPasswordHash },
-    });
-
-    await this.prisma.passwordReset.update({
-      where: { id: resetRequest.id },
-      data: { usedAt: new Date() },
-    });
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetRequest.userId },
+        data: { passwordHash: newPasswordHash },
+      }),
+      this.prisma.passwordReset.update({
+        where: { id: resetRequest.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
 
     // Invalidate all active sessions for security
     await this.logoutAllSessions(resetRequest.userId);
+
+    // Dispatch security alert email
+    this.mailService
+      .sendPasswordChangedAlert(resetRequest.user.email, resetRequest.user.name)
+      .catch((err) => {
+        this.logger.error(`[AuthService] Failed to dispatch password changed alert to ${resetRequest.user.email}: ${err.message}`);
+      });
+
+    await this.recordAuditLog(
+      resetRequest.userId,
+      'PASSWORD_RESET_COMPLETED',
+      'User',
+      resetRequest.userId,
+      { email: resetRequest.user.email },
+    );
 
     return { message: 'Password reset successful. You can now log in with your new password.' };
   }

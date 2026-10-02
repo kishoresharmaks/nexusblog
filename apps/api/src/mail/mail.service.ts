@@ -302,6 +302,101 @@ export class MailService {
   }
 
   /**
+   * Send Email Verification message via Brevo
+   */
+  async sendVerificationEmail(recipientEmail: string, name: string, rawToken: string) {
+    const config = await this.getConfig();
+    const verificationUrl = `${config.siteUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
+    const subject = `Verify your ${config.brevoSenderName || 'NexusBlog'} account`;
+    const previewText = `Confirm your email address to complete your registration.`;
+
+    const content = `Hello **${name || 'there'}**,
+
+Thank you for registering on **NexusBlog** — the production-grade publishing platform for systems architecture and backend engineering.
+
+Please confirm your email address by clicking the button below:
+
+[Verify Email Address](${verificationUrl})
+
+> **Link Security Notice**: This verification link will expire in **24 hours** and can only be used once.
+
+If the button above does not work, copy and paste this link into your browser:
+${verificationUrl}
+
+If you did not create an account on NexusBlog, you can safely ignore this email.`;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject,
+      previewText,
+      textContent: content,
+      htmlContent: this.markdownToEmailHtml(content, subject, previewText),
+    });
+  }
+
+  /**
+   * Send Password Reset link via Brevo
+   */
+  async sendPasswordResetEmail(recipientEmail: string, name: string, rawToken: string) {
+    const config = await this.getConfig();
+    const resetUrl = `${config.siteUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
+    const subject = `Reset your NexusBlog password`;
+    const previewText = `Secure password reset request for your NexusBlog account.`;
+
+    const content = `Hello **${name || 'there'}**,
+
+We received a request to reset the password for your **NexusBlog** account associated with **${recipientEmail}**.
+
+Click the link below to set a new secure password:
+
+[Reset Password](${resetUrl})
+
+> **Security Notice**: This password reset link is single-use and will expire in **1 hour**. For your security, requesting a new reset link will automatically invalidate any previous links.
+
+If the button above does not work, copy and paste this link into your browser:
+${resetUrl}
+
+If you did not request a password reset, please ignore this email. Your current password remains secure.`;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject,
+      previewText,
+      textContent: content,
+      htmlContent: this.markdownToEmailHtml(content, subject, previewText),
+    });
+  }
+
+  /**
+   * Send Password Changed Security Alert via Brevo
+   */
+  async sendPasswordChangedAlert(recipientEmail: string, name: string) {
+    const config = await this.getConfig();
+    const loginUrl = `${config.siteUrl}/login`;
+    const subject = `Security Alert: Your NexusBlog password was changed`;
+    const previewText = `Your account password has been successfully updated.`;
+
+    const timestamp = new Date().toUTCString();
+    const content = `Hello **${name || 'there'}**,
+
+The password for your **NexusBlog** account (**${recipientEmail}**) was changed on **${timestamp}**.
+
+All existing active sessions across other devices and browsers have been terminated as a security precaution.
+
+[Sign In to NexusBlog](${loginUrl})
+
+> **Didn't do this?** If you did not make this change, please immediately reset your password using the [Forgot Password link](${config.siteUrl}/forgot-password) or contact our security team.`;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject,
+      previewText,
+      textContent: content,
+      htmlContent: this.markdownToEmailHtml(content, subject, previewText),
+    });
+  }
+
+  /**
    * Convert Markdown to high-quality, email-client compliant responsive HTML
    */
   markdownToEmailHtml(markdown: string, subject: string, previewText?: string): string {

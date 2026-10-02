@@ -4,7 +4,8 @@ import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
-import { Lock, Mail, ArrowRight, Loader2, KeyRound, ShieldAlert } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Loader2, KeyRound, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { BrandLogo } from '@/components/common/brand-logo';
 
 function LoginForm() {
   const router = useRouter();
@@ -14,6 +15,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -43,29 +45,29 @@ function LoginForm() {
     }
   };
 
-  const isAdminRedirect = redirectUrl && redirectUrl.startsWith('/admin');
+  const isRedirected = Boolean(redirectUrl);
 
   return (
-    <div className="space-y-6 rounded-xl border border-border/80 bg-card/60 p-6 sm:p-8 backdrop-blur-md shadow-xl">
-      <div className="space-y-2 text-center">
-        <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mx-auto mb-1">
-          <KeyRound className="h-5 w-5" />
+    <div className="space-y-6 rounded-2xl border border-border/80 bg-card/70 p-6 sm:p-8 backdrop-blur-md shadow-xl">
+      <div className="space-y-3 text-center">
+        <div className="flex justify-center mb-1">
+          <BrandLogo variant="auth" size="xl" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Sign In</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Welcome Back</h1>
         <p className="text-sm text-muted-foreground">
-          Enter your credentials to access your engineering dashboard or administrative CMS.
+          Sign in to access your bookmarks, reading history, and profile.
         </p>
       </div>
 
-      {isAdminRedirect && (
-        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 p-3 text-xs text-primary font-mono">
-          <ShieldAlert className="h-4 w-4 shrink-0" />
-          <span>Staff credentials required to access the requested CMS route.</span>
+      {isRedirected && (
+        <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground font-mono">
+          <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+          <span>Please sign in to continue to your destination.</span>
         </div>
       )}
 
       {errorMessage && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive font-medium">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive font-medium">
           {errorMessage}
         </div>
       )}
@@ -81,8 +83,8 @@ function LoginForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="engineer@company.com or admin@nexusblog.dev"
-            className="w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="alex@example.com"
+            className="w-full rounded-xl border border-input bg-background/50 px-3.5 py-2.5 text-sm text-foreground shadow-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
 
@@ -99,24 +101,34 @@ function LoginForm() {
               Forgot password?
             </Link>
           </div>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••••••"
-            className="w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              className="w-full rounded-xl border border-input bg-background/50 px-3.5 py-2.5 pr-10 text-sm text-foreground shadow-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:bg-foreground/90 transition-colors shadow disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-background hover:opacity-90 transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Authenticating...
+              <Loader2 className="h-4 w-4 animate-spin" /> Signing In...
             </>
           ) : (
             <>

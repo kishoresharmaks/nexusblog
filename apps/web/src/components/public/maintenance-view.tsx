@@ -9,6 +9,7 @@ import {
 import { toast } from 'sonner';
 import { systemSettingsApi } from '@/lib/api-client';
 import { ThemeToggle } from '@/components/common/theme-toggle';
+import { BrandLogo } from '@/components/common/brand-logo';
 import { MaintenanceGame } from './maintenance-game';
 
 interface MaintenanceViewProps {
@@ -53,12 +54,7 @@ export function MaintenanceView({
       <header className="relative z-10 w-full border-b border-border bg-background/90 backdrop-blur-sm shrink-0">
         <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center space-x-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-foreground">
-              <Activity className="h-4 w-4" />
-            </div>
-            <span className="font-mono text-base font-bold tracking-tight text-foreground">
-              {siteName}
-            </span>
+            <BrandLogo variant="navbar" size="sm" subtitle="MAINTENANCE" />
           </div>
 
           <div className="flex items-center space-x-3">

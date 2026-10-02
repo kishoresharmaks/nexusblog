@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Sliders,
   Mail,
@@ -23,7 +24,11 @@ import {
   RotateCcw,
   ExternalLink,
   ShieldCheck,
+  ShieldAlert,
   HelpCircle,
+  FileCode2,
+  Code2,
+  Terminal,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { systemSettingsApi } from '@/lib/api-client';
@@ -66,6 +71,8 @@ export default function AdminDevConfigPage() {
   const [siteName, setSiteName] = useState('');
   const [newsletterAutoWelcome, setNewsletterAutoWelcome] = useState(true);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [robotsIndexingMode, setRobotsIndexingMode] = useState<'allow' | 'disallow_all' | 'custom'>('allow');
+  const [robotsCustomContent, setRobotsCustomContent] = useState('');
 
   // Diagnostics State
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
@@ -110,6 +117,8 @@ export default function AdminDevConfigPage() {
         setSiteName(settingsData.siteName?.value || 'NexusBlog');
         setNewsletterAutoWelcome(settingsData.newsletterAutoWelcome?.value !== 'false');
         setMaintenanceMode(settingsData.maintenanceMode?.value === 'true');
+        setRobotsIndexingMode((settingsData.robotsIndexingMode?.value as any) || 'allow');
+        setRobotsCustomContent(settingsData.robotsCustomContent?.value || '');
       }
 
       if (diagData) {
@@ -138,6 +147,8 @@ export default function AdminDevConfigPage() {
         siteName: siteName.trim(),
         newsletterAutoWelcome: String(newsletterAutoWelcome),
         maintenanceMode: String(maintenanceMode),
+        robotsIndexingMode,
+        robotsCustomContent: robotsCustomContent.trim(),
       };
 
       await systemSettingsApi.updateBatch(payload);
@@ -247,6 +258,7 @@ NEXT_PUBLIC_APP_URL=${siteUrl}
 PORTAL_BRAND_NAME=${siteName}
 NEWSLETTER_AUTO_WELCOME=${newsletterAutoWelcome}
 MAINTENANCE_MODE=${maintenanceMode}
+ROBOTS_INDEXING_MODE=${robotsIndexingMode}
 `;
     navigator.clipboard.writeText(snippet);
     setCopiedEnv(true);
@@ -672,6 +684,135 @@ MAINTENANCE_MODE=${maintenanceMode}
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Card: Search Engine Crawlers & Robots.txt Policy */}
+          <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <FileCode2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+                    Search Engine Crawlers &amp; Robots.txt Policy
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Control how search bots (Google, Bing) index your application during development and production.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/admin/seo"
+                  className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground hover:text-foreground px-2.5 py-1 rounded-md border border-border/50 hover:bg-muted transition-colors cursor-pointer"
+                >
+                  <Globe className="h-3 w-3 text-primary" />
+                  <span>Full SEO Dashboard</span>
+                </Link>
+
+                <Link
+                  href="/robots.txt"
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground hover:text-foreground px-2.5 py-1 rounded-md border border-border/50 hover:bg-muted transition-colors cursor-pointer"
+                >
+                  <span>View /robots.txt</span>
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Mode selection radio cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div
+                onClick={() => setRobotsIndexingMode('allow')}
+                className={`p-4 rounded-xl border cursor-pointer transition-all space-y-2 ${
+                  robotsIndexingMode === 'allow'
+                    ? 'border-emerald-500/70 bg-emerald-500/10 ring-1 ring-emerald-500/50'
+                    : 'border-border/60 bg-muted/20 hover:bg-muted/40'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Production
+                  </span>
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full border ${
+                      robotsIndexingMode === 'allow' ? 'bg-emerald-500 border-emerald-400' : 'border-border'
+                    }`}
+                  />
+                </div>
+                <p className="text-xs font-bold text-foreground">Allow Public Crawling</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Indexes public articles, blocks /admin and /api, embeds dynamic sitemap.
+                </p>
+              </div>
+
+              <div
+                onClick={() => setRobotsIndexingMode('disallow_all')}
+                className={`p-4 rounded-xl border cursor-pointer transition-all space-y-2 ${
+                  robotsIndexingMode === 'disallow_all'
+                    ? 'border-amber-500/70 bg-amber-500/10 ring-1 ring-amber-500/50'
+                    : 'border-border/60 bg-muted/20 hover:bg-muted/40'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1.5">
+                    <ShieldAlert className="h-3.5 w-3.5" /> Dev / Testing
+                  </span>
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full border ${
+                      robotsIndexingMode === 'disallow_all' ? 'bg-amber-500 border-amber-400' : 'border-border'
+                    }`}
+                  />
+                </div>
+                <p className="text-xs font-bold text-foreground">Block All Search Bots</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Disallow: / on entire site. Prevents indexing during testing and QA.
+                </p>
+              </div>
+
+              <div
+                onClick={() => setRobotsIndexingMode('custom')}
+                className={`p-4 rounded-xl border cursor-pointer transition-all space-y-2 ${
+                  robotsIndexingMode === 'custom'
+                    ? 'border-primary/70 bg-primary/10 ring-1 ring-primary/50'
+                    : 'border-border/60 bg-muted/20 hover:bg-muted/40'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-primary flex items-center gap-1.5">
+                    <Code2 className="h-3.5 w-3.5" /> Custom Rules
+                  </span>
+                  <span
+                    className={`h-2.5 w-2.5 rounded-full border ${
+                      robotsIndexingMode === 'custom' ? 'bg-primary border-primary' : 'border-border'
+                    }`}
+                  />
+                </div>
+                <p className="text-xs font-bold text-foreground">Custom Directives</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Custom robots.txt rules, crawl delays, and specific bots.
+                </p>
+              </div>
+            </div>
+
+            {robotsIndexingMode === 'custom' && (
+              <div className="space-y-2 pt-2">
+                <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Terminal className="h-3.5 w-3.5 text-primary" />
+                  <span>Custom Robots Directives</span>
+                </label>
+                <textarea
+                  rows={6}
+                  value={robotsCustomContent}
+                  onChange={(e) => setRobotsCustomContent(e.target.value)}
+                  placeholder="User-Agent: *&#10;Disallow: /admin&#10;..."
+                  className="w-full rounded-xl border border-border bg-background p-3 text-xs font-mono text-foreground focus:border-primary focus:outline-none leading-relaxed"
+                />
+              </div>
+            )}
           </div>
 
           {/* Card 4: Live Diagnostics & Environment Inspector */}

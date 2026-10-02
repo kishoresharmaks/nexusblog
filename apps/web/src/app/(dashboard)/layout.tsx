@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { ThemeToggle } from '@/components/common/theme-toggle';
+import { BrandLogo } from '@/components/common/brand-logo';
 import {
   LayoutDashboard,
   Bookmark,
@@ -69,14 +70,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Portal
             </Link>
-            <div className="flex items-center space-x-2">
-              <span className="font-mono font-bold text-base text-foreground tracking-tight">
-                Nexus<span className="text-primary font-light">Reader</span>
-              </span>
-              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono text-primary font-bold">
-                DASHBOARD
-              </span>
-            </div>
+            <Link href="/" className="inline-block">
+              <BrandLogo variant="reader" size="sm" />
+            </Link>
           </div>
 
           {/* User Preview */}

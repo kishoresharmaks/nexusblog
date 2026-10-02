@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { ThemeToggle } from '@/components/common/theme-toggle';
+import { BrandLogo } from '@/components/common/brand-logo';
 import {
   LayoutDashboard,
   FileText,
@@ -95,14 +96,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-5 space-y-6">
           {/* Brand & Badge */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="font-mono font-bold text-base text-foreground tracking-tight">
-                Nexus<span className="text-primary font-light">Admin</span>
-              </Link>
-              <span className="rounded bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 text-[10px] font-mono text-rose-400 font-bold">
-                CMS
-              </span>
-            </div>
+            <Link href="/" className="inline-block">
+              <BrandLogo variant="admin" size="sm" />
+            </Link>
 
             <Link
               href="/"

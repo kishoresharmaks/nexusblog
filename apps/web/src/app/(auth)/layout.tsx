@@ -1,16 +1,17 @@
 import Link from 'next/link';
 import { siteConfig } from '@nexus/config';
-import { Terminal, Shield, ArrowLeft } from 'lucide-react';
+import { Shield, ArrowLeft } from 'lucide-react';
 import { ThemeToggle } from '@/components/common/theme-toggle';
+import { BrandLogo } from '@/components/common/brand-logo';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col justify-between bg-background text-foreground">
       {/* Top bar */}
       <header className="px-6 py-4 flex items-center justify-between border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <Link href="/" className="inline-flex items-center space-x-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-mono">
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back to {siteConfig.name}</span>
+        <Link href="/" className="inline-flex items-center space-x-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-mono group">
+          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
+          <BrandLogo variant="compact" size="xs" />
         </Link>
         <div className="flex items-center space-x-3">
           <div className="hidden sm:flex items-center space-x-1.5 text-xs font-mono text-muted-foreground">

@@ -35,3 +35,6 @@ Thumbs.db
 
 # Turborepo
 .turbo/
+
+# Archives
+*.zip

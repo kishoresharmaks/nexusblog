@@ -57,9 +57,13 @@ export class SystemSettingsService {
         description: 'Primary email service provider (brevo, mock, custom)',
       },
       siteUrl: {
-        defaultValue: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        defaultValue:
+          process.env.NEXT_PUBLIC_SITE_URL ||
+          process.env.NEXT_PUBLIC_APP_URL ||
+          process.env.SITE_URL ||
+          'http://localhost:3000',
         isSecret: false,
-        description: 'Public production URL for canonical links and dispatch footers',
+        description: 'Public production URL for canonical links, sitemaps, and dispatch footers',
       },
       siteName: {
         defaultValue: 'NexusBlog',
@@ -75,6 +79,18 @@ export class SystemSettingsService {
         defaultValue: 'false',
         isSecret: false,
         description: 'Put portal into maintenance mode for critical upgrades',
+      },
+      robotsIndexingMode: {
+        defaultValue: 'allow',
+        isSecret: false,
+        description:
+          'Search engine indexing policy: "allow" (Production), "disallow_all" (Dev/Testing Block), or "custom" (Custom Directives)',
+      },
+      robotsCustomContent: {
+        defaultValue:
+          '# Custom robots.txt directives\nUser-Agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /api/*',
+        isSecret: false,
+        description: 'Custom robots.txt directives when Indexing Mode is set to custom',
       },
     };
 
@@ -223,6 +239,8 @@ export class SystemSettingsService {
             'siteName',
             'newsletterAutoWelcome',
             'maintenanceMode',
+            'robotsIndexingMode',
+            'robotsCustomContent',
           ],
         },
       },
@@ -235,13 +253,19 @@ export class SystemSettingsService {
   }
 
   /**
-   * Get public system runtime parameters (maintenance mode status and basic branding)
+   * Get public system runtime parameters (maintenance mode status, basic branding, robots policy)
    */
   async getPublicSettings() {
     const dbSettings = await this.prisma.systemSetting.findMany({
       where: {
         key: {
-          in: ['maintenanceMode', 'siteName', 'siteUrl'],
+          in: [
+            'maintenanceMode',
+            'siteName',
+            'siteUrl',
+            'robotsIndexingMode',
+            'robotsCustomContent',
+          ],
         },
       },
     });
@@ -261,13 +285,27 @@ export class SystemSettingsService {
 
     const siteUrl =
       settingsMap.siteUrl ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.SITE_URL ||
       'http://localhost:3000';
+
+    const robotsIndexingMode =
+      settingsMap.robotsIndexingMode ||
+      process.env.ROBOTS_INDEXING_MODE ||
+      'allow';
+
+    const robotsCustomContent =
+      settingsMap.robotsCustomContent ||
+      process.env.ROBOTS_CUSTOM_CONTENT ||
+      '# Custom robots.txt directives\nUser-Agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /api/*';
 
     return {
       maintenanceMode,
       siteName,
       siteUrl,
+      robotsIndexingMode,
+      robotsCustomContent,
     };
   }
 }
