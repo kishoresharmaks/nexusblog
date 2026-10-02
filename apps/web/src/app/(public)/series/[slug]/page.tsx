@@ -16,8 +16,8 @@ export default async function SeriesDetailPage({ params }: SeriesPageProps) {
 
   try {
     series = await seriesApi.getBySlug(decodedSlug);
-  } catch (err) {
-    console.error(`Failed to fetch series for ${decodedSlug}:`, err);
+  } catch {
+    // API offline or static generation fallback - use curated map
   }
 
   // Fallback curated series definitions

@@ -19,8 +19,11 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const apiTarget = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-    const uploadsTarget = process.env.INTERNAL_UPLOADS_URL || 'http://localhost:4000/uploads';
+    let apiTarget = (process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000/api').trim().replace(/\/+$/, '');
+    if (!apiTarget.endsWith('/api') && (apiTarget.startsWith('http://') || apiTarget.startsWith('https://'))) {
+      apiTarget = `${apiTarget}/api`;
+    }
+    const uploadsTarget = (process.env.INTERNAL_UPLOADS_URL || 'http://127.0.0.1:4000/uploads').trim().replace(/\/+$/, '');
     return [
       {
         source: '/api/:path*',

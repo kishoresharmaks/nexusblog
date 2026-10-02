@@ -10,8 +10,8 @@ export default async function SeriesIndexPage() {
 
   try {
     seriesList = await seriesApi.getAll();
-  } catch (err) {
-    console.error('Failed to fetch series from API:', err);
+  } catch {
+    // API offline or static generation fallback - use default curated series
   }
 
   const defaultCuratedSeries = [
