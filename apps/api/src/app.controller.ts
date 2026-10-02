@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AppService } from './app.service';
 
@@ -11,5 +11,12 @@ export class AppController {
   @ApiOperation({ summary: 'API Health Check' })
   getHealth() {
     return this.appService.getHealth();
+  }
+
+  @Post('telemetry/pageview')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Pageview Telemetry Ping' })
+  trackPageview() {
+    return { success: true };
   }
 }

@@ -197,7 +197,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               </div>
 
               <div className="flex items-center space-x-4 font-mono text-[11px]">
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1" suppressHydrationWarning>
                   <Calendar className="h-3.5 w-3.5" /> {publishedDate}
                 </span>
                 <span className="flex items-center gap-1">

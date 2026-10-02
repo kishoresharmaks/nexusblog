@@ -162,7 +162,7 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
                 </span>
               )}
               <span>•</span>
-              <span className="shrink-0">{publishedDate}</span>
+              <span className="shrink-0" suppressHydrationWarning>{publishedDate}</span>
             </div>
 
             <div className="flex items-center space-x-3 font-mono text-[11px] shrink-0">
