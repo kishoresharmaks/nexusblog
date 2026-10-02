@@ -48,6 +48,40 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
   const isGuest = Boolean(article.isGuestPost || article.guestAuthorName);
   const authorDisplayName = article.guestAuthorName || article.author?.name || 'Architect';
 
+  const getEditorialProvenance = () => {
+    if (isGuest) {
+      return {
+        label: 'Guest Blueprint',
+        color: 'bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/30',
+      };
+    }
+    const type = (article.type || '').toUpperCase();
+    if (type === 'BENCHMARK') {
+      return {
+        label: 'Original Benchmark',
+        color: 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30',
+      };
+    }
+    if (type === 'CASE_STUDY') {
+      return {
+        label: 'Case Study',
+        color: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+      };
+    }
+    if (type === 'DEEP_DIVE') {
+      return {
+        label: 'Deep Dive Research',
+        color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+      };
+    }
+    return {
+      label: 'Staff Explainer',
+      color: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
+    };
+  };
+
+  const provenance = getEditorialProvenance();
+
   return (
     <article
       className={`group relative rounded-2xl border border-border bg-card p-5 sm:p-6 transition-all duration-200 hover:border-foreground/30 hover:shadow-lg ${
@@ -77,16 +111,16 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
                     {article.category.name}
                   </Link>
                 )}
+                <span
+                  className={`rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold ${provenance.color}`}
+                >
+                  {provenance.label}
+                </span>
                 {article.difficulty && (
                   <span
                     className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider font-semibold ${difficultyColors}`}
                   >
                     {article.difficulty}
-                  </span>
-                )}
-                {isGuest && (
-                  <span className="rounded border border-amber-500/30 bg-amber-500/10 text-amber-500 dark:text-amber-400 px-1.5 py-0.5 font-mono text-[10px] font-semibold">
-                    Guest Post
                   </span>
                 )}
               </div>

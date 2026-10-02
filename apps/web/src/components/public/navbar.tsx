@@ -219,7 +219,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
               Articles
             </Link>
 
-            {/* Categories (with Mega Dropdown) */}
+            {/* Topics (with Mega Dropdown) */}
             <div
               className="relative"
               onMouseEnter={() => handleMouseEnter('categories')}
@@ -233,7 +233,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
                     : 'text-muted-foreground'
                 }`}
               >
-                <span>Categories</span>
+                <span>Topics</span>
                 <ChevronDown
                   className={`h-3.5 w-3.5 transition-transform duration-200 ${
                     activeDropdown === 'categories' ? 'rotate-180 text-primary' : ''
@@ -247,14 +247,14 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
                   <div className="flex items-center justify-between border-b border-border/50 pb-3 mb-3">
                     <span className="font-mono text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                       <Layers className="h-3.5 w-3.5 text-primary" />
-                      <span>Architecture Taxonomy</span>
+                      <span>Architecture Topics</span>
                     </span>
                     <Link
                       href="/categories"
                       onClick={() => setActiveDropdown(null)}
                       className="text-[11px] font-mono text-primary hover:underline flex items-center gap-1"
                     >
-                      <span>View All Categories</span>
+                      <span>View All Topics</span>
                       <ArrowRight className="h-3 w-3" />
                     </Link>
                   </div>
@@ -352,29 +352,29 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
               )}
             </div>
 
-            {/* Series */}
+            {/* Case Studies */}
             <Link
-              href="/series"
+              href="/case-studies"
               className={`px-3 py-1.5 rounded-lg transition-colors hover:text-foreground hover:bg-muted/50 ${
-                pathname.startsWith('/series')
+                pathname.startsWith('/case-studies')
                   ? 'text-foreground font-semibold bg-muted/60'
                   : 'text-muted-foreground'
               }`}
             >
-              Series
+              Case Studies
             </Link>
 
-            {/* Write for Us */}
+            {/* Contribute */}
             <Link
               href="/write-for-us"
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors hover:text-foreground hover:bg-muted/50 ${
-                pathname === '/write-for-us'
+                pathname === '/write-for-us' || pathname.startsWith('/guest-post')
                   ? 'text-foreground font-semibold bg-muted/60'
                   : 'text-muted-foreground'
               }`}
             >
               <PenTool className="h-3.5 w-3.5 text-primary/80" />
-              <span>Write for Us</span>
+              <span>Contribute</span>
             </Link>
           </nav>
         </div>
@@ -628,7 +628,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
               {/* Section: Core Blueprints & Publications */}
               <div className="space-y-1">
                 <p className="px-2 pb-1 font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Publications &amp; Hub
+                  Core Navigation
                 </p>
 
                 <Link
@@ -646,7 +646,49 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
                     </div>
                     <div className="space-y-0.5">
                       <p className="font-semibold text-xs leading-none">Articles &amp; Guides</p>
-                      <p className="text-[10px] text-muted-foreground">Production blueprints &amp; teardowns</p>
+                      <p className="text-[10px] text-muted-foreground">All engineering blueprints</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </Link>
+
+                <Link
+                  href="/categories"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between p-2.5 rounded-xl transition-colors ${
+                    pathname.startsWith('/categories')
+                      ? 'bg-primary/10 text-primary font-bold border border-primary/20'
+                      : 'hover:bg-muted/60 text-foreground'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-7 w-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center">
+                      <Layers className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-xs leading-none">Architecture Topics</p>
+                      <p className="text-[10px] text-muted-foreground">Browse by core domain</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </Link>
+
+                <Link
+                  href="/technologies"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between p-2.5 rounded-xl transition-colors ${
+                    pathname.startsWith('/technologies')
+                      ? 'bg-primary/10 text-primary font-bold border border-primary/20'
+                      : 'hover:bg-muted/60 text-foreground'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                      <Cpu className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-xs leading-none">Technologies</p>
+                      <p className="text-[10px] text-muted-foreground">Infrastructure &amp; database hubs</p>
                     </div>
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
@@ -667,49 +709,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
                     </div>
                     <div className="space-y-0.5">
                       <p className="font-semibold text-xs leading-none">Case Studies</p>
-                      <p className="text-[10px] text-muted-foreground">Real-world scale &amp; post-mortems</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                </Link>
-
-                <Link
-                  href="/series"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl transition-colors ${
-                    pathname.startsWith('/series')
-                      ? 'bg-primary/10 text-primary font-bold border border-primary/20'
-                      : 'hover:bg-muted/60 text-foreground'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-7 w-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-500 flex items-center justify-center">
-                      <Layers className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="font-semibold text-xs leading-none">Technical Series</p>
-                      <p className="text-[10px] text-muted-foreground">Multi-part masterclass curricula</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                </Link>
-
-                <Link
-                  href="/tags"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl transition-colors ${
-                    pathname.startsWith('/tags')
-                      ? 'bg-primary/10 text-primary font-bold border border-primary/20'
-                      : 'hover:bg-muted/60 text-foreground'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-7 w-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center">
-                      <Tag className="h-3.5 w-3.5" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="font-semibold text-xs leading-none">Topic Tags Cloud</p>
-                      <p className="text-[10px] text-muted-foreground">Explore by indexed keyword</p>
+                      <p className="text-[10px] text-muted-foreground">Real-world scale &amp; teardowns</p>
                     </div>
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
@@ -719,7 +719,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
                   href="/write-for-us"
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center justify-between p-2.5 rounded-xl transition-colors ${
-                    pathname === '/write-for-us'
+                    pathname === '/write-for-us' || pathname.startsWith('/guest-post')
                       ? 'bg-primary/10 text-primary font-bold border border-primary/20'
                       : 'hover:bg-muted/60 text-foreground'
                   }`}
@@ -729,8 +729,8 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
                       <PenTool className="h-3.5 w-3.5" />
                     </div>
                     <div className="space-y-0.5">
-                      <p className="font-semibold text-xs leading-none">Write for Us</p>
-                      <p className="text-[10px] text-muted-foreground">Author guidelines &amp; compensation</p>
+                      <p className="font-semibold text-xs leading-none">Contribute</p>
+                      <p className="text-[10px] text-muted-foreground">Submit blueprint &amp; guidelines</p>
                     </div>
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />

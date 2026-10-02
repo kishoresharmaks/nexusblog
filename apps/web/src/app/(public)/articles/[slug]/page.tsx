@@ -17,6 +17,14 @@ import {
   ChevronRight,
   BookOpen,
   ArrowLeft,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  ExternalLink,
+  FileCode2,
+  Activity,
+  PenTool,
+  Cpu,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ArticleJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld';
@@ -56,6 +64,67 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
   const categoryName = article.category?.name || 'System Design';
   const categorySlug = article.category?.slug || 'system-design';
   const technologies = article.technologies || [];
+
+  // Editorial Provenance Classification
+  const getProvenance = () => {
+    if (isGuestPost) {
+      return {
+        badge: 'Peer-Reviewed Guest Blueprint',
+        badgeColor: 'bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/30',
+        icon: PenTool,
+        description:
+          'Authored by an external engineering practitioner, vetted through our technical submission pipeline, and peer-reviewed by the editorial board.',
+        peerReviewed: true,
+        methodology: 'Community Technical Submission & Peer Review',
+      };
+    }
+    const type = (article.type || '').toUpperCase();
+    if (type === 'BENCHMARK') {
+      return {
+        badge: 'Original Benchmark & Research',
+        badgeColor: 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/30',
+        icon: Activity,
+        description:
+          'First-party benchmark research executed with reproducible load tests and empirical metrics in controlled infrastructure environments.',
+        peerReviewed: true,
+        methodology: 'Empirical Reproducible Load Testing & Hardware Benchmarking',
+      };
+    }
+    if (type === 'CASE_STUDY') {
+      return {
+        badge: 'Industry Architecture Analysis',
+        badgeColor: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+        icon: BookOpen,
+        description:
+          'Independent systems architecture breakdown synthesized from public engineering postmortems, RFC disclosures, and technical conference papers.',
+        peerReviewed: true,
+        methodology: 'Public Postmortem & Distributed Systems RFC Analysis',
+      };
+    }
+    if (type === 'DEEP_DIVE') {
+      return {
+        badge: 'Original Technical Deep Dive',
+        badgeColor: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+        icon: Layers,
+        description:
+          'Exhaustive deep dive authored by Nexus staff engineers covering low-level protocol mechanics, source code analysis, and edge failure modes.',
+        peerReviewed: true,
+        methodology: 'Source Code Audit & Consensus Protocol Verification',
+      };
+    }
+    return {
+      badge: 'Staff Architecture Explainer',
+      badgeColor: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
+      icon: ShieldCheck,
+      description:
+        'Staff-written distributed systems architectural explainer adhering to NexusBlog rigorous verification and reproducibility standards.',
+      peerReviewed: true,
+      methodology: 'Internal Engineering Staff Editorial Verification',
+    };
+  };
+
+  const provenance = getProvenance();
+  const ProvenanceIcon = provenance.icon;
 
   // Series Curriculum Context
   const series = article.series;
@@ -148,14 +217,15 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               <span className="rounded bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 font-mono text-[11px] font-semibold">
                 {categoryName}
               </span>
-              <span className="rounded border border-amber-500/30 bg-amber-500/10 text-amber-400 px-2 py-0.5 font-mono text-[10px] uppercase font-semibold">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 font-mono text-[10px] font-semibold ${provenance.badgeColor}`}
+              >
+                <ProvenanceIcon className="h-3 w-3" />
+                <span>{provenance.badge}</span>
+              </span>
+              <span className="rounded border border-border/80 bg-muted/50 text-foreground px-2 py-0.5 font-mono text-[10px] uppercase font-semibold">
                 {article.difficulty}
               </span>
-              {isGuestPost && (
-                <span className="rounded border border-amber-500/40 bg-amber-500/10 text-amber-500 dark:text-amber-400 px-2 py-0.5 font-mono text-[10px] font-semibold">
-                  Guest Post
-                </span>
-              )}
               {series && (
                 <Link
                   href={`/series/${series.slug}`}
@@ -282,8 +352,108 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
 
             <MdxRenderer source={article.content} />
 
+            {/* Editorial Transparency & Standards Card */}
+            <div className="mt-12 rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-muted/20 p-6 sm:p-7 space-y-5 font-sans shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-foreground text-sm flex items-center gap-2">
+                      <span>Editorial Transparency &amp; Verification Standards</span>
+                    </h4>
+                    <p className="text-[11px] font-mono text-muted-foreground">
+                      Provenance, research methodology &amp; primary citations
+                    </p>
+                  </div>
+                </div>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-semibold border ${provenance.badgeColor} shrink-0 self-start sm:self-auto`}>
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>{provenance.badge}</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="p-3.5 rounded-xl border border-border/60 bg-background/50 space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-mono font-bold text-foreground text-[11px] uppercase tracking-wider">
+                    <FileCode2 className="h-3.5 w-3.5 text-primary" />
+                    <span>Research Methodology</span>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed text-[11px]">
+                    {provenance.description}
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-xl border border-border/60 bg-background/50 space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-mono font-bold text-foreground text-[11px] uppercase tracking-wider">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>Technical Peer Review</span>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed text-[11px]">
+                    All architectural diagrams, code snippets, and distributed protocol assertions are technically reviewed prior to release.
+                  </p>
+                </div>
+              </div>
+
+              {/* Primary Sources & Citations if available */}
+              {article.references && article.references.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-border/30">
+                  <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-foreground">
+                    <BookOpen className="h-3.5 w-3.5 text-primary" />
+                    <span>Primary Sources &amp; Citations</span>
+                  </div>
+                  <ul className="space-y-1.5 pl-1">
+                    {article.references.map((ref: string, idx: number) => {
+                      const isUrl = ref.startsWith('http://') || ref.startsWith('https://');
+                      return (
+                        <li key={idx} className="text-xs font-mono text-muted-foreground flex items-start gap-2">
+                          <span className="text-primary font-bold">[{idx + 1}]</span>
+                          {isUrl ? (
+                            <a
+                              href={ref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-foreground hover:underline inline-flex items-center gap-1 break-all"
+                            >
+                              <span>{ref}</span>
+                              <ExternalLink className="h-3 w-3 shrink-0 inline" />
+                            </a>
+                          ) : (
+                            <span>{ref}</span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {/* Corrections Policy & Errata Notice */}
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted-foreground border-t border-border/30">
+                <div className="flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                  <span>
+                    Spotted a technical inaccuracy or outdated code sample?
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 font-mono text-[11px]">
+                  <a
+                    href="mailto:editorial@nexusblog.dev?subject=Technical%20Correction%20Report"
+                    className="text-primary hover:underline font-semibold"
+                  >
+                    Submit Errata
+                  </a>
+                  <span>•</span>
+                  <Link href="/content-policy" className="hover:text-foreground hover:underline">
+                    Editorial Policy
+                  </Link>
+                </div>
+              </div>
+            </div>
+
             {/* Bottom Actions Bar */}
-            <div className="mt-12 pt-6 border-t border-border/40 flex flex-wrap items-center justify-between gap-4">
+            <div className="mt-10 pt-6 border-t border-border/40 flex flex-wrap items-center justify-between gap-4">
               <ArticleActions
                 articleId={article.id}
                 initialLikes={article.likesCount || 0}
@@ -462,20 +632,48 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 </div>
               )}
 
+              {/* Editorial Integrity & Standards Info Widget */}
+              <div className="rounded-xl border border-border/80 bg-card/60 p-4 space-y-3 font-sans">
+                <div className="flex items-center gap-2 border-b border-border/40 pb-2.5">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                  <span className="font-mono text-xs font-bold text-foreground">
+                    Editorial Standards
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Every blueprint is peer-reviewed for technical accuracy and reproducible architecture patterns.
+                </p>
+                <div className="pt-1 flex items-center justify-between text-[11px] font-mono">
+                  <Link
+                    href="/content-policy"
+                    className="text-primary hover:underline flex items-center gap-1"
+                  >
+                    <span>Editorial Policy</span>
+                    <ChevronRight className="h-3 w-3" />
+                  </Link>
+                  <Link
+                    href="/author-guidelines"
+                    className="text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    Guidelines
+                  </Link>
+                </div>
+              </div>
+
               {/* Newsletter CTA Box */}
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2.5">
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2.5 font-sans">
                 <span className="text-xs font-bold text-foreground flex items-center gap-1.5 font-mono">
                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                  Weekly Architecture Dispatch
+                  Engineering Dispatch
                 </span>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Join 25,000+ engineers receiving system design deep dives every Tuesday.
+                  Curated distributed systems blueprints and failure postmortems delivered every Thursday. Zero marketing fluff.
                 </p>
                 <Link
                   href="/#newsletter"
-                  className="inline-block w-full text-center rounded-md bg-foreground px-3 py-1.5 text-xs font-semibold text-background hover:bg-foreground/90 transition-colors shadow"
+                  className="inline-block w-full text-center rounded-lg bg-foreground px-3 py-2 text-xs font-bold font-mono text-background hover:bg-foreground/90 transition-colors shadow-sm"
                 >
-                  Subscribe
+                  Subscribe Free
                 </Link>
               </div>
             </div>

@@ -36,8 +36,8 @@ export function Footer() {
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      toast.error('Please enter a valid email address');
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error('Please enter a valid work email address (e.g. name@company.com)');
       return;
     }
 
@@ -108,12 +108,21 @@ export function Footer() {
 
             <div className="lg:col-span-5">
               {isSubscribed ? (
-                <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-5 sm:p-6 text-center space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-5 sm:p-6 text-center space-y-3 animate-in fade-in zoom-in-95 duration-200">
                   <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto" />
-                  <p className="text-sm font-bold text-foreground font-mono">You&apos;re on the Dispatch list!</p>
-                  <p className="text-xs text-muted-foreground">
-                    Watch your inbox every Thursday for new architecture case studies.
-                  </p>
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-foreground font-mono">You&apos;re subscribed to Engineering Dispatch!</p>
+                    <p className="text-xs text-muted-foreground">
+                      Look out for new architectural blueprints every Thursday. You can unsubscribe at any time.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSubscribed(false)}
+                    className="text-[11px] font-mono text-emerald-400 hover:underline cursor-pointer inline-block pt-1"
+                  >
+                    Subscribe another email &rarr;
+                  </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubscribe} className="space-y-2.5">
@@ -125,7 +134,7 @@ export function Footer() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="architect@tech.io"
+                        placeholder="Enter your work email (e.g. name@company.com)"
                         className="w-full rounded-xl sm:rounded-2xl border border-border bg-background/90 py-2.5 sm:py-3 pl-10 pr-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none shadow-xs"
                       />
                     </div>
@@ -149,7 +158,7 @@ export function Footer() {
                   </div>
                   <p className="text-[11px] font-mono text-muted-foreground text-center sm:text-left flex items-center justify-center sm:justify-start gap-1.5">
                     <Zap className="h-3 w-3 text-amber-400" />
-                    <span>Join 25,000+ backend architects and systems engineers.</span>
+                    <span>Curated weekly engineering deep dives delivered every Thursday. Zero spam.</span>
                   </p>
                 </form>
               )}
