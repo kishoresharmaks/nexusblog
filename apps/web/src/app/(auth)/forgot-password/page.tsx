@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">Check Your Inbox</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            If an account exists with <span className="font-semibold text-foreground">{email}</span>, we have sent instructions to reset your password.
+            We have sent a secure password reset link to <span className="font-semibold text-foreground">{email}</span>. Please check your inbox and follow the link to reset your password.
           </p>
         </div>
         <div className="pt-2">

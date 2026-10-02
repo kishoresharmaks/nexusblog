@@ -430,13 +430,16 @@ export class AuthService {
       where: { email },
     });
 
-    // Always return generic success message to prevent user enumeration
-    const genericResponse = {
-      message: 'If an unverified account exists for this email address, a new verification link has been sent.',
-    };
+    if (!user) {
+      throw new NotFoundException('No account found with this email address');
+    }
 
-    if (!user || user.status === 'SUSPENDED' || user.emailVerified) {
-      return genericResponse;
+    if (user.status === 'SUSPENDED') {
+      throw new BadRequestException('Your account is suspended. Please contact support.');
+    }
+
+    if (user.emailVerified) {
+      throw new BadRequestException('This email address is already verified. You can log in directly.');
     }
 
     // Invalidate previous unused verification tokens
@@ -461,13 +464,15 @@ export class AuthService {
     });
 
     // Dispatch email via Brevo
-    this.mailService
-      .sendVerificationEmail(user.email, user.name, rawVerificationToken)
-      .catch((err) => {
-        this.logger.error(`[AuthService] Failed to dispatch resend verification email to ${user.email}: ${err.message}`);
-      });
+    try {
+      await this.mailService.sendVerificationEmail(user.email, user.name, rawVerificationToken);
+    } catch (err: any) {
+      this.logger.error(`[AuthService] Failed to dispatch resend verification email to ${user.email}: ${err.message}`);
+    }
 
-    return genericResponse;
+    return {
+      message: 'A new verification link has been sent to your email address.',
+    };
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
@@ -477,13 +482,12 @@ export class AuthService {
       where: { email },
     });
 
-    // Always return generic message to prevent email enumeration
-    const genericResponse = {
-      message: 'If that email address exists in our system, a password reset link has been sent.',
-    };
+    if (!user) {
+      throw new NotFoundException('No account found with this email address');
+    }
 
-    if (!user || user.status === 'SUSPENDED') {
-      return genericResponse;
+    if (user.status === 'SUSPENDED') {
+      throw new BadRequestException('Your account is suspended. Please contact support.');
     }
 
     // Invalidate previous unused password reset tokens
@@ -507,13 +511,15 @@ export class AuthService {
     });
 
     // Dispatch password reset email via Brevo
-    this.mailService
-      .sendPasswordResetEmail(user.email, user.name, rawToken)
-      .catch((err) => {
-        this.logger.error(`[AuthService] Failed to dispatch password reset email to ${user.email}: ${err.message}`);
-      });
+    try {
+      await this.mailService.sendPasswordResetEmail(user.email, user.name, rawToken);
+    } catch (err: any) {
+      this.logger.error(`[AuthService] Failed to dispatch password reset email to ${user.email}: ${err.message}`);
+    }
 
-    return genericResponse;
+    return {
+      message: 'A password reset link has been sent to your email address.',
+    };
   }
 
   async resetPassword(dto: ResetPasswordDto) {
@@ -530,6 +536,14 @@ export class AuthService {
 
     if (!resetRequest || resetRequest.usedAt || resetRequest.expiresAt < new Date()) {
       throw new BadRequestException('Password reset token is invalid or has expired');
+    }
+
+    if (!resetRequest.user) {
+      throw new NotFoundException('User associated with this reset token no longer exists');
+    }
+
+    if (resetRequest.user.status === 'SUSPENDED') {
+      throw new BadRequestException('Your account is suspended. Please contact support.');
     }
 
     if (dto.newPassword.length < 8) {

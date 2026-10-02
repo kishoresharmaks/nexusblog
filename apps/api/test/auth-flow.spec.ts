@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthService } from '../src/auth/auth.service';
 import { ConflictException, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import * as argon2 from 'argon2';
@@ -301,7 +301,7 @@ describe('Production Authentication & Brevo Email Flow (AuthService)', () => {
       await expect(authService.verifyEmail(rawToken)).rejects.toThrow(BadRequestException);
     });
 
-    it('should resend verification email without user enumeration', async () => {
+    it('should resend verification email only when unverified user exists', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
         id: 'usr_resend',
         email: 'resend@example.com',
@@ -322,18 +322,18 @@ describe('Production Authentication & Brevo Email Flow (AuthService)', () => {
       );
     });
 
-    it('should return same generic success response for non-existent email in resendVerification', async () => {
+    it('should throw NotFoundException when resending verification for non-existent email', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      const res = await authService.resendVerification({ email: 'nonexistent@example.com' });
-
-      expect(res.message).toContain('verification link has been sent');
+      await expect(
+        authService.resendVerification({ email: 'nonexistent@example.com' }),
+      ).rejects.toThrow(NotFoundException);
       expect(mockMailService.sendVerificationEmail).not.toHaveBeenCalled();
     });
   });
 
   describe('Password Reset & Session Revocation Flow', () => {
-    it('should handle forgotPassword with anti-enumeration and Brevo email dispatch', async () => {
+    it('should check user existence and dispatch password reset email only when user exists', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
         id: 'usr_forgot',
         email: 'forgot@example.com',
@@ -351,6 +351,16 @@ describe('Production Authentication & Brevo Email Flow (AuthService)', () => {
         'Forgot User',
         expect.any(String),
       );
+    });
+
+    it('should throw NotFoundException and NOT send email when user does not exist', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        authService.forgotPassword({ email: 'doesnotexist@example.com' }),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockMailService.sendPasswordResetEmail).not.toHaveBeenCalled();
     });
 
     it('should reset password, invalidate token, and revoke all sessions across all devices', async () => {
