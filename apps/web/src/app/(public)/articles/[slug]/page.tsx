@@ -8,6 +8,7 @@ import { TableOfContents } from '@/components/public/table-of-contents';
 import { ReadingProgress } from '@/components/public/reading-progress';
 import { ShareButtons } from '@/components/public/share-buttons';
 import { ArticleActions } from '@/components/public/article-actions';
+import { ArticleComments } from '@/components/public/article-comments';
 import { articlesApi } from '@/lib/api-client';
 import {
   Clock,
@@ -364,6 +365,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               <ArticleActions
                 articleId={article.id}
                 initialLikes={article.likesCount || 0}
+                commentsCount={article.commentsCount || 0}
               />
               <ShareButtons
                 title={article.title}
@@ -515,7 +517,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 </div>
               )}
 
-              {/* Corrections Policy & Errata Notice */}
+              {/* Corrections Policy & Technical Accuracy Notice */}
               <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted-foreground border-t border-border/30">
                 <div className="flex items-center gap-1.5">
                   <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
@@ -528,7 +530,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                     href="mailto:editorial@nexusnation.in?subject=Technical%20Correction%20Report"
                     className="text-primary hover:underline font-semibold"
                   >
-                    Submit Errata
+                    Report Correction
                   </a>
                   <span>•</span>
                   <Link href="/content-policy" className="hover:text-foreground hover:underline">
@@ -543,6 +545,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               <ArticleActions
                 articleId={article.id}
                 initialLikes={article.likesCount || 0}
+                commentsCount={article.commentsCount || 0}
               />
               <ShareButtons
                 title={article.title}
@@ -633,6 +636,13 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 {authorBio}
               </p>
             </div>
+
+            {/* Interactive Comments & Discussions Section */}
+            <ArticleComments
+              articleId={article.id}
+              articleSlug={article.slug}
+              articleAuthorUsername={authorUsername}
+            />
           </main>
 
           {/* Right Column: Article Utilities, Series Curriculum & Technologies */}

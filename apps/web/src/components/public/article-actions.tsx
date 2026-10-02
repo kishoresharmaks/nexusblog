@@ -11,12 +11,14 @@ interface ArticleActionsProps {
   articleId: string;
   initialLikes?: number;
   initialBookmarked?: boolean;
+  commentsCount?: number;
 }
 
 export function ArticleActions({
   articleId,
   initialLikes = 0,
   initialBookmarked = false,
+  commentsCount,
 }: ArticleActionsProps) {
   const { isAuthenticated } = useAuth();
   const [likes, setLikes] = useState(initialLikes);
@@ -168,7 +170,7 @@ export function ArticleActions({
         type="button"
         disabled={isSubmitting}
         onClick={handleBookmark}
-        className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-mono font-medium transition-colors ${
+        className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-mono font-medium transition-colors cursor-pointer ${
           isBookmarked
             ? 'border-primary/40 bg-primary/10 text-primary font-semibold'
             : 'border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground'
@@ -177,6 +179,16 @@ export function ArticleActions({
         <Bookmark className={`h-4 w-4 ${isBookmarked ? 'fill-primary text-primary' : ''}`} />
         <span>{isBookmarked ? 'Saved' : 'Save'}</span>
       </button>
+
+      {/* Comment Jump Button */}
+      <a
+        href="#comments"
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card hover:bg-muted px-3 py-1.5 text-xs font-mono font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+        title="Jump to discussion"
+      >
+        <MessageSquare className="h-4 w-4 text-emerald-500" />
+        <span>{typeof commentsCount === 'number' ? commentsCount : 'Comments'}</span>
+      </a>
     </div>
   );
 }
