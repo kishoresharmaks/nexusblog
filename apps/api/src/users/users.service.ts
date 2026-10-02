@@ -264,12 +264,52 @@ export class UsersService {
   }
 
   async deleteUser(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        _count: {
+          select: {
+            articles: true,
+          },
+        },
+      },
+    });
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    await this.prisma.user.delete({ where: { id: userId } });
-    return { success: true, message: 'User removed successfully' };
+
+    if (user.role === 'SUPER_ADMIN') {
+      const superAdminCount = await this.prisma.user.count({
+        where: { role: 'SUPER_ADMIN' },
+      });
+      if (superAdminCount <= 1) {
+        throw new BadRequestException('Cannot delete the last remaining Super Admin account');
+      }
+    }
+
+    if (user._count.articles > 0) {
+      throw new BadRequestException(
+        `Cannot delete user "${user.name}" (@${user.username}) because they have authored ${user._count.articles} article(s). Please reassign or delete their articles first, or set their account status to DEACTIVATED or SUSPENDED.`,
+      );
+    }
+
+    // Safely clean up dependent records in a transaction
+    await this.prisma.$transaction([
+      this.prisma.session.deleteMany({ where: { userId } }),
+      this.prisma.emailVerification.deleteMany({ where: { userId } }),
+      this.prisma.passwordReset.deleteMany({ where: { userId } }),
+      this.prisma.bookmark.deleteMany({ where: { userId } }),
+      this.prisma.readingHistory.deleteMany({ where: { userId } }),
+      this.prisma.comment.deleteMany({ where: { userId } }),
+      this.prisma.guestPost.updateMany({
+        where: { authorId: userId },
+        data: { authorId: null },
+      }),
+      this.prisma.user.delete({ where: { id: userId } }),
+    ]);
+
+    return { success: true, message: `User @${user.username} has been successfully removed` };
   }
 }
 
