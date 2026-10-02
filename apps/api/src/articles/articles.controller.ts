@@ -27,6 +27,24 @@ import { Role } from '@prisma/client';
 export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR')
+  @ApiBearerAuth()
+  @Get('admin/all')
+  @ApiOperation({ summary: 'Get all articles for admin CMS (including drafts, scheduled, etc.)' })
+  findAdminArticles(@Query() query: QueryArticleDto) {
+    return this.articlesService.findAdminArticles(query);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR')
+  @ApiBearerAuth()
+  @Get('admin/detail/:id')
+  @ApiOperation({ summary: 'Get single article by ID or slug for admin editing' })
+  findAdminArticleById(@Param('id') id: string) {
+    return this.articlesService.findAdminArticleById(id);
+  }
+
   @Public()
   @Get()
   @ApiOperation({ summary: 'Get published public articles with filtering and pagination' })

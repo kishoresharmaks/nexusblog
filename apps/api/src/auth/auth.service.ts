@@ -200,7 +200,7 @@ export class AuthService {
 
     const refreshTokenHash = this.hashToken(rawRefreshToken);
 
-    const session = await this.prisma.session.findFirst({
+    let session = await this.prisma.session.findFirst({
       where: {
         refreshTokenHash,
         revokedAt: null,
@@ -209,7 +209,31 @@ export class AuthService {
       include: { user: true },
     });
 
-    if (!session || !session.user || session.user.status === 'SUSPENDED') {
+    // Handle concurrent / React StrictMode race condition: allow 30-second grace period for recently rotated sessions
+    if (!session) {
+      const gracePeriodCutoff = new Date(Date.now() - 30 * 1000);
+      const recentlyRevoked = await this.prisma.session.findFirst({
+        where: {
+          refreshTokenHash,
+          revokedAt: { gte: gracePeriodCutoff },
+          expiresAt: { gt: new Date() },
+        },
+        include: { user: true },
+      });
+
+      if (recentlyRevoked && recentlyRevoked.user && recentlyRevoked.user.status !== 'SUSPENDED') {
+        const { accessToken } = await this.generateTokens(recentlyRevoked.user);
+        return {
+          user: this.sanitizeUser(recentlyRevoked.user),
+          accessToken,
+          refreshToken: rawRefreshToken,
+        };
+      }
+
+      throw new UnauthorizedException('Session is invalid or has expired');
+    }
+
+    if (!session.user || session.user.status === 'SUSPENDED') {
       throw new UnauthorizedException('Session is invalid or has expired');
     }
 

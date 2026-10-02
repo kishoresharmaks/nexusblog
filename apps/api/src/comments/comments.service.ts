@@ -177,4 +177,75 @@ export class CommentsService {
 
     return { message: 'Comment deleted successfully' };
   }
+
+  async getAllAdminComments(status?: string, search?: string) {
+    const where: any = {};
+    if (status && status !== 'ALL') {
+      where.status = status;
+    }
+    if (search) {
+      where.OR = [
+        { content: { contains: search, mode: 'insensitive' } },
+        { user: { name: { contains: search, mode: 'insensitive' } } },
+        { user: { username: { contains: search, mode: 'insensitive' } } },
+        { article: { title: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    return this.prisma.comment.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+            role: true,
+          },
+        },
+        article: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
+    });
+  }
+
+  async updateStatus(id: string, status: string) {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    return this.prisma.comment.update({
+      where: { id },
+      data: { status },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+            role: true,
+          },
+        },
+        article: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+      },
+    });
+  }
 }

@@ -14,9 +14,7 @@ export class SeriesService {
       include: {
         _count: {
           select: {
-            articles: {
-              where: { status: 'PUBLISHED' },
-            },
+            articles: publishedOnly ? { where: { status: 'PUBLISHED' } } : true,
           },
         },
       },
@@ -27,6 +25,7 @@ export class SeriesService {
       articleCount: s._count.articles,
     }));
   }
+
 
   async findBySlug(slug: string) {
     const series = await this.prisma.series.findUnique({

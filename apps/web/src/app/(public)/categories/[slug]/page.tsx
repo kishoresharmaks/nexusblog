@@ -2,7 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArticleCard } from '@/components/public/article-card';
-import { Layers, ArrowLeft } from 'lucide-react';
+import { Layers, ArrowLeft, BookOpen } from 'lucide-react';
+import { categoriesApi, articlesApi } from '@/lib/api-client';
+import { IconRenderer } from '@/components/common/icon-renderer';
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -10,40 +12,30 @@ interface CategoryPageProps {
 
 export default async function CategoryDetailPage({ params }: CategoryPageProps) {
   const { slug } = await params;
-  const formattedTitle = slug
+  const decodedSlug = decodeURIComponent(slug).toLowerCase();
+  
+  const formattedTitle = decodedSlug
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
-  const sampleArticles = [
-    {
-      id: '1',
-      title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-      slug: 'designing-distributed-rate-limiter',
-      excerpt:
-        'A deep dive into sub-millisecond sliding window counter algorithms, token buckets, and coordinating distributed rate limiting across multi-region API gateways.',
-      difficulty: 'ADVANCED' as const,
-      type: 'SYSTEM_DESIGN' as const,
-      featured: true,
-      readingTime: 12,
-      viewsCount: 14200,
-      publishedAt: new Date(),
-      author: {
-        id: 'a1',
-        name: 'Alex Rivera',
-        username: 'alexdev',
-      },
-      category: {
-        id: 'c1',
-        name: formattedTitle,
-        slug,
-      },
-      technologies: [
-        { id: 't1', name: 'Redis', slug: 'redis' },
-        { id: 't2', name: 'NestJS', slug: 'nestjs' },
-      ],
-    },
-  ];
+  let category: any = null;
+  let articles: any[] = [];
+
+  try {
+    const [catData, articlesData] = await Promise.all([
+      categoriesApi.getBySlug(decodedSlug).catch(() => null),
+      articlesApi.getPublicFeed({ categorySlug: decodedSlug, limit: 20 }),
+    ]);
+
+    category = catData;
+    articles = articlesData?.items || [];
+  } catch (err) {
+    console.error(`Failed to fetch category data for ${decodedSlug}:`, err);
+  }
+
+  const categoryName = category?.name || formattedTitle;
+  const categoryDescription = category?.description || `Comprehensive collection of architecture guides, case studies, and engineering breakdowns on ${categoryName}.`;
 
   return (
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-8 font-sans">
@@ -54,22 +46,49 @@ export default async function CategoryDetailPage({ params }: CategoryPageProps) 
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to Categories
         </Link>
-        <div className="flex items-center gap-2">
-          <Layers className="h-5 w-5 text-primary" />
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center p-2 text-primary shrink-0">
+            <IconRenderer value={category?.image} defaultIcon="Layers" className="h-6 w-6 text-primary" />
+          </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-            {formattedTitle}
+            {categoryName}
           </h1>
         </div>
         <p className="text-sm sm:text-base text-muted-foreground max-w-2xl leading-relaxed">
-          Comprehensive collection of architecture guides, case studies, and engineering breakdowns on {formattedTitle}.
+          {categoryDescription}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-        {sampleArticles.map((article) => (
-          <ArticleCard key={article.id} article={article} />
-        ))}
+      <div className="space-y-4 pt-2">
+        <div className="flex items-center justify-between border-b border-border/40 pb-3">
+          <h2 className="text-sm font-bold font-mono text-foreground uppercase tracking-wider">
+            Articles ({articles.length})
+          </h2>
+        </div>
+
+        {articles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            {articles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        ) : (
+          <div className="py-16 text-center space-y-3 rounded-2xl border border-dashed border-border bg-card/40">
+            <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
+            <p className="text-sm font-semibold text-foreground">No articles in this category yet</p>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Check back soon as new technical deep-dives and blueprints are published weekly.
+            </p>
+            <Link
+              href="/articles"
+              className="inline-flex items-center gap-1 text-xs font-mono text-primary font-semibold hover:underline pt-2"
+            >
+              Browse all articles →
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+

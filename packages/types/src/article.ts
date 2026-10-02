@@ -15,7 +15,8 @@ export type ArticleType =
   | 'HOW_TO'
   | 'COMPARISON'
   | 'REFERENCE'
-  | 'OPINION';
+  | 'OPINION'
+  | (string & {});
 
 export interface Article {
   id: string;
@@ -57,6 +58,8 @@ export interface Article {
   seoDescription?: string | null;
   canonicalUrl?: string | null;
   noIndex?: boolean;
+  isGuestPost?: boolean;
+  guestAuthorName?: string | null;
   
   viewsCount: number;
   likesCount: number;

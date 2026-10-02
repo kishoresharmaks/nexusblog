@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ClientMdxRenderer } from '@/components/mdx/client-mdx-renderer';
-import { saveArticle } from '@/lib/articles-data';
+import { articlesApi, categoriesApi, articleTypesApi, technologiesApi, tagsApi, seriesApi } from '@/lib/api-client';
 import {
   Save,
   Send,
@@ -24,27 +24,22 @@ import {
   Globe,
   Settings2,
   X,
+  Image as ImageIcon,
+  Trash2,
+  Lock,
+  Unlock,
+  Tag as TagIcon,
+  Cpu,
+  BookOpen,
+  Hash,
 } from 'lucide-react';
+import { MediaPickerModal } from '@/components/media/media-picker-modal';
+import { RichMdxEditor } from '@/components/editor/rich-mdx-editor';
 import { toast } from 'sonner';
 
 interface ArticleEditorProps {
-  initialData?: {
-    id?: string;
-    title?: string;
-    slug?: string;
-    excerpt?: string;
-    content?: string;
-    coverImage?: string;
-    categoryId?: string;
-    difficulty?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
-    type?: string;
-    status?: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'ARCHIVED';
-    featured?: boolean;
-    seoTitle?: string;
-    seoDescription?: string;
-    canonicalUrl?: string;
-    noIndex?: boolean;
-  };
+  initialData?: any;
+  articleId?: string;
   isNew?: boolean;
 }
 
@@ -100,99 +95,232 @@ export async function acquireRateLimit(key: string, limit: number, windowMs: num
 \`\`\`
 `;
 
-export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps) {
+export function ArticleEditor({ initialData, articleId, isNew = false }: ArticleEditorProps) {
   const router = useRouter();
 
   const [viewMode, setViewMode] = useState<'split' | 'edit' | 'preview'>('split');
   const [showMetadata, setShowMetadata] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [articleTypesList, setArticleTypesList] = useState<any[]>([]);
+  const [technologiesList, setTechnologiesList] = useState<any[]>([]);
+  const [tagsList, setTagsList] = useState<any[]>([]);
+  const [seriesList, setSeriesList] = useState<any[]>([]);
+  const [currentArticle, setCurrentArticle] = useState<any>(initialData || null);
+  const [isLoadingArticle, setIsLoadingArticle] = useState<boolean>(!isNew && !initialData && !!articleId);
 
   // Form State
   const [title, setTitle] = useState(isNew ? '' : initialData?.title || '');
   const [slug, setSlug] = useState(isNew ? '' : initialData?.slug || '');
   const [excerpt, setExcerpt] = useState(isNew ? '' : initialData?.excerpt || '');
-  const [content, setContent] = useState(
+  const [content, setContent] = useState<string>(
     initialData?.content || (isNew ? '## Introduction\n\nStart writing your technical article here...\n' : DEFAULT_STARTER),
   );
-  const [category, setCategory] = useState(initialData?.categoryId || 'system-design');
+  const [category, setCategory] = useState(
+    initialData?.category?.slug || initialData?.category?.id || initialData?.categoryId || 'system-design',
+  );
   const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'ADVANCED');
   const [type, setType] = useState(initialData?.type || 'SYSTEM_DESIGN');
   const [status, setStatus] = useState(initialData?.status || 'DRAFT');
   const [coverImage, setCoverImage] = useState(initialData?.coverImage || '');
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
+  const [selectedTechnologyIds, setSelectedTechnologyIds] = useState<string[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string>('');
+  const [seriesOrder, setSeriesOrder] = useState<number>(1);
   const [seoTitle, setSeoTitle] = useState(initialData?.seoTitle || '');
   const [seoDescription, setSeoDescription] = useState(initialData?.seoDescription || '');
+  const [isSlugLocked, setIsSlugLocked] = useState(true);
+  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
+  const [mediaPickerMode, setMediaPickerMode] = useState<'cover' | 'content'>('cover');
 
-  // Synchronize state when initialData changes dynamically
+  // Helper to slugify title
+  const generateSlug = (text: string) => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  // Fetch all available categories, article types, technologies, tags & series dynamically
   useEffect(() => {
-    if (initialData && !isNew) {
-      if (initialData.title !== undefined) setTitle(initialData.title);
-      if (initialData.slug !== undefined) setSlug(initialData.slug);
-      if (initialData.excerpt !== undefined) setExcerpt(initialData.excerpt);
-      if (initialData.content !== undefined) setContent(initialData.content);
-      if (initialData.categoryId !== undefined) setCategory(initialData.categoryId);
-      if (initialData.difficulty !== undefined) setDifficulty(initialData.difficulty);
-      if (initialData.type !== undefined) setType(initialData.type);
-      if (initialData.status !== undefined) setStatus(initialData.status);
-      if (initialData.coverImage !== undefined) setCoverImage(initialData.coverImage);
-      if (initialData.featured !== undefined) setFeatured(initialData.featured);
-      if (initialData.seoTitle !== undefined) setSeoTitle(initialData.seoTitle);
-      if (initialData.seoDescription !== undefined) setSeoDescription(initialData.seoDescription);
+    categoriesApi
+      .getAll()
+      .then((cats) => {
+        if (Array.isArray(cats) && cats.length > 0) {
+          setCategoriesList(cats);
+        }
+      })
+      .catch(() => {});
+
+    articleTypesApi
+      .getAll()
+      .then((types) => {
+        if (Array.isArray(types) && types.length > 0) {
+          setArticleTypesList(types);
+        }
+      })
+      .catch(() => {});
+
+    technologiesApi
+      .getAll()
+      .then((techs) => {
+        if (Array.isArray(techs) && techs.length > 0) {
+          setTechnologiesList(techs);
+        }
+      })
+      .catch(() => {});
+
+    tagsApi
+      .getAll()
+      .then((tags) => {
+        if (Array.isArray(tags) && tags.length > 0) {
+          setTagsList(tags);
+        }
+      })
+      .catch(() => {});
+
+    seriesApi
+      .getAll(true)
+      .then((series) => {
+        if (Array.isArray(series) && series.length > 0) {
+          setSeriesList(series);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch article if editing and not supplied in SSR props
+  useEffect(() => {
+    if (!isNew && articleId) {
+      setIsLoadingArticle(true);
+      articlesApi
+        .getById(articleId)
+        .catch(() => articlesApi.getBySlug(articleId))
+        .then((data) => {
+          if (data) {
+            setCurrentArticle(data);
+          }
+        })
+        .finally(() => setIsLoadingArticle(false));
     }
-  }, [initialData, isNew]);
+  }, [articleId, isNew]);
+
+  // Synchronize state when currentArticle or initialData updates
+  useEffect(() => {
+    const data = currentArticle || initialData;
+    if (data && !isNew) {
+      if (data.title !== undefined) setTitle(data.title);
+      if (data.slug !== undefined) setSlug(data.slug);
+      if (data.excerpt !== undefined) setExcerpt(data.excerpt);
+      if (data.content !== undefined) setContent(data.content);
+      const catVal = data.category?.slug || data.category?.id || data.categoryId || data.categorySlug || 'system-design';
+      setCategory(catVal);
+      if (data.difficulty !== undefined) setDifficulty(data.difficulty);
+      if (data.type !== undefined) setType(data.type);
+      if (data.status !== undefined) setStatus(data.status);
+      if (data.coverImage !== undefined) setCoverImage(data.coverImage);
+      if (data.featured !== undefined) setFeatured(data.featured);
+      if (data.seoTitle !== undefined) setSeoTitle(data.seoTitle);
+      if (data.seoDescription !== undefined) setSeoDescription(data.seoDescription);
+
+      // Multi-dimensional taxonomy sync
+      if (data.technologies && Array.isArray(data.technologies)) {
+        setSelectedTechnologyIds(data.technologies.map((t: any) => t.id || t));
+      } else if (data.technologyIds && Array.isArray(data.technologyIds)) {
+        setSelectedTechnologyIds(data.technologyIds);
+      }
+
+      if (data.tags && Array.isArray(data.tags)) {
+        setSelectedTagIds(data.tags.map((t: any) => t.id || t));
+      } else if (data.tagIds && Array.isArray(data.tagIds)) {
+        setSelectedTagIds(data.tagIds);
+      }
+
+      if (data.seriesId) setSelectedSeriesId(data.seriesId);
+      else if (data.series?.id) setSelectedSeriesId(data.series.id);
+      if (data.seriesOrder !== undefined && data.seriesOrder !== null) {
+        setSeriesOrder(data.seriesOrder);
+      }
+    }
+  }, [currentArticle, initialData, isNew]);
 
   // Calculate estimated reading time
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
   const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
-  const insertSnippet = (snippet: string) => {
-    setContent((prev) => prev + '\n\n' + snippet);
-    toast.success('Snippet inserted');
+  const toggleTech = (techId: string) => {
+    setSelectedTechnologyIds((prev) =>
+      prev.includes(techId) ? prev.filter((id) => id !== techId) : [...prev, techId],
+    );
+  };
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
+    );
   };
 
   const handleSave = async (publishStatus: 'DRAFT' | 'PUBLISHED') => {
     setIsSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
+    const targetSlug = slug || (title ? title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-') : 'untitled-article');
+    const targetId = articleId || currentArticle?.id || initialData?.id;
 
-    const categoryNames: Record<string, string> = {
-      'system-design': 'System Design',
-      'backend-engineering': 'Backend Engineering',
-      'distributed-systems': 'Distributed Systems',
-      'databases': 'Databases',
-      'apis': 'APIs',
-      'devops': 'DevOps',
-      'cloud': 'Cloud',
-      'performance': 'Performance',
-      'observability': 'Observability',
-      'ai-engineering': 'AI Engineering',
-    };
+    const selectedCat = categoriesList.find((c) => c.slug === category || c.id === category);
+    const categoryId = selectedCat?.id || (category && category.length === 24 ? category : undefined);
+    const categorySlug = selectedCat?.slug || category || 'system-design';
+    const targetExcerpt = excerpt?.trim() || content.replace(/^[#\s\n*`_-]+/, '').slice(0, 160).trim() || `${title || 'Technical article breakdown.'}`;
 
-    saveArticle({
-      id: initialData?.id,
+    const payload: any = {
       title: title || 'Untitled Article',
-      slug: slug || (title ? title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-') : 'untitled-article'),
-      excerpt,
+      slug: targetSlug,
+      excerpt: targetExcerpt,
       content,
-      categoryId: category,
-      category: categoryNames[category] || 'System Design',
-      difficulty: difficulty as any,
+      categorySlug,
+      ...(categoryId ? { categoryId } : {}),
+      difficulty,
       type,
       status: publishStatus,
       featured,
-      coverImage,
-      seoTitle,
-      seoDescription,
-    });
+      coverImage: coverImage || undefined,
+      technologyIds: selectedTechnologyIds,
+      tagIds: selectedTagIds,
+      seriesId: selectedSeriesId || null,
+      seriesOrder: selectedSeriesId ? seriesOrder : null,
+      seoTitle: seoTitle || undefined,
+      seoDescription: seoDescription || undefined,
+    };
 
-    setStatus(publishStatus);
-    setIsSaving(false);
-    toast.success(
-      publishStatus === 'PUBLISHED'
-        ? 'Article published successfully!'
-        : 'Article draft saved!',
-    );
-    if (isNew) {
-      router.push('/admin/articles');
+
+    try {
+      if (!isNew && targetId) {
+        await articlesApi.update(targetId, payload);
+      } else if (isNew) {
+        await articlesApi.create(payload);
+      }
+
+      setStatus(publishStatus);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nexus_articles_updated'));
+      }
+      toast.success(
+        publishStatus === 'PUBLISHED'
+          ? 'Article published successfully!'
+          : 'Article draft saved!',
+      );
+      if (isNew) {
+        router.push('/admin/articles');
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to save article';
+      toast.error(errorMsg, {
+        description: err.details ? (Array.isArray(err.details) ? err.details.join('\n') : String(err.details)) : undefined,
+        duration: 6000,
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -244,40 +372,46 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
             <span className="hidden sm:inline">Settings</span>
           </button>
 
-          {/* View Mode */}
-          <div className="hidden md:flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/60 text-xs font-mono">
+          {/* High-Contrast Active View Mode Toggle */}
+          <div className="hidden md:flex items-center bg-muted/80 p-1 rounded-xl border border-border/70 text-xs font-mono shadow-2xs">
             <button
+              type="button"
               onClick={() => setViewMode('edit')}
-              className={`p-1.5 rounded-md flex items-center gap-1 transition-all ${
+              className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs font-mono ${
                 viewMode === 'edit'
-                  ? 'bg-background text-foreground font-semibold shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary text-primary-foreground font-bold shadow-xs ring-1 ring-primary/40'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
               }`}
               title="Editor Only"
             >
               <Code2 className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Editor</span>
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('split')}
-              className={`p-1.5 rounded-md flex items-center gap-1 transition-all ${
+              className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs font-mono ${
                 viewMode === 'split'
-                  ? 'bg-background text-foreground font-semibold shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary text-primary-foreground font-bold shadow-xs ring-1 ring-primary/40'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
               }`}
-              title="Split View"
+              title="Split View (Editor + Live Preview)"
             >
               <Columns className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Split</span>
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('preview')}
-              className={`p-1.5 rounded-md flex items-center gap-1 transition-all ${
+              className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-xs font-mono ${
                 viewMode === 'preview'
-                  ? 'bg-background text-foreground font-semibold shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-primary text-primary-foreground font-bold shadow-xs ring-1 ring-primary/40'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/60'
               }`}
               title="Preview Only"
             >
               <Eye className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Preview</span>
             </button>
           </div>
 
@@ -312,73 +446,14 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                 viewMode === 'split' ? 'w-full lg:w-1/2' : 'w-full'
               }`}
             >
-              {/* Snippet Insertion Toolbar */}
-              <div className="shrink-0 px-4 py-2 bg-muted/20 border-b border-border/40 flex flex-wrap items-center gap-1.5">
-                <span className="text-[11px] font-mono text-muted-foreground mr-1">Insert:</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    insertSnippet(
-                      `<Callout type="tip" title="Production Tip">\nEnter actionable engineering advice here.\n</Callout>`,
-                    )
-                  }
-                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
-                >
-                  <Sparkles className="h-3 w-3 text-primary" /> Callout
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    insertSnippet(
-                      `\`\`\`mermaid\ngraph TD\n    A[API Gateway] --> B[Service A]\n    A --> C[Service B]\n\`\`\``,
-                    )
-                  }
-                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
-                >
-                  <Layers className="h-3 w-3 text-sky-500" /> Mermaid
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    insertSnippet(
-                      `<Terminal title="benchmark.sh" command="pnpm test" />`,
-                    )
-                  }
-                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
-                >
-                  <Terminal className="h-3 w-3 text-emerald-500" /> Terminal
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    insertSnippet(
-                      `<Benchmark\n  title="Performance Benchmark"\n  description="Measured over 100k requests"\n  metrics={[\n    { label: "Throughput", value: "119k req/sec", change: "+40%", trend: "up" }\n  ]}\n/>`,
-                    )
-                  }
-                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
-                >
-                  <Activity className="h-3 w-3 text-amber-500" /> Benchmark
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    insertSnippet(
-                      `<DatabaseSchema\n  tableName="rate_limit_buckets"\n  columns={[\n    { name: "id", type: "UUID", primaryKey: true },\n    { name: "key", type: "VARCHAR(255)", indexed: true },\n    { name: "tokens", type: "INTEGER" }\n  ]}\n/>`,
-                    )
-                  }
-                  className="px-2 py-1 rounded bg-card hover:bg-muted text-[11px] font-mono border border-border/60 flex items-center gap-1 transition-colors shadow-2xs"
-                >
-                  <Database className="h-3 w-3 text-violet-500" /> Schema
-                </button>
-              </div>
-
-              {/* Textarea Container */}
-              <div className="flex-1 p-4 overflow-hidden flex flex-col min-h-0">
-                <textarea
+              {/* Rich Visual MDX Editor Pane */}
+              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                <RichMdxEditor
                   value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-full flex-1 rounded-xl border border-border bg-card/60 p-4 font-mono text-xs sm:text-sm text-foreground leading-relaxed focus:border-primary focus:outline-none resize-none shadow-inner overflow-y-auto"
-                  placeholder="Write your technical article in MDX..."
+                  onChange={setContent}
+                  placeholder="Write your technical article in MDX with visual diagrams and code blocks..."
+                  className="h-full border-0 rounded-none shadow-none"
+                  minHeight="min-h-full"
                 />
               </div>
             </div>
@@ -392,6 +467,19 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
               }`}
             >
               <div className="max-w-2xl mx-auto space-y-8">
+                {/* Article Cover Image Live Preview */}
+                {coverImage && (
+                  <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm max-h-72">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={coverImage}
+                      alt={title || 'Cover image preview'}
+                      crossOrigin="anonymous"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 {/* Article Header Preview */}
                 <div className="space-y-3 border-b border-border/60 pb-6">
                   <div className="flex items-center gap-2">
@@ -439,24 +527,58 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                   type="text"
                   value={title}
                   onChange={(e) => {
-                    setTitle(e.target.value);
-                    setSlug(
-                      e.target.value
-                        .toLowerCase()
-                        .replace(/[^\w\s-]/g, '')
-                        .replace(/\s+/g, '-'),
-                    );
+                    const newTitle = e.target.value;
+                    setTitle(newTitle);
+                    if (isSlugLocked) {
+                      setSlug(generateSlug(newTitle));
+                    }
                   }}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-mono font-semibold text-foreground">Slug</label>
+                <div className="flex items-center justify-between">
+                  <label className="font-mono font-semibold text-foreground">Slug</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextLocked = !isSlugLocked;
+                      setIsSlugLocked(nextLocked);
+                      if (nextLocked) {
+                        setSlug(generateSlug(title));
+                        toast.success('Slug auto-synced with title!');
+                      } else {
+                        toast.info('Custom slug mode enabled');
+                      }
+                    }}
+                    className="text-[10px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                  >
+                    {isSlugLocked ? (
+                      <>
+                        <Lock className="h-3 w-3 text-primary" />
+                        <span className="text-primary font-semibold">Auto-sync</span>
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="h-3 w-3 text-amber-500" />
+                        <span className="text-amber-500 font-semibold">Custom</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
+                  onChange={(e) => {
+                    setIsSlugLocked(false);
+                    setSlug(
+                      e.target.value
+                        .toLowerCase()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/[\s_]+/g, '-')
+                    );
+                  }}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground font-mono text-[11px] focus:border-primary focus:outline-none"
                 />
               </div>
@@ -468,16 +590,26 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                   onChange={(e) => setCategory(e.target.value)}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                 >
-                  <option value="system-design">System Design</option>
-                  <option value="backend-engineering">Backend Engineering</option>
-                  <option value="distributed-systems">Distributed Systems</option>
-                  <option value="databases">Databases</option>
-                  <option value="apis">APIs</option>
-                  <option value="devops">DevOps</option>
-                  <option value="cloud">Cloud</option>
-                  <option value="performance">Performance</option>
-                  <option value="observability">Observability</option>
-                  <option value="ai-engineering">AI / Engineering</option>
+                  {categoriesList.length > 0 ? (
+                    categoriesList.map((cat) => (
+                      <option key={cat.id || cat.slug} value={cat.slug || cat.id}>
+                        {cat.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="system-design">System Design</option>
+                      <option value="backend-engineering">Backend Engineering</option>
+                      <option value="distributed-systems">Distributed Systems</option>
+                      <option value="databases">Databases</option>
+                      <option value="apis">APIs</option>
+                      <option value="devops">DevOps</option>
+                      <option value="cloud">Cloud</option>
+                      <option value="performance">Performance</option>
+                      <option value="observability">Observability</option>
+                      <option value="ai-engineering">AI / Engineering</option>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -502,14 +634,144 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                   onChange={(e) => setType(e.target.value)}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none"
                 >
-                  <option value="SYSTEM_DESIGN">System Design</option>
-                  <option value="DEEP_DIVE">Deep Dive</option>
-                  <option value="TUTORIAL">Tutorial</option>
-                  <option value="CASE_STUDY">Case Study</option>
-                  <option value="ARCHITECTURE_DECISION">Architecture Decision</option>
-                  <option value="BENCHMARK">Benchmark</option>
+                  {articleTypesList.length > 0 ? (
+                    articleTypesList.map((t) => (
+                      <option key={t.id || t.slug} value={t.slug}>
+                        {t.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="SYSTEM_DESIGN">System Design</option>
+                      <option value="DEEP_DIVE">Deep Dive</option>
+                      <option value="TUTORIAL">Tutorial</option>
+                      <option value="CASE_STUDY">Case Study</option>
+                      <option value="BENCHMARK">Benchmark</option>
+                      <option value="COMPARISON">Comparison</option>
+                      <option value="GUIDE">Guide</option>
+                      <option value="HOW_TO">How-To</option>
+                      <option value="REFERENCE">Reference</option>
+                      <option value="OPINION">Opinion</option>
+                    </>
+                  )}
                 </select>
               </div>
+
+              {/* Technology Hubs Multi-Select */}
+              <div className="space-y-2 pt-1 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <label className="font-mono font-semibold text-foreground flex items-center gap-1.5">
+                    <Cpu className="h-3.5 w-3.5 text-primary" />
+                    <span>Technology Hubs</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {selectedTechnologyIds.length} selected
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 rounded-lg border border-border/60 bg-muted/20">
+                  {technologiesList.length > 0 ? (
+                    technologiesList.map((tech) => {
+                      const isSelected = selectedTechnologyIds.includes(tech.id) || selectedTechnologyIds.includes(tech.slug);
+                      return (
+                        <button
+                          key={tech.id}
+                          type="button"
+                          onClick={() => toggleTech(tech.id)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono transition-all ${
+                            isSelected
+                              ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                              : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50'
+                          }`}
+                        >
+                          <span>{tech.name}</span>
+                          {isSelected && <CheckCircle2 className="h-3 w-3" />}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground p-1">No technology hubs configured.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Tags Multi-Select */}
+              <div className="space-y-2 pt-1 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <label className="font-mono font-semibold text-foreground flex items-center gap-1.5">
+                    <Hash className="h-3.5 w-3.5 text-primary" />
+                    <span>Tags Taxonomy</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {selectedTagIds.length} selected
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 rounded-lg border border-border/60 bg-muted/20">
+                  {tagsList.length > 0 ? (
+                    tagsList.map((tag) => {
+                      const isSelected = selectedTagIds.includes(tag.id) || selectedTagIds.includes(tag.slug);
+                      return (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() => toggleTag(tag.id)}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono transition-all ${
+                            isSelected
+                              ? 'bg-emerald-500 text-white font-bold shadow-xs'
+                              : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50'
+                          }`}
+                        >
+                          <span>#{tag.name}</span>
+                          {isSelected && <CheckCircle2 className="h-3 w-3" />}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground p-1">No tags configured.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Series Curriculum Association */}
+              <div className="space-y-2 pt-1 border-t border-border/40">
+                <label className="font-mono font-semibold text-foreground flex items-center gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5 text-primary" />
+                  <span>Series Curriculum</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <select
+                      value={selectedSeriesId}
+                      onChange={(e) => setSelectedSeriesId(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none text-xs"
+                    >
+                      <option value="">None (Standalone Article)</option>
+                      {seriesList.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-1">
+                    <input
+                      type="number"
+                      min={1}
+                      disabled={!selectedSeriesId}
+                      value={seriesOrder}
+                      onChange={(e) => setSeriesOrder(parseInt(e.target.value, 10) || 1)}
+                      placeholder="Chapter #"
+                      title="Chapter sequence number"
+                      className="w-full rounded-lg border border-border bg-background px-2.5 py-2 text-foreground focus:border-primary focus:outline-none text-xs font-mono disabled:opacity-40"
+                    />
+                  </div>
+                </div>
+                {selectedSeriesId && (
+                  <p className="text-[10px] font-mono text-muted-foreground">
+                    This article will be rendered as Chapter {seriesOrder} of the selected series.
+                  </p>
+                )}
+              </div>
+
 
               <div className="space-y-1.5">
                 <label className="font-mono font-semibold text-foreground">Excerpt</label>
@@ -521,15 +783,70 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="font-mono font-semibold text-foreground">Cover Image URL</label>
-                <input
-                  type="text"
-                  value={coverImage}
-                  onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none font-mono text-[11px]"
-                />
+              {/* Cover Image & Media Library Integration */}
+              <div className="space-y-2 pt-1 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <label className="font-mono font-semibold text-foreground">Cover Image</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMediaPickerMode('cover');
+                      setIsMediaPickerOpen(true);
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-mono text-primary hover:underline font-semibold"
+                  >
+                    <ImageIcon className="h-3 w-3" /> Browse Library
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={coverImage}
+                    onChange={(e) => setCoverImage(e.target.value)}
+                    placeholder="https://... or choose from Media Library"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none font-mono text-[11px]"
+                  />
+
+                  {coverImage ? (
+                    <div className="relative rounded-xl border border-border bg-muted/30 overflow-hidden group">
+                      <div className="h-28 flex items-center justify-center p-2 bg-muted/40">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={coverImage}
+                          alt="Cover preview"
+                          crossOrigin="anonymous"
+                          className="h-full w-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <div className="p-2 flex items-center justify-between bg-card border-t border-border/50 text-[11px] font-mono">
+                        <span className="text-muted-foreground truncate max-w-[150px]">Cover Set</span>
+                        <button
+                          type="button"
+                          onClick={() => setCoverImage('')}
+                          className="text-rose-500 hover:text-rose-600 flex items-center gap-1 hover:underline"
+                        >
+                          <Trash2 className="h-3 w-3" /> Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMediaPickerMode('cover');
+                        setIsMediaPickerOpen(true);
+                      }}
+                      className="w-full py-3.5 border border-dashed border-border hover:border-primary/50 rounded-xl flex flex-col items-center justify-center gap-1 bg-muted/10 hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-all"
+                    >
+                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-[10px] font-mono">Pick from Media Library</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center space-x-2 pt-2">
@@ -574,6 +891,18 @@ export function ArticleEditor({ initialData, isNew = false }: ArticleEditorProps
           </aside>
         )}
       </div>
+
+      {/* Media Library Picker Modal */}
+      <MediaPickerModal
+        isOpen={isMediaPickerOpen}
+        onClose={() => setIsMediaPickerOpen(false)}
+        title="Select Article Cover Image"
+        actionLabel="Set as Cover Image"
+        onSelect={(url) => {
+          setCoverImage(url);
+          toast.success('Cover image selected!');
+        }}
+      />
     </div>
   );
 }

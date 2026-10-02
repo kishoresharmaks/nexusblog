@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { NewsletterService } from './newsletter.service';
 import { Public } from '../auth/decorators/public.decorator';
@@ -28,6 +28,26 @@ export class NewsletterController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR')
   @ApiBearerAuth()
+  @Get('stats')
+  @ApiOperation({ summary: 'Get newsletter subscriber statistics (Admin/Editor)' })
+  getStats() {
+    return this.newsletterService.getStats();
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR')
+  @ApiBearerAuth()
+  @Post('broadcast')
+  @ApiOperation({ summary: 'Send email dispatch broadcast to active subscribers (Admin/Editor)' })
+  broadcast(
+    @Body() payload: { subject: string; content: string; previewText?: string },
+  ) {
+    return this.newsletterService.broadcast(payload);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR')
+  @ApiBearerAuth()
   @Get('subscribers')
   @ApiOperation({ summary: 'List all newsletter subscribers (Admin/Editor)' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -41,4 +61,14 @@ export class NewsletterController {
       skip ? parseInt(skip, 10) : 0,
     );
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiBearerAuth()
+  @Delete('subscribers/:id')
+  @ApiOperation({ summary: 'Delete a subscriber from the list (Admin only)' })
+  deleteSubscriber(@Param('id') id: string) {
+    return this.newsletterService.deleteSubscriber(id);
+  }
 }
+

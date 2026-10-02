@@ -30,6 +30,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
+      const token = authClient.getAccessToken();
+      if (token) {
+        try {
+          const me = await authClient.getMe();
+          if (me) {
+            setUser(me);
+            setIsLoading(false);
+            return;
+          }
+        } catch {
+          // Token expired, attempt refresh
+        }
+      }
+
       const refreshed = await authClient.refreshToken();
       if (refreshed) {
         const me = await authClient.getMe();

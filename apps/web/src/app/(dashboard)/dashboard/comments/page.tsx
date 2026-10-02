@@ -1,54 +1,83 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { MessageSquare, Trash2, Edit3, Check, X, ArrowRight, ExternalLink } from 'lucide-react';
+import { MessageSquare, Trash2, Edit3, Check, X, ExternalLink, Loader2 } from 'lucide-react';
+import { commentsApi } from '@/lib/api-client';
 import { toast } from 'sonner';
 
-const INITIAL_COMMENTS = [
-  {
-    id: 'c1',
-    articleId: '1',
-    articleTitle: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-    articleSlug: 'designing-distributed-rate-limiter',
-    category: 'System Design',
-    content: 'Excellent breakdown of the sliding window counter algorithm. Have you evaluated Redis Cluster slot hashing implications when using Lua multi-key operations?',
-    status: 'APPROVED',
-    createdAt: '3 days ago',
-  },
-  {
-    id: 'c2',
-    articleId: '2',
-    articleTitle: 'Zero-Downtime PostgreSQL Schema Migrations at Scale',
-    articleSlug: 'zero-downtime-postgresql-migrations',
-    category: 'Databases',
-    content: 'Using lock_timeout is indeed critical before running ALTER TABLE. We encountered an incident last year where a blocked lock queued all incoming OLTP traffic.',
-    status: 'APPROVED',
-    createdAt: '1 week ago',
-  },
-];
+interface UserCommentItem {
+  id: string;
+  articleId: string;
+  articleTitle: string;
+  articleSlug: string;
+  category: string;
+  content: string;
+  status: string;
+  createdAt: string;
+}
 
 export default function CommentsPage() {
-  const [comments, setComments] = useState(INITIAL_COMMENTS);
+  const [comments, setComments] = useState<UserCommentItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+
+  const fetchComments = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await commentsApi.getUserComments();
+      if (Array.isArray(data)) {
+        setComments(
+          data.map((c: any) => ({
+            id: c.id,
+            articleId: c.articleId,
+            articleTitle: c.article?.title || 'Technical Article',
+            articleSlug: c.article?.slug || '#',
+            category: c.article?.category?.name || 'Architecture',
+            content: c.content,
+            status: c.status || 'APPROVED',
+            createdAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recently',
+          }))
+        );
+      }
+    } catch {
+      setComments([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
 
   const handleStartEdit = (id: string, text: string) => {
     setEditingId(id);
     setEditText(text);
   };
 
-  const handleSaveEdit = (id: string) => {
-    setComments((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, content: editText } : c)),
-    );
-    setEditingId(null);
-    toast.success('Comment updated successfully');
+  const handleSaveEdit = async (id: string) => {
+    try {
+      await commentsApi.update(id, editText);
+      setComments((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, content: editText } : c)),
+      );
+      setEditingId(null);
+      toast.success('Comment updated successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update comment');
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setComments((prev) => prev.filter((c) => c.id !== id));
-    toast.success('Comment deleted');
+  const handleDelete = async (id: string) => {
+    try {
+      await commentsApi.delete(id);
+      setComments((prev) => prev.filter((c) => c.id !== id));
+      toast.success('Comment deleted');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete comment');
+    }
   };
 
   return (
@@ -65,7 +94,12 @@ export default function CommentsPage() {
         </p>
       </div>
 
-      {comments.length > 0 ? (
+      {loading ? (
+        <div className="py-20 flex flex-col items-center justify-center space-y-3 text-muted-foreground">
+          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          <p className="text-xs font-mono">Loading discussions...</p>
+        </div>
+      ) : comments.length > 0 ? (
         <div className="space-y-4">
           {comments.map((item) => (
             <div

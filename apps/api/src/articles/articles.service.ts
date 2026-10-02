@@ -17,6 +17,150 @@ export class ArticlesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  async findAdminArticles(query: QueryArticleDto) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    if (query.status && (query.status as string) !== 'ALL') {
+      where.status = query.status;
+    }
+
+    if (query.search) {
+      where.OR = [
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { slug: { contains: query.search, mode: 'insensitive' } },
+        { excerpt: { contains: query.search, mode: 'insensitive' } },
+        { category: { name: { contains: query.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    if (query.categorySlug) {
+      where.category = { slug: query.categorySlug.toLowerCase() };
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.article.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          coverImage: true,
+          thumbnail: true,
+          difficulty: true,
+          type: true,
+          status: true,
+          featured: true,
+          readingTime: true,
+          viewsCount: true,
+          likesCount: true,
+          bookmarksCount: true,
+          commentsCount: true,
+          publishedAt: true,
+          createdAt: true,
+          isGuestPost: true,
+          guestAuthorName: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              image: true,
+            },
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+          technologies: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+            },
+          },
+        },
+      }),
+      this.prisma.article.count({ where }),
+    ]);
+
+    return {
+      items,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+    };
+  }
+
+  async findAdminArticleById(idOrSlug: string) {
+    let article = await this.prisma.article.findUnique({
+      where: { id: idOrSlug },
+      include: {
+        category: true,
+        tags: true,
+        technologies: true,
+        series: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+          },
+        },
+      },
+    }).catch(() => null);
+
+    if (!article) {
+      article = await this.prisma.article.findUnique({
+        where: { slug: idOrSlug.toLowerCase() },
+        include: {
+          category: true,
+          tags: true,
+          technologies: true,
+          series: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              avatar: true,
+            },
+          },
+        },
+      }).catch(() => null);
+    }
+
+    if (!article) {
+      throw new NotFoundException(`Article '${idOrSlug}' not found`);
+    }
+
+    return article;
+  }
+
   async findPublicFeed(query: QueryArticleDto) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(query.limit) || 10));
@@ -86,6 +230,8 @@ export class ArticlesService {
           commentsCount: true,
           publishedAt: true,
           createdAt: true,
+          isGuestPost: true,
+          guestAuthorName: true,
           author: {
             select: {
               id: true,
@@ -99,6 +245,7 @@ export class ArticlesService {
               id: true,
               name: true,
               slug: true,
+              image: true,
             },
           },
           tags: {
@@ -238,6 +385,7 @@ export class ArticlesService {
           select: {
             name: true,
             slug: true,
+            image: true,
           },
         },
       },
@@ -253,14 +401,28 @@ export class ArticlesService {
       throw new ConflictException('An article with this slug already exists');
     }
 
+    let categoryId = dto.categoryId;
+    if (!categoryId && (dto as any).categorySlug) {
+      const cat = await this.prisma.category.findUnique({
+        where: { slug: (dto as any).categorySlug.toLowerCase() },
+      }).catch(() => null);
+      if (cat) categoryId = cat.id;
+    }
+    if (!categoryId) {
+      const firstCat = await this.prisma.category.findFirst();
+      categoryId = firstCat?.id || '';
+    }
+
     const publishedAt =
       dto.status === ArticleStatus.PUBLISHED ? new Date() : undefined;
+
+    const excerpt = dto.excerpt || (dto.content ? dto.content.replace(/^[#\s\n*`_-]+/, '').slice(0, 160).trim() : 'Technical article.');
 
     return this.prisma.article.create({
       data: {
         title: dto.title,
         slug: dto.slug.toLowerCase(),
-        excerpt: dto.excerpt,
+        excerpt,
         content: dto.content,
         coverImage: dto.coverImage,
         thumbnail: dto.thumbnail,
@@ -271,11 +433,11 @@ export class ArticlesService {
         featured: dto.featured || false,
         readingTime: dto.readingTime || 5,
         authorId,
-        categoryId: dto.categoryId,
+        categoryId,
         tagIds: dto.tagIds || [],
         technologyIds: dto.technologyIds || [],
-        seriesId: dto.seriesId,
-        seriesOrder: dto.seriesOrder,
+        seriesId: dto.seriesId && dto.seriesId.trim().length === 24 ? dto.seriesId : null,
+        seriesOrder: dto.seriesId ? (dto.seriesOrder || 1) : null,
         prerequisites: dto.prerequisites || [],
         keyTakeaways: dto.keyTakeaways || [],
         references: dto.references || [],
@@ -315,9 +477,19 @@ export class ArticlesService {
       }
     }
 
+    let categoryId = dto.categoryId;
+    if (!categoryId && (dto as any).categorySlug) {
+      const cat = await this.prisma.category.findUnique({
+        where: { slug: (dto as any).categorySlug.toLowerCase() },
+      }).catch(() => null);
+      if (cat) categoryId = cat.id;
+    }
+
     let publishedAt = article.publishedAt;
     if (dto.status === ArticleStatus.PUBLISHED && !article.publishedAt) {
       publishedAt = new Date();
+    } else if (dto.status === ArticleStatus.DRAFT) {
+      publishedAt = null as any;
     }
 
     return this.prisma.article.update({
@@ -335,11 +507,16 @@ export class ArticlesService {
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.featured !== undefined && { featured: dto.featured }),
         ...(dto.readingTime !== undefined && { readingTime: dto.readingTime }),
-        ...(dto.categoryId && { categoryId: dto.categoryId }),
+        ...(categoryId && { categoryId }),
         ...(dto.tagIds !== undefined && { tagIds: dto.tagIds }),
         ...(dto.technologyIds !== undefined && { technologyIds: dto.technologyIds }),
-        ...(dto.seriesId !== undefined && { seriesId: dto.seriesId }),
-        ...(dto.seriesOrder !== undefined && { seriesOrder: dto.seriesOrder }),
+        ...(dto.seriesId !== undefined && {
+          seriesId: dto.seriesId && dto.seriesId.trim().length === 24 ? dto.seriesId : null,
+          seriesOrder: dto.seriesId ? (dto.seriesOrder || 1) : null,
+        }),
+        ...(dto.seriesOrder !== undefined && dto.seriesId === undefined && {
+          seriesOrder: dto.seriesOrder,
+        }),
         ...(dto.prerequisites !== undefined && { prerequisites: dto.prerequisites }),
         ...(dto.keyTakeaways !== undefined && { keyTakeaways: dto.keyTakeaways }),
         ...(dto.references !== undefined && { references: dto.references }),

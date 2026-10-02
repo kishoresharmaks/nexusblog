@@ -192,6 +192,19 @@ model Technology {
   @@map("technologies")
 }
 
+model ArticleTypeModel {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String   @unique
+  description String?
+  badgeColor  String?  @default("blue")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("article_types")
+}
+
 model Series {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   title       String
@@ -219,7 +232,7 @@ model Article {
 
   status      ArticleStatus   @default(DRAFT)
   difficulty  DifficultyLevel @default(INTERMEDIATE)
-  type        ArticleType     @default(SYSTEM_DESIGN)
+  type        String          @default("SYSTEM_DESIGN")
   featured    Boolean         @default(false)
   readingTime Int             @default(5)
 
@@ -247,6 +260,8 @@ model Article {
   seoDescription  String?
   canonicalUrl    String?
   noIndex         Boolean     @default(false)
+  isGuestPost     Boolean     @default(false)
+  guestAuthorName String?
 
   viewsCount      Int         @default(0)
   likesCount      Int         @default(0)
@@ -278,10 +293,14 @@ model GuestPost {
 
   status      GuestPostStatus @default(DRAFT)
   difficulty  DifficultyLevel @default(INTERMEDIATE)
-  type        ArticleType     @default(TUTORIAL)
+  type        String          @default("TUTORIAL")
 
-  authorId    String          @db.ObjectId
-  author      User            @relation(fields: [authorId], references: [id])
+  authorId    String?         @db.ObjectId
+  author      User?           @relation(fields: [authorId], references: [id])
+
+  guestName   String?
+  guestEmail  String?
+  editToken   String?
 
   authorBio   String?
   authorAvatar String?
@@ -307,6 +326,7 @@ model GuestPost {
   updatedAt DateTime @updatedAt
 
   @@index([authorId, status])
+  @@index([editToken])
   @@index([status, submittedAt])
   @@map("guest_posts")
 }
@@ -370,7 +390,7 @@ model Media {
   blurHash     String?
   variants     Json                @default("[]")
   url          String
-  createdBy    String              @db.ObjectId
+  createdBy    String?             @db.ObjectId
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 
@@ -402,4 +422,16 @@ model NewsletterSubscriber {
   unsubscribedAt DateTime?
 
   @@map("newsletter_subscribers")
+}
+
+model SystemSetting {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  key         String   @unique
+  value       String
+  isSecret    Boolean  @default(false)
+  description String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@map("system_settings")
 }

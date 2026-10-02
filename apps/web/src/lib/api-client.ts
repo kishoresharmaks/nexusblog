@@ -1,0 +1,677 @@
+import { siteConfig } from '@nexus/config';
+import { authClient } from './auth-client';
+
+const API_BASE = siteConfig.apiUrl;
+
+async function request<T>(
+  endpoint: string,
+  options: RequestInit = {},
+  requireAuth = false,
+): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  const token = authClient.getAccessToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const isServer = typeof window === 'undefined';
+  const url = `${API_BASE}${endpoint}`;
+
+  const fetchOptions: RequestInit = {
+    ...options,
+    headers,
+    credentials: 'include',
+  };
+
+  if (isServer && (!options.method || options.method === 'GET')) {
+    (fetchOptions as any).next = { revalidate: 60 };
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, fetchOptions);
+  } catch (err) {
+    if (!isServer && url.startsWith('http')) {
+      try {
+        res = await fetch(`/api${endpoint}`, fetchOptions);
+      } catch {
+        throw new Error(`Failed to connect to API server at ${url}. Please verify that the NestJS backend is running.`);
+      }
+    } else {
+      throw err;
+    }
+  }
+
+  let data: any;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(`Invalid JSON response from ${url} (status: ${res.status})`);
+  }
+
+  if (!res.ok || (data && data.success === false)) {
+    const details = data?.error?.details || data?.details;
+    let message = data?.error?.message || data?.message || `Request failed with status ${res.status}`;
+    if (Array.isArray(details) && details.length > 0) {
+      message = `${message}: ${details.join(', ')}`;
+    } else if (typeof details === 'string') {
+      message = `${message}: ${details}`;
+    }
+    const error = new Error(message);
+    (error as any).details = details;
+    (error as any).code = data?.error?.code || data?.code;
+    throw error;
+  }
+
+  // If response has meta (paginated response from TransformInterceptor)
+  if (data?.meta && data?.data !== undefined) {
+    const items = Array.isArray(data.data) ? data.data : [];
+    return {
+      items,
+      meta: data.meta,
+      total: data.meta?.total || items.length,
+    } as unknown as T;
+  }
+
+  return data?.data !== undefined ? data.data : data;
+}
+
+// Articles API
+export const articlesApi = {
+  async getPublicFeed(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    categorySlug?: string;
+    technologySlug?: string;
+    tagSlug?: string;
+    difficulty?: string;
+    type?: string;
+    filter?: 'featured' | 'popular';
+  } = {}) {
+    const query = new URLSearchParams();
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.search) query.set('search', params.search);
+    if (params.categorySlug) query.set('categorySlug', params.categorySlug);
+    if (params.technologySlug) query.set('technologySlug', params.technologySlug);
+    if (params.tagSlug) query.set('tagSlug', params.tagSlug);
+    if (params.difficulty) query.set('difficulty', params.difficulty);
+    if (params.type) query.set('type', params.type);
+    if (params.filter) query.set('filter', params.filter);
+
+    const queryString = query.toString();
+    const endpoint = queryString ? `/articles?${queryString}` : '/articles';
+    const res = await request<any>(endpoint);
+    const items = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
+    const meta = res?.meta || { total: items.length };
+    return { items, meta, total: meta.total || items.length };
+  },
+
+  async getAdminArticles(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    categorySlug?: string;
+  } = {}) {
+    const query = new URLSearchParams();
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.search) query.set('search', params.search);
+    if (params.status && params.status !== 'ALL') query.set('status', params.status);
+    if (params.categorySlug) query.set('categorySlug', params.categorySlug);
+
+    const queryString = query.toString();
+    const endpoint = queryString ? `/articles/admin/all?${queryString}` : '/articles/admin/all';
+    const res = await request<any>(endpoint, {}, true);
+    const items = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
+    const meta = res?.meta || { total: items.length };
+    return { items, meta, total: meta.total || items.length };
+  },
+
+  async getById(id: string) {
+    return request<any>(`/articles/admin/detail/${id}`, {}, true);
+  },
+
+  async getBySlug(slug: string) {
+    return request<any>(`/articles/${slug}`);
+  },
+
+  async create(payload: any) {
+    return request<any>('/articles', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+
+  async update(id: string, payload: any) {
+    return request<any>(`/articles/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+
+  async delete(id: string) {
+    return request<any>(`/articles/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+
+  async toggleBookmark(id: string) {
+    return request<{ bookmarked: boolean }>(`/articles/${id}/bookmark`, {
+      method: 'POST',
+    }, true);
+  },
+
+  async like(id: string) {
+    return request<{ likesCount: number }>(`/articles/${id}/like`, {
+      method: 'POST',
+    });
+  },
+};
+
+// Categories API
+export const categoriesApi = {
+  async getAll() {
+    return request<any[]>('/categories');
+  },
+  async getBySlug(slug: string) {
+    return request<any>(`/categories/${slug}`);
+  },
+  async create(payload: any) {
+    return request<any>('/categories', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async update(id: string, payload: any) {
+    return request<any>(`/categories/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async delete(id: string) {
+    return request<any>(`/categories/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// Technologies API
+export const technologiesApi = {
+  async getAll() {
+    return request<any[]>('/technologies');
+  },
+  async getBySlug(slug: string) {
+    return request<any>(`/technologies/${slug}`);
+  },
+  async create(payload: any) {
+    return request<any>('/technologies', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async update(id: string, payload: any) {
+    return request<any>(`/technologies/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async delete(id: string) {
+    return request<any>(`/technologies/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// Article Types API
+export const articleTypesApi = {
+  async getAll() {
+    return request<any[]>('/article-types');
+  },
+  async getBySlug(slug: string) {
+    return request<any>(`/article-types/${slug}`);
+  },
+  async create(payload: any) {
+    return request<any>('/article-types', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async update(id: string, payload: any) {
+    return request<any>(`/article-types/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async delete(id: string) {
+    return request<any>(`/article-types/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// Tags API
+export const tagsApi = {
+  async getAll() {
+    return request<any[]>('/tags');
+  },
+  async getBySlug(slug: string) {
+    return request<any>(`/tags/${slug}`);
+  },
+  async create(payload: any) {
+    return request<any>('/tags', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async update(id: string, payload: any) {
+    return request<any>(`/tags/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async delete(id: string) {
+    return request<any>(`/tags/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// Series API
+export const seriesApi = {
+  async getAll(all?: boolean) {
+    const endpoint = all ? '/series?all=true' : '/series';
+    return request<any[]>(endpoint);
+  },
+  async getBySlug(slug: string) {
+    return request<any>(`/series/${slug}`);
+  },
+  async create(payload: any) {
+    return request<any>('/series', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async update(id: string, payload: any) {
+    return request<any>(`/series/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async delete(id: string) {
+    return request<any>(`/series/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// Guest Posts API
+export const guestPostsApi = {
+  async getModerationQueue(params: { status?: string } = {}) {
+    const query = new URLSearchParams();
+    if (params.status && params.status !== 'ALL') query.set('status', params.status);
+    const queryString = query.toString();
+    const endpoint = queryString ? `/guest-posts/admin/queue?${queryString}` : '/guest-posts/admin/queue';
+    return request<any[]>(endpoint, {}, true);
+  },
+  async moderateSubmission(id: string, action: 'APPROVE' | 'REQUEST_CHANGES' | 'REJECT', feedback?: string) {
+    return request<any>(`/guest-posts/admin/${id}/moderate`, {
+      method: 'PATCH',
+      body: JSON.stringify({ action, feedback }),
+    }, true);
+  },
+  async getUserSubmissions(params: { status?: string } = {}) {
+    const query = new URLSearchParams();
+    if (params.status && params.status !== 'ALL') query.set('status', params.status);
+    const queryString = query.toString();
+    const endpoint = queryString ? `/guest-posts/me?${queryString}` : '/guest-posts/me';
+    return request<any[]>(endpoint, {}, true);
+  },
+  async getById(id: string, token?: string) {
+    const endpoint = token
+      ? `/guest-posts/${id}?token=${encodeURIComponent(token)}`
+      : `/guest-posts/${id}`;
+    return request<any>(endpoint, {});
+  },
+  async submit(payload: any) {
+    return request<any>('/guest-posts', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  async update(id: string, payload: any, token?: string) {
+    const endpoint = token
+      ? `/guest-posts/${id}?token=${encodeURIComponent(token)}`
+      : `/guest-posts/${id}`;
+    return request<any>(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify({ ...payload, ...(token ? { editToken: token } : {}) }),
+    });
+  },
+  async delete(id: string, token?: string) {
+    const endpoint = token
+      ? `/guest-posts/${id}?token=${encodeURIComponent(token)}`
+      : `/guest-posts/${id}`;
+    return request<any>(endpoint, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Comments API
+export const commentsApi = {
+  async getForArticle(articleId: string) {
+    return request<any[]>(`/comments/article/${articleId}`);
+  },
+  async getAdminComments(params: { status?: string; search?: string } = {}) {
+    const query = new URLSearchParams();
+    if (params.status && params.status !== 'ALL') query.set('status', params.status);
+    if (params.search) query.set('search', params.search);
+    const queryString = query.toString();
+    const endpoint = queryString ? `/comments/admin/all?${queryString}` : '/comments/admin/all';
+    return request<any[]>(endpoint, {}, true);
+  },
+  async updateStatus(id: string, status: string) {
+    return request<any>(`/comments/admin/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }, true);
+  },
+  async getUserComments() {
+    return request<any[]>('/comments/me', {}, true);
+  },
+  async create(articleId: string, content: string, parentId?: string) {
+    return request<any>('/comments', {
+      method: 'POST',
+      body: JSON.stringify({ articleId, content, parentId }),
+    }, true);
+  },
+  async update(id: string, content: string) {
+    return request<any>(`/comments/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ content }),
+    }, true);
+  },
+  async delete(id: string) {
+    return request<any>(`/comments/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// Media API
+export const mediaApi = {
+  async getAll(params: { search?: string; limit?: number; page?: number } = {}) {
+    const query = new URLSearchParams();
+    if (params.search) query.set('search', params.search);
+    if (params.limit) query.set('limit', params.limit.toString());
+    if (params.page) query.set('page', params.page.toString());
+    const queryString = query.toString();
+    const endpoint = queryString ? `/media?${queryString}` : '/media';
+    return request<{ items: any[]; total: number; page: number; totalPages: number }>(endpoint, {}, true);
+  },
+  async upload(file: File, alt?: string, caption?: string) {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (alt) formData.append('alt', alt);
+    if (caption) formData.append('caption', caption);
+
+    const token = authClient.getAccessToken();
+    const res = await fetch(`${API_BASE}/media/upload`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      credentials: 'include',
+      body: formData,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.message || 'Failed to upload media');
+    }
+    return data?.data !== undefined ? data.data : data;
+  },
+  async delete(id: string) {
+    return request<any>(`/media/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// Newsletter API
+export const newsletterApi = {
+  async subscribe(email: string) {
+    return request<{ message: string }>('/newsletter/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+  async unsubscribe(email: string) {
+    return request<{ message: string }>('/newsletter/unsubscribe', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+  async getSubscribers(limit = 100, skip = 0) {
+    return request<any>(`/newsletter/subscribers?limit=${limit}&skip=${skip}`, {}, true);
+  },
+  async getStats() {
+    return request<{
+      total: number;
+      active: number;
+      inactive: number;
+      estimatedOpenRate: number;
+      estimatedCtr: number;
+    }>('/newsletter/stats', {}, true);
+  },
+  async broadcast(payload: { subject: string; content: string; previewText?: string; testEmail?: string }) {
+    return request<any>('/newsletter/broadcast', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async deleteSubscriber(id: string) {
+    return request<any>(`/newsletter/subscribers/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// System & Developer Configuration API
+export const systemSettingsApi = {
+  async getPublicSettings() {
+    return request<{
+      maintenanceMode: boolean;
+      siteName: string;
+      siteUrl: string;
+    }>('/system-settings/public');
+  },
+  async getAll() {
+    return request<Record<string, { value: string; isSecret: boolean; isSet: boolean; description?: string }>>(
+      '/system-settings/admin/all',
+      {},
+      true,
+    );
+  },
+  async updateBatch(updates: Record<string, any>) {
+    return request<{ success: boolean; message: string }>('/system-settings/admin/batch', {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    }, true);
+  },
+  async verifyBrevo(apiKey?: string) {
+    return request<{
+      valid: boolean;
+      email?: string;
+      companyName?: string;
+      plan?: any;
+      credits?: any;
+      message: string;
+    }>('/system-settings/admin/verify-brevo', {
+      method: 'POST',
+      body: JSON.stringify({ apiKey }),
+    }, true);
+  },
+  async testMail(recipientEmail: string) {
+    return request<{ success: boolean; messageId?: string; error?: string }>('/system-settings/admin/test-mail', {
+      method: 'POST',
+      body: JSON.stringify({ recipientEmail }),
+    }, true);
+  },
+  async getDiagnostics() {
+    return request<{
+      database: {
+        engine: string;
+        status: string;
+        latencyMs: number;
+        articlesCount: number;
+        subscribersCount: number;
+        seriesCount: number;
+      };
+      emailService: {
+        provider: string;
+        senderEmail: string;
+        senderName: string;
+        isApiKeySet: boolean;
+      };
+      runtime: {
+        nodeVersion: string;
+        environment: string;
+        uptimeSeconds: number;
+        memoryUsageMb: number;
+      };
+    }>('/system-settings/admin/diagnostics', {}, true);
+  },
+  async resetDefaults() {
+    return request<{ success: boolean; message: string }>('/system-settings/admin/reset-defaults', {
+      method: 'POST',
+    }, true);
+  },
+};
+
+// Bookmarks API
+export const bookmarksApi = {
+  async getUserBookmarks() {
+    return request<any[]>('/bookmarks', {}, true);
+  },
+  async isBookmarked(articleId: string) {
+    return request<{ isBookmarked: boolean }>(`/bookmarks/check/${articleId}`, {}, true);
+  },
+  async toggleBookmark(articleId: string) {
+    return request<{ isBookmarked: boolean }>(`/bookmarks/${articleId}`, {
+      method: 'POST',
+    }, true);
+  },
+  async removeBookmark(articleId: string) {
+    return request<any>(`/bookmarks/${articleId}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// Reading History API
+export const readingHistoryApi = {
+  async getUserHistory() {
+    return request<any[]>('/reading-history', {}, true);
+  },
+  async getArticleProgress(articleId: string) {
+    return request<{ completionPercentage: number; lastPosition: number }>(`/reading-history/${articleId}`, {}, true);
+  },
+  async updateProgress(payload: { articleId: string; completionPercentage: number; lastPosition?: number }) {
+    return request<any>('/reading-history', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async removeFromHistory(articleId: string) {
+    return request<any>(`/reading-history/${articleId}`, {
+      method: 'DELETE',
+    }, true);
+  },
+  async clearHistory() {
+    return request<any>('/reading-history', {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+// Audit Logs API
+export const auditLogsApi = {
+  async getAll(limit = 50, skip = 0) {
+    return request<any[]>(`/audit-logs?limit=${limit}&skip=${skip}`, {}, true);
+  },
+};
+
+// Users API
+export const usersApi = {
+  async getProfile() {
+    return request<any>('/users/me', {}, true);
+  },
+  async getPublicAuthor(username: string) {
+    return request<any>(`/users/author/${username}`);
+  },
+  async updateProfile(payload: any) {
+    return request<any>('/users/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async changePassword(payload: { currentPassword: string; newPassword: string }) {
+    return request<any>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async getActiveSessions() {
+    return request<any[]>('/users/sessions', {}, true);
+  },
+  async revokeSession(sessionId: string) {
+    return request<any>(`/users/sessions/${sessionId}`, {
+      method: 'DELETE',
+    }, true);
+  },
+  async revokeAllOtherSessions() {
+    return request<any>('/users/sessions', {
+      method: 'DELETE',
+    }, true);
+  },
+  async getAdminUsers(params: { search?: string; role?: string; limit?: number; offset?: number } = {}) {
+    const query = new URLSearchParams();
+    if (params.search) query.set('search', params.search);
+    if (params.role && params.role !== 'ALL') query.set('role', params.role);
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.offset) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return request<{ items: any[]; total: number; limit: number; offset: number }>(
+      qs ? `/users/admin/list?${qs}` : '/users/admin/list',
+      {},
+      true,
+    );
+  },
+  async updateUserRole(id: string, role: string) {
+    return request<any>(`/users/admin/${id}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }, true);
+  },
+  async updateUserStatus(id: string, status: string) {
+    return request<any>(`/users/admin/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }, true);
+  },
+  async deleteUser(id: string) {
+    return request<any>(`/users/admin/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   FileText,
@@ -9,12 +9,12 @@ import {
   ExternalLink,
   MessageCircle,
   AlertCircle,
-  CheckCircle2,
   Clock,
   Trash2,
-  RotateCw,
   X,
+  Loader2,
 } from 'lucide-react';
+import { guestPostsApi } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 type StatusType =
@@ -40,60 +40,46 @@ interface Submission {
   reviewerName?: string;
 }
 
-const INITIAL_SUBMISSIONS: Submission[] = [
-  {
-    id: 'gp1',
-    title: 'Designing Multi-Region Active-Active Postgres with CockroachDB & Raft',
-    slug: 'multi-region-active-active-postgres',
-    category: 'Databases',
-    difficulty: 'EXPERT',
-    status: 'CHANGES_REQUESTED',
-    updatedAt: 'Yesterday, 18:20',
-    submittedAt: '3 days ago',
-    reviewerName: 'Staff Editor Alex',
-    editorialFeedback:
-      'Great architectural depth! Could you please expand section 3 with a concrete Mermaid sequence diagram showing what happens during a network partition split-brain scenario? Also check the benchmark reproduction steps.',
-  },
-  {
-    id: 'gp2',
-    title: 'Building a High-Performance Redis-Backed Priority Queue with Zero-Loss Semantics',
-    slug: 'redis-backed-priority-queue',
-    category: 'System Design',
-    difficulty: 'ADVANCED',
-    status: 'UNDER_REVIEW',
-    updatedAt: '2 days ago',
-    submittedAt: '2 days ago',
-  },
-  {
-    id: 'gp3',
-    title: 'Sub-Millisecond gRPC Transcoding with Envoy and Rust',
-    slug: 'sub-millisecond-grpc-transcoding',
-    category: 'Backend Architecture',
-    difficulty: 'ADVANCED',
-    status: 'PUBLISHED',
-    updatedAt: '1 week ago',
-    submittedAt: '2 weeks ago',
-  },
-  {
-    id: 'gp4',
-    title: 'Deep Dive into Linux eBPF for Container Network Observability',
-    slug: 'linux-ebpf-container-observability',
-    category: 'DevOps & Cloud',
-    difficulty: 'EXPERT',
-    status: 'DRAFT',
-    updatedAt: '4 hours ago',
-  },
-];
-
 export default function GuestPostsTrackerPage() {
-  const [submissions, setSubmissions] = useState<Submission[]>(INITIAL_SUBMISSIONS);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<StatusType>('ALL');
   const [feedbackModal, setFeedbackModal] = useState<Submission | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<Submission | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const filtered = submissions.filter((sub) => {
-    if (selectedStatus === 'ALL') return true;
-    return sub.status === selectedStatus;
-  });
+  const fetchSubmissions = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await guestPostsApi.getUserSubmissions({
+        status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
+      });
+      if (Array.isArray(data)) {
+        setSubmissions(
+          data.map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            slug: item.slug,
+            category: (typeof item.category === 'object' && item.category !== null ? item.category.name : typeof item.category === 'string' ? item.category : 'System Design') || 'System Design',
+            difficulty: item.difficulty || 'INTERMEDIATE',
+            status: item.status,
+            updatedAt: item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'Recently',
+            submittedAt: item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : undefined,
+            editorialFeedback: item.editorialFeedback,
+            reviewerName: item.reviewer?.name || 'Staff Editor',
+          }))
+        );
+      }
+    } catch {
+      setSubmissions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedStatus]);
+
+  useEffect(() => {
+    fetchSubmissions();
+  }, [fetchSubmissions]);
 
   const getStatusBadge = (status: Submission['status']) => {
     switch (status) {
@@ -114,9 +100,19 @@ export default function GuestPostsTrackerPage() {
     }
   };
 
-  const handleDelete = (id: string) => {
-    setSubmissions((prev) => prev.filter((s) => s.id !== id));
-    toast.success('Draft deleted');
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      await guestPostsApi.delete(itemToDelete.id);
+      setSubmissions((prev) => prev.filter((s) => s.id !== itemToDelete.id));
+      toast.success('Draft deleted successfully');
+      setItemToDelete(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete draft');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -168,12 +164,23 @@ export default function GuestPostsTrackerPage() {
       </div>
 
       {/* Submissions List */}
-      {filtered.length > 0 ? (
+      {loading ? (
+        <div className="py-20 flex flex-col items-center justify-center space-y-3 text-muted-foreground">
+          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          <p className="text-xs font-mono">Loading submissions...</p>
+        </div>
+      ) : submissions.length > 0 ? (
         <div className="space-y-4">
-          {filtered.map((item) => (
+          {submissions.map((item) => (
             <div
               key={item.id}
-              className="group rounded-xl border border-border/70 bg-card p-5 hover:border-border hover:shadow-xs transition-all space-y-3"
+              className={`rounded-xl border p-5 transition-all space-y-4 shadow-xs ${
+                item.status === 'CHANGES_REQUESTED'
+                  ? 'border-rose-500/40 bg-rose-500/[0.03]'
+                  : item.status === 'PUBLISHED'
+                  ? 'border-emerald-500/30 bg-emerald-500/[0.02]'
+                  : 'border-border/70 bg-card hover:border-border'
+              }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3">
                 <div className="flex items-center gap-2 text-xs">
@@ -203,25 +210,25 @@ export default function GuestPostsTrackerPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-center">
-                  {/* Feedback button if changes requested or has notes */}
-                  {item.editorialFeedback && (
-                    <button
-                      onClick={() => setFeedbackModal(item)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-400 text-xs font-mono font-semibold hover:bg-rose-500/20 transition-all"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      <span>View Editorial Feedback</span>
-                    </button>
-                  )}
-
-                  {/* Edit / Revise */}
-                  {item.status !== 'PUBLISHED' && (
+                  {/* Revise Button for CHANGES_REQUESTED */}
+                  {item.status === 'CHANGES_REQUESTED' && (
                     <Link
                       href={`/guest-post/submit?edit=${item.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border bg-muted/40 hover:bg-muted text-foreground text-xs font-mono font-medium transition-all"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-mono font-bold hover:opacity-90 transition-all shadow-xs"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      <span>Revise & Resubmit</span>
+                    </Link>
+                  )}
+
+                  {/* Edit Draft */}
+                  {item.status === 'DRAFT' && (
+                    <Link
+                      href={`/guest-post/submit?edit=${item.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-muted/40 hover:bg-muted text-foreground text-xs font-mono font-medium transition-all"
                     >
                       <Edit className="h-3 w-3" />
-                      <span>{item.status === 'CHANGES_REQUESTED' ? 'Revise Draft' : 'Edit Draft'}</span>
+                      <span>Edit Draft</span>
                     </Link>
                   )}
 
@@ -229,17 +236,17 @@ export default function GuestPostsTrackerPage() {
                   {item.status === 'PUBLISHED' && (
                     <Link
                       href={`/articles/${item.slug}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-mono font-semibold hover:opacity-90 transition-all"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-mono font-semibold hover:bg-emerald-500 transition-all shadow-xs"
                     >
-                      <span>View Article</span>
-                      <ExternalLink className="h-3 w-3" />
+                      <span>View Live Article</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
                     </Link>
                   )}
 
                   {/* Delete draft */}
                   {item.status === 'DRAFT' && (
                     <button
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => setItemToDelete(item)}
                       className="p-1.5 rounded-lg border border-border/60 hover:bg-rose-500/10 hover:border-rose-500/30 text-muted-foreground hover:text-rose-500 transition-colors"
                       title="Delete draft"
                     >
@@ -248,6 +255,41 @@ export default function GuestPostsTrackerPage() {
                   )}
                 </div>
               </div>
+
+              {/* Inline Editorial Feedback Highlight Card for CHANGES_REQUESTED */}
+              {item.status === 'CHANGES_REQUESTED' && item.editorialFeedback && (
+                <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 space-y-2.5 mt-2">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="font-bold text-rose-400 flex items-center gap-1.5">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                      <span>Editorial Feedback & Revision Guidance:</span>
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      From: <strong className="text-foreground">{item.reviewerName || 'Editorial Team'}</strong>
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground/90 leading-relaxed font-sans whitespace-pre-wrap pl-5 border-l-2 border-rose-500/40">
+                    {item.editorialFeedback}
+                  </p>
+                  <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-muted-foreground">
+                    <span>Click &quot;Revise & Resubmit&quot; above to make the requested edits in the live editor.</span>
+                    <Link
+                      href={`/guest-post/submit?edit=${item.id}`}
+                      className="text-primary hover:underline font-semibold"
+                    >
+                      Open in Editor &rarr;
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* In Review Notice */}
+              {(item.status === 'SUBMITTED' || item.status === 'UNDER_REVIEW') && (
+                <div className="rounded-lg bg-muted/40 border border-border/40 px-3.5 py-2 text-xs font-mono text-muted-foreground flex items-center gap-2">
+                  <Clock className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                  <span>Your article is in the staff moderation queue. Editors typically review within 24-48 hours.</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -270,52 +312,102 @@ export default function GuestPostsTrackerPage() {
 
       {/* Editorial Feedback Modal */}
       {feedbackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-border/40 pb-3">
-              <div className="flex items-center gap-2 text-rose-400">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setFeedbackModal(null);
+          }}
+        >
+          <div className="relative w-full max-w-lg rounded-2xl border border-border bg-card text-card-foreground p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2 text-rose-500">
                 <AlertCircle className="h-5 w-5" />
-                <h3 className="font-bold text-sm text-foreground font-mono">Editorial Review Notes</h3>
+                <h3 className="font-bold text-base text-foreground font-mono">Editorial Review Notes</h3>
               </div>
               <button
                 onClick={() => setFeedbackModal(null)}
-                className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div>
                 <p className="text-xs text-muted-foreground font-mono">Article:</p>
-                <p className="text-sm font-bold text-foreground">{feedbackModal.title}</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{feedbackModal.title}</p>
               </div>
 
-              <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 space-y-2">
+              <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 space-y-2.5">
                 <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground">
                   <span className="font-semibold text-foreground">{feedbackModal.reviewerName || 'Editorial Team'}</span>
                   <span>{feedbackModal.updatedAt}</span>
                 </div>
-                <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans">
                   {feedbackModal.editorialFeedback}
                 </p>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-border/60">
               <button
                 onClick={() => setFeedbackModal(null)}
-                className="px-4 py-2 rounded-lg border border-border text-xs font-mono text-muted-foreground hover:text-foreground"
+                className="px-4 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
               >
                 Close
               </button>
               <Link
                 href={`/guest-post/submit?edit=${feedbackModal.id}`}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-mono font-semibold hover:opacity-90"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-mono font-semibold hover:opacity-90 transition-opacity shadow-sm"
               >
                 <Edit className="h-3.5 w-3.5" />
                 <span>Revise Draft Now</span>
               </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {itemToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting) setItemToDelete(null);
+          }}
+        >
+          <div className="relative w-full max-w-md rounded-2xl border border-border bg-card text-card-foreground p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-rose-500">
+              <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-foreground">Delete Draft Submission?</h3>
+                <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-foreground leading-relaxed bg-background p-3 rounded-xl border border-border font-mono shadow-xs">
+              &quot;{itemToDelete.title}&quot;
+            </p>
+
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-border/60">
+              <button
+                type="button"
+                onClick={() => setItemToDelete(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted text-xs font-mono text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-mono font-semibold transition-colors shadow-sm disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+              </button>
             </div>
           </div>
         </div>

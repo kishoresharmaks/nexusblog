@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArticleCard } from '@/components/public/article-card';
 import { Cpu, ExternalLink, ArrowLeft, BookOpen } from 'lucide-react';
+import { technologiesApi, articlesApi } from '@/lib/api-client';
 
 interface TechnologyPageProps {
   params: Promise<{ slug: string }>;
@@ -33,33 +34,23 @@ export default async function TechnologyDetailPage({ params }: TechnologyPagePro
 
   const docsUrl = TECH_DOCS[decodedSlug] || `https://google.com/search?q=${encodeURIComponent(formattedTitle + ' official documentation')}`;
 
-  const sampleArticles = [
-    {
-      id: '1',
-      title: `Scaling ${formattedTitle} in High-Throughput Production Environments`,
-      slug: `scaling-${decodedSlug}-in-production`,
-      excerpt: `Architectural best practices, connection pooling, memory optimization, and benchmarked failover strategies for ${formattedTitle} at scale.`,
-      difficulty: 'ADVANCED' as const,
-      type: 'DEEP_DIVE' as const,
-      featured: true,
-      readingTime: 14,
-      viewsCount: 18200,
-      publishedAt: new Date(),
-      author: {
-        id: 'a1',
-        name: 'Alex Rivera',
-        username: 'alexdev',
-      },
-      category: {
-        id: 'c1',
-        name: 'Backend Architecture',
-        slug: 'backend',
-      },
-      technologies: [
-        { id: 't1', name: formattedTitle, slug: decodedSlug },
-      ],
-    },
-  ];
+  let technology: any = null;
+  let articles: any[] = [];
+
+  try {
+    const [techData, articlesData] = await Promise.all([
+      technologiesApi.getBySlug(decodedSlug).catch(() => null),
+      articlesApi.getPublicFeed({ technologySlug: decodedSlug, limit: 20 }),
+    ]);
+
+    technology = techData;
+    articles = articlesData?.items || [];
+  } catch (err) {
+    console.error(`Failed to fetch technology data for ${decodedSlug}:`, err);
+  }
+
+  const techName = technology?.name || formattedTitle;
+  const techDescription = technology?.description || `Curated architectural deep-dives, production performance benchmarks, and implementation guides for ${techName}.`;
 
   return (
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-10 font-sans">
@@ -78,10 +69,10 @@ export default async function TechnologyDetailPage({ params }: TechnologyPagePro
               <span>Technology Stack</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground font-mono">
-              {formattedTitle}
+              {techName}
             </h1>
             <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-              Curated architectural deep-dives, production performance benchmarks, and implementation guides.
+              {techDescription}
             </p>
           </div>
 
@@ -101,18 +92,35 @@ export default async function TechnologyDetailPage({ params }: TechnologyPagePro
       </div>
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
-            Articles & Case Studies ({sampleArticles.length})
+        <div className="flex items-center justify-between border-b border-border/40 pb-3">
+          <h2 className="text-sm font-bold font-mono text-foreground uppercase tracking-wider">
+            Articles & Case Studies ({articles.length})
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {sampleArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+        {articles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {articles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        ) : (
+          <div className="py-16 text-center space-y-3 rounded-2xl border border-dashed border-border bg-card/40">
+            <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
+            <p className="text-sm font-semibold text-foreground">No articles tagged with {techName} yet</p>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Our engineering team is preparing new implementation guides. Check back soon!
+            </p>
+            <Link
+              href="/articles"
+              className="inline-flex items-center gap-1 text-xs font-mono text-primary font-semibold hover:underline pt-2"
+            >
+              Browse all articles →
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+

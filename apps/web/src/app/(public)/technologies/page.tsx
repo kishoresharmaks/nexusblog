@@ -1,9 +1,35 @@
 import React from 'react';
 import Link from 'next/link';
 import { siteConfig } from '@nexus/config';
-import { Cpu, Database, ChevronRight, ExternalLink } from 'lucide-react';
+import { technologiesApi } from '@/lib/api-client';
+import { Cpu, ChevronRight } from 'lucide-react';
+import { IconRenderer } from '@/components/common/icon-renderer';
 
-export default function TechnologiesPage() {
+export const revalidate = 60;
+
+export default async function TechnologiesPage() {
+  let technologies: any[] = [];
+  try {
+    const res = await technologiesApi.getAll();
+    if (Array.isArray(res) && res.length > 0) {
+      technologies = res;
+    }
+  } catch {
+    technologies = siteConfig.technologies.map((tech) => ({
+      name: tech,
+      slug: tech.toLowerCase(),
+      description: `Production patterns, scaling recipes, and performance benchmarks for ${tech}.`,
+    }));
+  }
+
+  if (technologies.length === 0) {
+    technologies = siteConfig.technologies.map((tech) => ({
+      name: tech,
+      slug: tech.toLowerCase(),
+      description: `Production patterns, scaling recipes, and performance benchmarks for ${tech}.`,
+    }));
+  }
+
   return (
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-8 font-sans">
       <div className="space-y-3">
@@ -20,36 +46,33 @@ export default function TechnologiesPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {siteConfig.technologies.map((tech) => {
-          const slug = tech.toLowerCase();
-          return (
-            <Link
-              key={tech}
-              href={`/technologies/${slug}`}
-              className="group rounded-xl border border-border/70 bg-card/60 p-6 hover:border-border hover:shadow-md hover:bg-card transition-all space-y-4 flex flex-col justify-between"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-mono font-bold text-sm">
-                    <Database className="h-5 w-5" />
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+        {technologies.map((tech: any) => (
+          <Link
+            key={tech.slug}
+            href={`/articles?technology=${tech.slug}`}
+            className="group rounded-2xl border border-border/80 bg-card p-6 hover:border-foreground/30 hover:shadow-lg hover:bg-card transition-all space-y-4 flex flex-col justify-between"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center p-2 text-primary font-mono font-bold text-sm group-hover:scale-105 transition-transform shrink-0">
+                  <IconRenderer value={tech.logo} defaultIcon="Cpu" className="h-6 w-6 text-primary" />
                 </div>
-                <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors font-mono">
-                  {tech}
-                </h2>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Production patterns, scaling recipes, and performance benchmarks for {tech}.
-                </p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
               </div>
+              <h2 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors font-mono">
+                {tech.name}
+              </h2>
+              <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                {tech.description || `Production patterns, scaling recipes, and performance benchmarks for ${tech.name}.`}
+              </p>
+            </div>
 
-              <div className="pt-2 text-xs font-mono text-primary font-medium flex items-center gap-1">
-                <span>View {tech} guides</span>
-                <span>→</span>
-              </div>
-            </Link>
-          );
-        })}
+            <div className="pt-2 text-xs font-mono text-primary font-medium flex items-center justify-between border-t border-border/30">
+              <span>View {tech.name} guides</span>
+              <span>→</span>
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );

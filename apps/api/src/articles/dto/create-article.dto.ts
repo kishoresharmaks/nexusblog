@@ -22,10 +22,10 @@ export class CreateArticleDto {
   @IsNotEmpty()
   slug!: string;
 
-  @ApiProperty({ example: 'A production deep-dive into token bucket algorithms, Redis sliding window counters, and sub-millisecond API rate limiting.' })
+  @ApiPropertyOptional({ example: 'A production deep-dive into token bucket algorithms, Redis sliding window counters, and sub-millisecond API rate limiting.' })
   @IsString()
-  @IsNotEmpty()
-  excerpt!: string;
+  @IsOptional()
+  excerpt?: string;
 
   @ApiProperty({ example: '# Distributed Rate Limiting\n\nHigh-throughput APIs require reliable protection...' })
   @IsString()
@@ -57,10 +57,10 @@ export class CreateArticleDto {
   @IsOptional()
   difficulty?: DifficultyLevel;
 
-  @ApiPropertyOptional({ enum: ArticleType, default: ArticleType.SYSTEM_DESIGN })
-  @IsEnum(ArticleType)
+  @ApiPropertyOptional({ example: 'SYSTEM_DESIGN' })
+  @IsString()
   @IsOptional()
-  type?: ArticleType;
+  type?: string;
 
   @ApiPropertyOptional({ example: true })
   @IsBoolean()
@@ -73,10 +73,15 @@ export class CreateArticleDto {
   @IsOptional()
   readingTime?: number;
 
-  @ApiProperty({ example: '674e1234abcd5678ef901234' })
+  @ApiPropertyOptional({ example: '674e1234abcd5678ef901234' })
   @IsString()
-  @IsNotEmpty()
-  categoryId!: string;
+  @IsOptional()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ example: 'system-design' })
+  @IsString()
+  @IsOptional()
+  categorySlug?: string;
 
   @ApiPropertyOptional({ example: ['674e1234abcd5678ef901235'] })
   @IsArray()

@@ -22,11 +22,11 @@ export class CreateGuestPostDto {
   @IsString()
   slug?: string;
 
-  @ApiProperty({ example: 'A deep dive into sub-millisecond sliding window rate limiting.' })
+  @ApiPropertyOptional({ example: 'A deep dive into sub-millisecond sliding window rate limiting.' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(500)
-  excerpt!: string;
+  excerpt?: string;
 
   @ApiProperty({ description: 'MDX article body with code blocks and diagrams' })
   @IsString()
@@ -38,10 +38,10 @@ export class CreateGuestPostDto {
   @IsString()
   coverImage?: string;
 
-  @ApiProperty({ description: 'MongoDB ObjectId of Category' })
+  @ApiPropertyOptional({ description: 'MongoDB ObjectId or Slug of Category' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  categoryId!: string;
+  categoryId?: string;
 
   @ApiPropertyOptional({ type: [String], description: 'MongoDB ObjectIds of Tags' })
   @IsOptional()
@@ -60,10 +60,10 @@ export class CreateGuestPostDto {
   @IsEnum(DifficultyLevel)
   difficulty?: DifficultyLevel;
 
-  @ApiPropertyOptional({ enum: ArticleType, default: ArticleType.TUTORIAL })
+  @ApiPropertyOptional({ example: 'TUTORIAL' })
   @IsOptional()
-  @IsEnum(ArticleType)
-  type?: ArticleType;
+  @IsString()
+  type?: string;
 
   @ApiPropertyOptional({ example: 'Distributed systems engineer at HighScale Inc.' })
   @IsOptional()
@@ -95,8 +95,28 @@ export class CreateGuestPostDto {
   @IsString()
   seoDescription?: string;
 
+  @ApiPropertyOptional({ example: 'Alex Developer' })
+  @IsOptional()
+  @IsString()
+  guestName?: string;
+
+  @ApiPropertyOptional({ example: 'alex@example.com' })
+  @IsOptional()
+  @IsString()
+  guestEmail?: string;
+
   @ApiPropertyOptional({ default: false, description: 'True to submit for editorial review immediately' })
   @IsOptional()
   @IsBoolean()
   submitForReview?: boolean;
+
+  @ApiPropertyOptional({ description: 'Resubmit for review if revisions were requested' })
+  @IsOptional()
+  @IsBoolean()
+  resubmit?: boolean;
+
+  @ApiPropertyOptional({ description: 'Secret edit token for anonymous guest posts' })
+  @IsOptional()
+  @IsString()
+  editToken?: string;
 }

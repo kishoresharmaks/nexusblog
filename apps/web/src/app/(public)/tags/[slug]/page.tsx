@@ -2,7 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArticleCard } from '@/components/public/article-card';
-import { Hash, ArrowLeft } from 'lucide-react';
+import { Hash, ArrowLeft, BookOpen } from 'lucide-react';
+import { tagsApi, articlesApi } from '@/lib/api-client';
 
 interface TagPageProps {
   params: Promise<{ slug: string }>;
@@ -16,33 +17,22 @@ export default async function TagDetailPage({ params }: TagPageProps) {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
-  const sampleArticles = [
-    {
-      id: '1',
-      title: `Production Patterns & Practices for ${formattedTag}`,
-      slug: `production-patterns-${decodedSlug}`,
-      excerpt: `An engineering guide covering architecture, resilience, monitoring, and debugging ${formattedTag} in cloud deployments.`,
-      difficulty: 'INTERMEDIATE' as const,
-      type: 'TUTORIAL' as const,
-      featured: false,
-      readingTime: 11,
-      viewsCount: 9400,
-      publishedAt: new Date(),
-      author: {
-        id: 'a1',
-        name: 'Alex Rivera',
-        username: 'alexdev',
-      },
-      category: {
-        id: 'c1',
-        name: 'System Design',
-        slug: 'system-design',
-      },
-      tags: [
-        { id: 'tg1', name: formattedTag, slug: decodedSlug },
-      ],
-    },
-  ];
+  let tag: any = null;
+  let articles: any[] = [];
+
+  try {
+    const [tagData, articlesData] = await Promise.all([
+      tagsApi.getBySlug(decodedSlug).catch(() => null),
+      articlesApi.getPublicFeed({ tagSlug: decodedSlug, limit: 20 }).catch(() => articlesApi.getPublicFeed({ search: decodedSlug, limit: 20 })),
+    ]);
+
+    tag = tagData;
+    articles = articlesData?.items || [];
+  } catch (err) {
+    console.error(`Failed to fetch tag data for ${decodedSlug}:`, err);
+  }
+
+  const tagName = tag?.name || formattedTag;
 
   return (
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-10 font-sans">
@@ -63,24 +53,41 @@ export default async function TagDetailPage({ params }: TagPageProps) {
             #{decodedSlug}
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-            Articles and engineering guides tagged with #{decodedSlug}.
+            Articles and engineering guides tagged with #{tagName}.
           </p>
         </div>
       </div>
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
-            Articles ({sampleArticles.length})
+        <div className="flex items-center justify-between border-b border-border/40 pb-3">
+          <h2 className="text-sm font-bold font-mono text-foreground uppercase tracking-wider">
+            Articles ({articles.length})
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {sampleArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} />
-          ))}
-        </div>
+        {articles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {articles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        ) : (
+          <div className="py-16 text-center space-y-3 rounded-2xl border border-dashed border-border bg-card/40">
+            <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
+            <p className="text-sm font-semibold text-foreground">No articles tagged with #{decodedSlug} yet</p>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Check back soon as new technical deep-dives and blueprints are published weekly.
+            </p>
+            <Link
+              href="/articles"
+              className="inline-flex items-center gap-1 text-xs font-mono text-primary font-semibold hover:underline pt-2"
+            >
+              Browse all articles →
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+

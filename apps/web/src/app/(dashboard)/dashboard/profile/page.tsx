@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { User, CheckCircle2, Save, Globe } from 'lucide-react';
+import { User, CheckCircle2, Save, Globe, Loader2 } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '@/components/public/brand-icons';
+import { usersApi } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 export default function ProfileSettingsPage() {
@@ -13,22 +14,63 @@ export default function ProfileSettingsPage() {
     name: user?.name || '',
     username: user?.username || '',
     email: user?.email || '',
-    bio: user?.bio || 'Staff Infrastructure & Distributed Systems Engineer.',
+    bio: user?.bio || '',
     avatar: user?.avatar || '',
-    website: 'https://nexusblog.dev',
-    github: 'https://github.com/nexusdev',
-    linkedin: 'https://linkedin.com/in/nexusdev',
+    website: '',
+    github: '',
+    linkedin: '',
   });
 
+  const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        setLoading(true);
+        const profile = await usersApi.getProfile();
+        if (profile) {
+          const socials = profile.socialLinks || {};
+          setFormData({
+            name: profile.name || '',
+            username: profile.username || '',
+            email: profile.email || '',
+            bio: profile.bio || '',
+            avatar: profile.avatar || '',
+            website: socials.website || '',
+            github: socials.github || '',
+            linkedin: socials.linkedin || '',
+          });
+        }
+      } catch {
+        // Handled silently
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProfile();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    // Simulate API call to PATCH /api/users/profile
-    await new Promise((res) => setTimeout(res, 600));
-    setIsSaving(false);
-    toast.success('Profile updated successfully');
+    try {
+      await usersApi.updateProfile({
+        name: formData.name,
+        bio: formData.bio,
+        avatar: formData.avatar,
+        socialLinks: {
+          website: formData.website,
+          github: formData.github,
+          linkedin: formData.linkedin,
+        },
+      });
+      toast.success('Profile updated successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

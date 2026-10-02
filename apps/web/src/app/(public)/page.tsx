@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { siteConfig } from '@nexus/config';
 import { ArticleCard } from '@/components/public/article-card';
+import { articlesApi, categoriesApi, technologiesApi } from '@/lib/api-client';
 import {
   Layers,
   Cpu,
@@ -9,99 +10,66 @@ import {
   ArrowRight,
   ChevronRight,
   Sparkles,
-  Zap,
 } from 'lucide-react';
+
+import { IconRenderer } from '@/components/common/icon-renderer';
 
 export const revalidate = 60; // ISR cache for 60 seconds
 
-// Sample Starter Feature Articles for rich Initial Landing UI
-const FEATURED_ARTICLES = [
-  {
-    id: '1',
-    title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-    slug: 'designing-distributed-rate-limiter',
-    excerpt:
-      'A deep dive into sub-millisecond sliding window counter algorithms, token buckets, and coordinating distributed rate limiting across multi-region API gateways.',
-    difficulty: 'ADVANCED' as const,
-    type: 'SYSTEM_DESIGN' as const,
-    featured: true,
-    readingTime: 12,
-    viewsCount: 14200,
-    publishedAt: new Date(),
-    author: {
-      id: 'a1',
-      name: 'Alex Rivera',
-      username: 'alexdev',
-      avatar: undefined,
-    },
-    category: {
-      id: 'c1',
-      name: 'System Design',
-      slug: 'system-design',
-    },
-    technologies: [
-      { id: 't1', name: 'Redis', slug: 'redis' },
-      { id: 't2', name: 'NestJS', slug: 'nestjs' },
-    ],
-  },
-  {
-    id: '2',
-    title: 'PostgreSQL Indexing Under High Concurrency: B-Trees vs BRIN vs GiST',
-    slug: 'postgresql-indexing-under-concurrency',
-    excerpt:
-      'Understanding execution plans, index bloat, partial indexes, and optimizing queries handling millions of rows per hour.',
-    difficulty: 'INTERMEDIATE' as const,
-    type: 'DEEP_DIVE' as const,
-    featured: false,
-    readingTime: 8,
-    viewsCount: 9800,
-    publishedAt: new Date(),
-    author: {
-      id: 'a2',
-      name: 'Elena Rostova',
-      username: 'erostova',
-      avatar: undefined,
-    },
-    category: {
-      id: 'c2',
-      name: 'Databases',
-      slug: 'databases',
-    },
-    technologies: [
-      { id: 't3', name: 'PostgreSQL', slug: 'postgresql' },
-    ],
-  },
-  {
-    id: '3',
-    title: 'Kafka Partitioning Strategies for Zero-Data-Loss Architectures',
-    slug: 'kafka-partitioning-zero-data-loss',
-    excerpt:
-      'Guaranteed message ordering, consumer group rebalancing internals, and handling backpressure in distributed event stream pipelines.',
-    difficulty: 'ADVANCED' as const,
-    type: 'SYSTEM_DESIGN' as const,
-    featured: false,
-    readingTime: 15,
-    viewsCount: 12300,
-    publishedAt: new Date(),
-    author: {
-      id: 'a1',
-      name: 'Alex Rivera',
-      username: 'alexdev',
-      avatar: undefined,
-    },
-    category: {
-      id: 'c3',
-      name: 'Distributed Systems',
-      slug: 'distributed-systems',
-    },
-    technologies: [
-      { id: 't4', name: 'Kafka', slug: 'kafka' },
-      { id: 't5', name: 'Docker', slug: 'docker' },
-    ],
-  },
-];
+export default async function HomePage() {
+  // 1. Fetch featured & published articles from API
+  let articles: any[] = [];
+  try {
+    const res = await articlesApi.getPublicFeed({ limit: 4 });
+    if (res?.items?.length > 0) {
+      articles = res.items;
+    }
+  } catch {
+    articles = [];
+  }
 
-export default function HomePage() {
+  // 2. Fetch Categories from API with fallback
+  let categories: any[] = [];
+  try {
+    const catsRes = await categoriesApi.getAll();
+    if (Array.isArray(catsRes) && catsRes.length > 0) {
+      categories = catsRes;
+    }
+  } catch {
+    categories = siteConfig.categories.map((name) => ({
+      name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    }));
+  }
+
+  if (categories.length === 0) {
+    categories = siteConfig.categories.map((name) => ({
+      name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    }));
+  }
+
+  // 3. Fetch Technologies with fallback
+  let technologies: any[] = [];
+  try {
+    const techRes = await technologiesApi.getAll();
+    if (Array.isArray(techRes) && techRes.length > 0) {
+      technologies = techRes;
+    }
+  } catch {
+    technologies = siteConfig.technologies.map((name) => ({
+      name,
+      slug: name.toLowerCase(),
+    }));
+  }
+
+  if (technologies.length === 0) {
+    technologies = siteConfig.technologies.map((name) => ({
+      name,
+      slug: name.toLowerCase(),
+    }));
+  }
+
   return (
     <div className="space-y-16 pb-16">
       {/* Hero Section */}
@@ -126,7 +94,7 @@ export default function HomePage() {
                 Explore Articles <ChevronRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/write-for-us"
+                href="/guest-post/submit"
                 className="inline-flex items-center gap-2 border border-border bg-card/60 text-foreground px-5 py-2.5 rounded-md font-medium text-sm hover:bg-muted transition-colors"
               >
                 Submit Guest Post <ArrowRight className="h-4 w-4" />
@@ -157,10 +125,14 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {FEATURED_ARTICLES.map((article, idx) => (
+          {articles.map((article, idx) => (
             <ArticleCard
               key={article.id}
-              article={article}
+              article={{
+                ...article,
+                category: article.category || { name: 'System Design', slug: 'system-design' },
+                author: article.author || { name: 'Alex Rivera', username: 'alexdev' },
+              }}
               featured={idx === 0}
             />
           ))}
@@ -180,26 +152,23 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {siteConfig.categories.map((cat) => {
-              const slug = cat.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-              return (
-                <Link
-                  key={cat}
-                  href={`/categories/${slug}`}
-                  className="group flex items-center justify-between p-4 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/50 hover:border-border transition-all"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center font-mono font-bold text-xs">
-                      <Layers className="h-4 w-4" />
-                    </div>
-                    <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                      {cat}
-                    </span>
+            {categories.map((cat: any) => (
+              <Link
+                key={cat.slug}
+                href={`/categories/${cat.slug}`}
+                className="group flex items-center justify-between p-4 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/50 hover:border-border transition-all"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center font-mono font-bold text-xs p-1.5">
+                    <IconRenderer value={cat.image} defaultIcon="Layers" className="h-4 w-4 text-primary" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              );
-            })}
+                  <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                    {cat.name}
+                  </span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -225,23 +194,20 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-          {siteConfig.technologies.slice(0, 6).map((tech) => {
-            const slug = tech.toLowerCase();
-            return (
-              <Link
-                key={tech}
-                href={`/technologies/${slug}`}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-border/70 bg-card/60 hover:bg-card hover:border-border hover:shadow transition-all text-center group"
-              >
-                <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2 font-mono font-bold text-xs group-hover:scale-105 transition-transform">
-                  <Database className="h-5 w-5" />
-                </div>
-                <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors font-mono">
-                  {tech}
-                </span>
-              </Link>
-            );
-          })}
+          {technologies.slice(0, 6).map((tech: any) => (
+            <Link
+              key={tech.slug}
+              href={`/technologies/${tech.slug}`}
+              className="flex flex-col items-center justify-center p-4 rounded-xl border border-border/70 bg-card/60 hover:bg-card hover:border-border hover:shadow transition-all text-center group"
+            >
+              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2 font-mono font-bold text-xs group-hover:scale-105 transition-transform p-2">
+                <IconRenderer value={tech.logo} defaultIcon="Database" className="h-6 w-6 text-primary" />
+              </div>
+              <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors font-mono">
+                {tech.name}
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
     </div>

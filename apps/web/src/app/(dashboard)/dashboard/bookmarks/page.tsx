@@ -1,52 +1,57 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Bookmark, Trash2, ArrowRight, BookOpen, Clock, Search } from 'lucide-react';
+import { Bookmark, Trash2, ArrowRight, Clock, Search, Loader2 } from 'lucide-react';
+import { bookmarksApi } from '@/lib/api-client';
 import { toast } from 'sonner';
 
-const INITIAL_BOOKMARKS = [
-  {
-    id: 'b1',
-    articleId: '1',
-    title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-    slug: 'designing-distributed-rate-limiter',
-    excerpt: 'A deep dive into sub-millisecond sliding window counter algorithms, token buckets, and coordinating distributed rate limiting across multi-region API gateways.',
-    category: 'System Design',
-    difficulty: 'ADVANCED',
-    readingTime: 12,
-    savedAt: '2 days ago',
-    author: 'Alex Rivera',
-  },
-  {
-    id: 'b2',
-    articleId: '2',
-    title: 'Zero-Downtime PostgreSQL Schema Migrations at Scale',
-    slug: 'zero-downtime-postgresql-migrations',
-    excerpt: 'Safe table alteration patterns, concurrent index creation, avoiding lock queues, and backward-compatible contract testing with Prisma.',
-    category: 'Databases',
-    difficulty: 'ADVANCED',
-    readingTime: 16,
-    savedAt: '5 days ago',
-    author: 'Alex Rivera',
-  },
-  {
-    id: 'b3',
-    articleId: '3',
-    title: 'Kafka Partitioning Strategies for Zero-Data-Loss Architectures',
-    slug: 'kafka-partitioning-zero-data-loss',
-    excerpt: 'Guaranteed message ordering, consumer group rebalancing internals, and handling backpressure in distributed event stream pipelines.',
-    category: 'Distributed Systems',
-    difficulty: 'ADVANCED',
-    readingTime: 15,
-    savedAt: '1 week ago',
-    author: 'Alex Rivera',
-  },
-];
+interface BookmarkItem {
+  id: string;
+  articleId: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  category: string;
+  difficulty: string;
+  readingTime: number;
+  savedAt: string;
+}
 
 export default function BookmarksPage() {
-  const [bookmarks, setBookmarks] = useState(INITIAL_BOOKMARKS);
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  const fetchBookmarks = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await bookmarksApi.getUserBookmarks();
+      if (Array.isArray(data)) {
+        setBookmarks(
+          data.map((b: any) => ({
+            id: b.id,
+            articleId: b.articleId || b.article?.id || '',
+            title: b.article?.title || 'Saved Technical Article',
+            slug: b.article?.slug || '#',
+            excerpt: b.article?.excerpt || 'Architectural deep dive and system design reference.',
+            category: b.article?.category?.name || 'Architecture',
+            difficulty: b.article?.difficulty || 'INTERMEDIATE',
+            readingTime: b.article?.readingTimeMinutes || 10,
+            savedAt: b.createdAt ? new Date(b.createdAt).toLocaleDateString() : 'Recently',
+          }))
+        );
+      }
+    } catch {
+      setBookmarks([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBookmarks();
+  }, [fetchBookmarks]);
 
   const filtered = bookmarks.filter(
     (b) =>
@@ -54,9 +59,14 @@ export default function BookmarksPage() {
       b.category.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleRemove = (id: string, title: string) => {
-    setBookmarks((prev) => prev.filter((b) => b.id !== id));
-    toast.success('Bookmark removed');
+  const handleRemove = async (id: string, articleId: string, title: string) => {
+    try {
+      await bookmarksApi.removeBookmark(articleId);
+      setBookmarks((prev) => prev.filter((b) => b.id !== id));
+      toast.success('Bookmark removed');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove bookmark');
+    }
   };
 
   return (
@@ -86,7 +96,12 @@ export default function BookmarksPage() {
         </div>
       </div>
 
-      {filtered.length > 0 ? (
+      {loading ? (
+        <div className="py-20 flex flex-col items-center justify-center space-y-3 text-muted-foreground">
+          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          <p className="text-xs font-mono">Loading saved bookmarks...</p>
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="space-y-4">
           {filtered.map((item) => (
             <div
@@ -121,7 +136,7 @@ export default function BookmarksPage() {
 
               <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pt-2 sm:pt-0">
                 <button
-                  onClick={() => handleRemove(item.id, item.title)}
+                  onClick={() => handleRemove(item.id, item.articleId, item.title)}
                   className="p-2 rounded-lg border border-border/60 hover:bg-rose-500/10 hover:border-rose-500/30 text-muted-foreground hover:text-rose-500 transition-colors"
                   title="Remove bookmark"
                 >

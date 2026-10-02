@@ -35,6 +35,7 @@ export class ReadingHistoryService {
                 id: true,
                 name: true,
                 slug: true,
+                image: true,
               },
             },
             technologies: {
@@ -50,7 +51,10 @@ export class ReadingHistoryService {
     });
 
     return history.map((item) => ({
+      id: item.id,
       historyId: item.id,
+      userId: item.userId,
+      articleId: item.articleId,
       completionPercentage: item.completionPercentage,
       lastPosition: item.lastPosition,
       lastViewedAt: item.lastViewedAt,
@@ -58,14 +62,51 @@ export class ReadingHistoryService {
     }));
   }
 
+  async getArticleProgress(userId: string, articleId: string) {
+    const history = await this.prisma.readingHistory.findUnique({
+      where: {
+        userId_articleId: {
+          userId,
+          articleId,
+        },
+      },
+    });
+
+    if (!history) {
+      return { completionPercentage: 0, lastPosition: 0 };
+    }
+
+    return {
+      id: history.id,
+      historyId: history.id,
+      completionPercentage: history.completionPercentage,
+      lastPosition: history.lastPosition,
+      lastViewedAt: history.lastViewedAt,
+    };
+  }
+
   async updateProgress(userId: string, dto: UpdateProgressDto) {
     const article = await this.prisma.article.findUnique({
       where: { id: dto.articleId },
+      select: { id: true },
     });
 
     if (!article) {
       throw new NotFoundException('Article not found');
     }
+
+    const existing = await this.prisma.readingHistory.findUnique({
+      where: {
+        userId_articleId: {
+          userId,
+          articleId: dto.articleId,
+        },
+      },
+    });
+
+    const completionPercentage = existing
+      ? Math.max(existing.completionPercentage, dto.completionPercentage)
+      : dto.completionPercentage;
 
     return this.prisma.readingHistory.upsert({
       where: {
@@ -75,7 +116,7 @@ export class ReadingHistoryService {
         },
       },
       update: {
-        completionPercentage: dto.completionPercentage,
+        completionPercentage,
         ...(dto.lastPosition !== undefined && { lastPosition: dto.lastPosition }),
         lastViewedAt: new Date(),
       },

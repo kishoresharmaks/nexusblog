@@ -5,12 +5,38 @@ class AuthClient {
   private accessToken: string | null = null;
   private readonly baseUrl = `${siteConfig.apiUrl}/auth`;
 
+  constructor() {
+    if (typeof window !== 'undefined') {
+      try {
+        this.accessToken = localStorage.getItem('nexus_access_token');
+      } catch {}
+    }
+  }
+
   setAccessToken(token: string | null) {
     this.accessToken = token;
+    if (typeof window !== 'undefined') {
+      try {
+        if (token) {
+          localStorage.setItem('nexus_access_token', token);
+        } else {
+          localStorage.removeItem('nexus_access_token');
+        }
+      } catch {}
+    }
   }
 
   getAccessToken(): string | null {
+    if (!this.accessToken && typeof window !== 'undefined') {
+      try {
+        this.accessToken = localStorage.getItem('nexus_access_token');
+      } catch {}
+    }
     return this.accessToken;
+  }
+
+  isAuthenticated(): boolean {
+    return Boolean(this.getAccessToken());
   }
 
   private async fetchWithAuth<T>(
@@ -27,11 +53,22 @@ class AuthClient {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const fetchOptions: RequestInit = {
       ...options,
       headers,
-      credentials: 'include', // sends/receives httpOnly refresh cookies
-    });
+      credentials: 'include',
+    };
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${endpoint}`, fetchOptions);
+    } catch {
+      try {
+        response = await fetch(`/api/auth${endpoint}`, fetchOptions);
+      } catch {
+        throw new Error('Failed to connect to authentication server. Please ensure the backend is running.');
+      }
+    }
 
     if (response.status === 401 && retryOnAuthFailure) {
       const refreshed = await this.refreshToken();
@@ -83,38 +120,70 @@ class AuthClient {
     return data;
   }
 
+  private refreshPromise: Promise<boolean> | null = null;
+
   async refreshToken(): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.baseUrl}/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        this.setAccessToken(null);
-        return false;
-      }
-
-      const data: ApiResponse<AuthResponse> = await response.json();
-      if (data.success && data.data?.accessToken) {
-        this.setAccessToken(data.data.accessToken);
-        return true;
-      }
-      return false;
-    } catch {
-      this.setAccessToken(null);
-      return false;
+    if (this.refreshPromise) {
+      return this.refreshPromise;
     }
+
+    this.refreshPromise = (async () => {
+      try {
+        let response: Response;
+        try {
+          response = await fetch(`${this.baseUrl}/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          });
+        } catch {
+          response = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          });
+        }
+
+        if (!response.ok) {
+          // Only clear token if session is genuinely invalid
+          const data: any = await response.json().catch(() => ({}));
+          if (response.status === 401 && !this.getAccessToken()) {
+            this.setAccessToken(null);
+          }
+          return false;
+        }
+
+        const data: ApiResponse<AuthResponse> = await response.json();
+        if (data.success && data.data?.accessToken) {
+          this.setAccessToken(data.data.accessToken);
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      } finally {
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
   }
 
   async logout(): Promise<void> {
     try {
-      await fetch(`${this.baseUrl}/logout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
+      try {
+        await fetch(`${this.baseUrl}/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+      } catch {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+      }
     } finally {
       this.setAccessToken(null);
     }

@@ -36,10 +36,10 @@ export class QueryArticleDto {
   @IsOptional()
   difficulty?: DifficultyLevel;
 
-  @ApiPropertyOptional({ enum: ArticleType })
-  @IsEnum(ArticleType)
+  @ApiPropertyOptional({ example: 'SYSTEM_DESIGN' })
+  @IsString()
   @IsOptional()
-  type?: ArticleType;
+  type?: string;
 
   @ApiPropertyOptional({ enum: ArticleStatus })
   @IsEnum(ArticleStatus)

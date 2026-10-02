@@ -4,11 +4,17 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
+import { ThemeToggle } from '@/components/common/theme-toggle';
 import {
   LayoutDashboard,
   FileText,
   Inbox,
   FolderTree,
+  Cpu,
+  Bookmark,
+  Layers,
+  Tag,
+  Users,
   Image,
   MessageSquare,
   Mail,
@@ -20,19 +26,27 @@ import {
   LogOut,
   PenSquare,
   ShieldCheck,
+  Sliders,
 } from 'lucide-react';
 
 const ADMIN_NAV = [
   { name: 'Dashboard Overview', href: '/admin', icon: LayoutDashboard },
   { name: 'Articles Management', href: '/admin/articles', icon: FileText },
   { name: 'Guest Post Queue', href: '/admin/guest-posts', icon: Inbox },
+  { name: 'Series & Roadmaps', href: '/admin/series', icon: Layers },
   { name: 'Taxonomy & Categories', href: '/admin/categories', icon: FolderTree },
+  { name: 'Technology Hubs', href: '/admin/technologies', icon: Cpu },
+  { name: 'Article Types', href: '/admin/article-types', icon: Bookmark },
+  { name: 'Tags Taxonomy', href: '/admin/tags', icon: Tag },
+  { name: 'Staff & User Directory', href: '/admin/users', icon: Users },
   { name: 'Media Library', href: '/admin/media', icon: Image },
   { name: 'Comment Moderation', href: '/admin/comments', icon: MessageSquare },
-  { name: 'Newsletter Subscribers', href: '/admin/newsletter', icon: Mail },
+  { name: 'Newsletter & Dispatch', href: '/admin/newsletter', icon: Mail },
+  { name: 'Developer Config', href: '/admin/dev-config', icon: Sliders },
   { name: 'SEO & Performance', href: '/admin/seo', icon: Search },
   { name: 'Security Audit Logs', href: '/admin/audit-logs', icon: ShieldAlert },
 ];
+
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -152,6 +166,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-border/40 space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-mono text-muted-foreground">Theme</span>
+            <ThemeToggle showLabel={false} />
+          </div>
+
           <Link
             href="/dashboard"
             className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-border/70 bg-card hover:bg-muted px-3 py-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-all"
@@ -161,7 +180,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           <button
             onClick={() => logout()}
-            className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
+            className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Sign Out</span>

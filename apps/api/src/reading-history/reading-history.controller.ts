@@ -26,6 +26,15 @@ export class ReadingHistoryController {
     return this.readingHistoryService.getUserHistory(userId);
   }
 
+  @Get(':articleId')
+  @ApiOperation({ summary: 'Get reading history progress for a specific article' })
+  getArticleProgress(
+    @CurrentUser('id') userId: string,
+    @Param('articleId') articleId: string,
+  ) {
+    return this.readingHistoryService.getArticleProgress(userId, articleId);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Record or update article reading progress' })
   updateProgress(

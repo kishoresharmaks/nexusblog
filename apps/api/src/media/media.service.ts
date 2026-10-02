@@ -35,7 +35,7 @@ export class MediaService {
 
   async uploadFile(
     file: Express.Multer.File,
-    userId: string,
+    userId?: string | null,
     alt?: string,
     caption?: string,
   ) {
@@ -95,14 +95,14 @@ export class MediaService {
         blurHash: processed.blurHash,
         variants: uploadedVariants,
         url: mainUrl,
-        createdBy: userId as any,
+        createdBy: userId ? (userId as any) : null,
       },
     });
 
     return media;
   }
 
-  async createPresignedUploadUrl(dto: CreatePresignedUrlDto, _userId: string) {
+  async createPresignedUploadUrl(dto: CreatePresignedUrlDto, _userId?: string) {
     if (!this.storageProvider.getPresignedUploadUrl) {
       throw new ConflictException(
         'Direct presigned uploads are only supported on cloud object storage (R2/S3). Use standard multipart upload for local storage.',
@@ -121,7 +121,7 @@ export class MediaService {
     return presigned;
   }
 
-  async confirmPresignedUpload(dto: ConfirmUploadDto, userId: string) {
+  async confirmPresignedUpload(dto: ConfirmUploadDto, userId?: string | null) {
     const providerType: StorageProviderType =
       (process.env.STORAGE_PROVIDER as StorageProviderType) || 'r2';
 
@@ -148,23 +148,32 @@ export class MediaService {
           },
         ],
         url,
-        createdBy: userId as any,
+        createdBy: userId ? (userId as any) : null,
       },
     });
 
     return media;
   }
 
-  async findAll(query: QueryMediaDto) {
+  async findAll(query: QueryMediaDto, ownerId?: string) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;
     const skip = (page - 1) * limit;
 
     const where: any = {};
+    if (ownerId) {
+      where.createdBy = ownerId;
+    }
+
     if (query.search) {
-      where.OR = [
-        { originalName: { contains: query.search, mode: 'insensitive' } },
-        { alt: { contains: query.search, mode: 'insensitive' } },
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { originalName: { contains: query.search, mode: 'insensitive' } },
+            { alt: { contains: query.search, mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 

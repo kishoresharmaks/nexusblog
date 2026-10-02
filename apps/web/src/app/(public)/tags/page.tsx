@@ -1,27 +1,17 @@
 import React from 'react';
 import Link from 'next/link';
 import { Hash, ArrowRight } from 'lucide-react';
+import { tagsApi } from '@/lib/api-client';
 
-const POPULAR_TAGS = [
-  { name: 'Architecture', slug: 'architecture', count: 28 },
-  { name: 'Distributed Systems', slug: 'distributed-systems', count: 24 },
-  { name: 'Performance', slug: 'performance', count: 19 },
-  { name: 'Database Internals', slug: 'database-internals', count: 16 },
-  { name: 'Kafka', slug: 'kafka', count: 14 },
-  { name: 'Redis', slug: 'redis', count: 12 },
-  { name: 'Kubernetes', slug: 'kubernetes', count: 11 },
-  { name: 'Observability', slug: 'observability', count: 9 },
-  { name: 'PostgreSQL', slug: 'postgresql', count: 15 },
-  { name: 'Saga Pattern', slug: 'saga-pattern', count: 7 },
-  { name: 'Microservices', slug: 'microservices', count: 22 },
-  { name: 'Event Driven', slug: 'event-driven', count: 18 },
-  { name: 'Zero Downtime', slug: 'zero-downtime', count: 6 },
-  { name: 'Security', slug: 'security', count: 10 },
-  { name: 'Sharding', slug: 'sharding', count: 8 },
-  { name: 'Docker', slug: 'docker', count: 13 },
-];
+export default async function TagsIndexPage() {
+  let tags: any[] = [];
 
-export default function TagsIndexPage() {
+  try {
+    tags = await tagsApi.getAll();
+  } catch (err) {
+    console.error('Failed to fetch tags from API:', err);
+  }
+
   return (
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-10 font-sans">
       <div className="space-y-3">
@@ -38,9 +28,9 @@ export default function TagsIndexPage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        {POPULAR_TAGS.map((tag) => (
+        {tags.map((tag) => (
           <Link
-            key={tag.slug}
+            key={tag.id || tag.slug}
             href={`/tags/${tag.slug}`}
             className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border/70 bg-card hover:border-primary/50 hover:bg-muted/40 transition-all font-mono text-xs"
           >
@@ -48,12 +38,15 @@ export default function TagsIndexPage() {
             <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
               {tag.name}
             </span>
-            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground font-sans">
-              {tag.count}
-            </span>
+            {tag.articlesCount !== undefined && (
+              <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground font-sans">
+                {tag.articlesCount}
+              </span>
+            )}
           </Link>
         ))}
       </div>
     </div>
   );
 }
+

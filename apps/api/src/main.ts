@@ -16,17 +16,25 @@ async function bootstrap() {
   const port = process.env.PORT || 4000;
 
   // Security Headers
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // Cookie Parser
   app.use(cookieParser());
 
   // CORS Configuration
   app.enableCors({
-    origin: clientUrl,
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow requests with any origin (localhost, 127.0.0.1, custom dev ports, etc.)
+      callback(null, true);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   });
 
   // Global Prefix

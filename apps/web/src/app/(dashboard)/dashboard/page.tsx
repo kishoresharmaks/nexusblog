@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import {
@@ -13,69 +13,118 @@ import {
   Clock,
   CheckCircle2,
   BookOpen,
+  Loader2,
 } from 'lucide-react';
+import { bookmarksApi, readingHistoryApi, commentsApi, guestPostsApi } from '@/lib/api-client';
 
 export default function DashboardOverviewPage() {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
+  const [guestPosts, setGuestPosts] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        setLoading(true);
+        const [bmRes, histRes, commRes, gpRes] = await Promise.allSettled([
+          bookmarksApi.getUserBookmarks(),
+          readingHistoryApi.getUserHistory(),
+          commentsApi.getUserComments(),
+          guestPostsApi.getUserSubmissions(),
+        ]);
+
+        if (bmRes.status === 'fulfilled' && Array.isArray(bmRes.value)) {
+          setBookmarks(bmRes.value);
+        }
+        let histItems: any[] = [];
+        if (histRes.status === 'fulfilled' && Array.isArray(histRes.value)) {
+          histItems = histRes.value;
+        }
+
+        // Merge local storage history if available
+        try {
+          const localRaw = localStorage.getItem('nexus_reading_history');
+          if (localRaw) {
+            const localList = JSON.parse(localRaw);
+            if (Array.isArray(localList)) {
+              localList.forEach((localItem: any) => {
+                const exists = histItems.some(
+                  (h) => (h.articleId && h.articleId === localItem.articleId) || (h.article?.slug && h.article?.slug === localItem.slug)
+                );
+                if (!exists) {
+                  histItems.push({
+                    id: localItem.articleId,
+                    articleId: localItem.articleId,
+                    completionPercentage: localItem.completionPercentage || 0,
+                    lastPosition: localItem.lastPosition || 0,
+                    lastViewedAt: localItem.lastViewedAt,
+                    article: {
+                      id: localItem.articleId,
+                      title: localItem.title,
+                      slug: localItem.slug,
+                      readingTime: localItem.readingTime || 10,
+                      category: { name: localItem.category || 'Architecture' },
+                    },
+                  });
+                }
+              });
+            }
+          }
+        } catch {}
+
+        setHistory(histItems);
+        if (commRes.status === 'fulfilled' && Array.isArray(commRes.value)) {
+          setComments(commRes.value);
+        }
+        if (gpRes.status === 'fulfilled' && Array.isArray(gpRes.value)) {
+          setGuestPosts(gpRes.value);
+        }
+      } catch {
+        // Handled silently
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadDashboardData();
+  }, []);
 
   const stats = [
     {
       title: 'Saved Bookmarks',
-      value: 12,
+      value: bookmarks.length,
       href: '/dashboard/bookmarks',
       icon: Bookmark,
       color: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
     },
     {
       title: 'Articles in Progress',
-      value: 4,
+      value: history.filter((h) => (h.completionPercentage || 0) < 100).length,
       href: '/dashboard/history',
       icon: History,
       color: 'text-sky-500 bg-sky-500/10 border-sky-500/20',
     },
     {
       title: 'Discussions & Comments',
-      value: 7,
+      value: comments.length,
       href: '/dashboard/comments',
       icon: MessageSquare,
       color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
     },
     {
       title: 'Guest Submissions',
-      value: 2,
+      value: guestPosts.length,
       href: '/dashboard/guest-posts',
       icon: FileText,
       color: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
     },
   ];
 
-  const inProgressArticle = {
-    title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-    slug: 'designing-distributed-rate-limiter',
-    category: 'System Design',
-    progress: 68,
-    remainingMins: 4,
-    lastViewed: '2 hours ago',
-  };
-
-  const recentBookmarks = [
-    {
-      id: 'b1',
-      title: 'Zero-Downtime PostgreSQL Schema Migrations at Scale',
-      slug: 'zero-downtime-postgresql-migrations',
-      category: 'Databases',
-      readingTime: 16,
-      savedAt: 'Yesterday',
-    },
-    {
-      id: 'b2',
-      title: 'Kafka Partitioning Strategies for Zero-Data-Loss Architectures',
-      slug: 'kafka-partitioning-zero-data-loss',
-      category: 'Distributed Systems',
-      readingTime: 15,
-      savedAt: '3 days ago',
-    },
-  ];
+  const inProgressArticle = history.find((h) => (h.completionPercentage || 0) < 100) || history[0];
+  const recentBookmarks = bookmarks.slice(0, 3);
+  const latestGuestPost = guestPosts[0];
 
   return (
     <div className="space-y-8 font-sans">
@@ -84,7 +133,7 @@ export default function DashboardOverviewPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              Welcome back, {user?.name}
+              Welcome back, {user?.name || 'Reader'}
             </h1>
             <span className="rounded-full bg-primary/10 border border-primary/20 px-2.5 py-0.5 text-[11px] font-mono font-semibold text-primary">
               {user?.role || 'READER'}
@@ -121,7 +170,9 @@ export default function DashboardOverviewPage() {
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-mono font-extrabold text-foreground">{item.value}</p>
+                <p className="text-2xl font-mono font-extrabold text-foreground">
+                  {loading ? '...' : item.value}
+                </p>
                 <p className="text-xs text-muted-foreground font-medium">{item.title}</p>
               </div>
             </Link>
@@ -130,51 +181,59 @@ export default function DashboardOverviewPage() {
       </div>
 
       {/* Continue Reading Card */}
-      <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-mono font-semibold text-primary">
-            <BookOpen className="h-4 w-4" />
-            <span>Continue Reading</span>
-          </div>
-          <span className="text-[11px] font-mono text-muted-foreground">
-            {inProgressArticle.lastViewed}
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-              {inProgressArticle.category}
+      {inProgressArticle && inProgressArticle.article && (
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold text-primary">
+              <BookOpen className="h-4 w-4" />
+              <span>Continue Reading</span>
+            </div>
+            <span className="text-[11px] font-mono text-muted-foreground">
+              {inProgressArticle.lastViewedAt
+                ? new Date(inProgressArticle.lastViewedAt).toLocaleDateString()
+                : 'Recently'}
             </span>
-            <h3 className="text-base sm:text-lg font-bold text-foreground">
-              {inProgressArticle.title}
-            </h3>
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-              <span>Progress: {inProgressArticle.progress}%</span>
-              <span>~{inProgressArticle.remainingMins} mins remaining</span>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                {inProgressArticle.article?.category?.name || 'Technical Guide'}
+              </span>
+              <h3 className="text-base sm:text-lg font-bold text-foreground">
+                {inProgressArticle.article?.title}
+              </h3>
             </div>
-            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full transition-all duration-500"
-                style={{ width: `${inProgressArticle.progress}%` }}
-              />
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+                <span>Progress: {inProgressArticle.completionPercentage || 0}%</span>
+                <span>
+                  {inProgressArticle.completionPercentage === 100
+                    ? 'Completed'
+                    : `~${Math.max(1, Math.round(((inProgressArticle.article?.readingTime || inProgressArticle.article?.readingTimeMinutes) || 10) * (1 - (inProgressArticle.completionPercentage || 0) / 100)))} mins remaining`}
+                </span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${inProgressArticle.completionPercentage || 0}%` }}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="pt-2 flex justify-end">
-          <Link
-            href={`/articles/${inProgressArticle.slug}`}
-            className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-primary hover:underline"
-          >
-            <span>Resume Reading</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          <div className="pt-2 flex justify-end">
+            <Link
+              href={`/articles/${inProgressArticle.article?.slug}`}
+              className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-primary hover:underline"
+            >
+              <span>{inProgressArticle.completionPercentage === 100 ? 'Read Again' : 'Resume Reading'}</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Two Column Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -190,23 +249,27 @@ export default function DashboardOverviewPage() {
             </Link>
           </div>
 
-          <div className="space-y-3">
-            {recentBookmarks.map((item) => (
-              <Link
-                key={item.id}
-                href={`/articles/${item.slug}`}
-                className="group block p-3 rounded-lg border border-border/40 hover:bg-muted/40 transition-colors space-y-1"
-              >
-                <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                  <span>{item.category}</span>
-                  <span>{item.savedAt}</span>
-                </div>
-                <h3 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">
-                  {item.title}
-                </h3>
-              </Link>
-            ))}
-          </div>
+          {recentBookmarks.length > 0 ? (
+            <div className="space-y-3">
+              {recentBookmarks.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/articles/${item.article?.slug || item.slug}`}
+                  className="group block p-3 rounded-lg border border-border/40 hover:bg-muted/40 transition-colors space-y-1"
+                >
+                  <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
+                    <span>{item.article?.category?.name || 'Guide'}</span>
+                    <span>{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Saved'}</span>
+                  </div>
+                  <h3 className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors leading-snug">
+                    {item.article?.title || item.title}
+                  </h3>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground py-4 text-center">No bookmarks saved yet.</p>
+          )}
         </div>
 
         {/* Contributor Highlights */}
@@ -221,22 +284,38 @@ export default function DashboardOverviewPage() {
             </Link>
           </div>
 
-          <div className="space-y-3">
-            <div className="p-3 rounded-lg border border-border/40 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-semibold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">
-                  UNDER_REVIEW
-                </span>
-                <span className="text-[10px] font-mono text-muted-foreground">Submitted 2d ago</span>
+          {latestGuestPost ? (
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg border border-border/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-semibold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded">
+                    {latestGuestPost.status}
+                  </span>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    {latestGuestPost.submittedAt
+                      ? new Date(latestGuestPost.submittedAt).toLocaleDateString()
+                      : 'Recently'}
+                  </span>
+                </div>
+                <h3 className="text-xs font-semibold text-foreground leading-snug">
+                  {latestGuestPost.title}
+                </h3>
+                <p className="text-[11px] text-muted-foreground">
+                  {latestGuestPost.editorialFeedback || 'Assigned to editorial reviewer. You will be notified when feedback is ready.'}
+                </p>
               </div>
-              <h3 className="text-xs font-semibold text-foreground leading-snug">
-                Event-Driven Architecture with Debezium and Apache Kafka
-              </h3>
-              <p className="text-[11px] text-muted-foreground">
-                Assigned to editorial reviewer. You will be notified when feedback is ready.
-              </p>
             </div>
-          </div>
+          ) : (
+            <div className="py-4 text-center space-y-2">
+              <p className="text-xs text-muted-foreground">Ready to share your technical blueprint with our community?</p>
+              <Link
+                href="/guest-post/submit"
+                className="inline-flex items-center gap-1 text-xs font-mono text-primary font-semibold hover:underline"
+              >
+                Write Guest Post →
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -6,13 +6,16 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 
@@ -20,6 +23,32 @@ import { Public } from '../auth/decorators/public.decorator';
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiBearerAuth()
+  @Get('admin/all')
+  @ApiOperation({ summary: 'Get all comments for admin moderation' })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  getAllAdminComments(
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.commentsService.getAllAdminComments(status, search);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiBearerAuth()
+  @Patch('admin/:id/status')
+  @ApiOperation({ summary: 'Update comment moderation status' })
+  updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+  ) {
+    return this.commentsService.updateStatus(id, status);
+  }
 
   @Public()
   @Get('article/:articleId')

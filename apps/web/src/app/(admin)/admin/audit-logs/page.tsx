@@ -1,90 +1,59 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ShieldAlert, Search, Eye, Clock, User, Globe, Code, X } from 'lucide-react';
+import { auditLogsApi } from '@/lib/api-client';
 
 interface AuditLogEntry {
   id: string;
   action: string;
   resource: string;
   resourceId?: string;
-  userName: string;
-  userEmail: string;
-  ipAddress: string;
+  userName?: string;
+  userEmail?: string;
+  user?: {
+    name: string;
+    email: string;
+  };
+  ipAddress?: string;
   createdAt: string;
-  details: Record<string, any>;
+  details?: Record<string, any>;
+  metadata?: Record<string, any>;
 }
 
-const INITIAL_LOGS: AuditLogEntry[] = [
-  {
-    id: 'log1',
-    action: 'ARTICLE_PUBLISHED',
-    resource: 'Article',
-    resourceId: 'art_684',
-    userName: 'Super Admin',
-    userEmail: 'admin@nexusblog.dev',
-    ipAddress: '192.168.1.10',
-    createdAt: 'Just now',
-    details: {
-      slug: 'designing-distributed-rate-limiter',
-      title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-      status: 'PUBLISHED',
-    },
-  },
-  {
-    id: 'log2',
-    action: 'GUEST_POST_APPROVED',
-    resource: 'GuestPost',
-    resourceId: 'gp_102',
-    userName: 'Staff Editor Alex',
-    userEmail: 'alex@nexusblog.dev',
-    ipAddress: '10.0.0.15',
-    createdAt: '2 hours ago',
-    details: {
-      contributor: 'David Chen',
-      slug: 'multi-region-active-active-postgres',
-      action: 'CONVERTED_TO_ARTICLE',
-    },
-  },
-  {
-    id: 'log3',
-    action: 'AUTH_LOGIN_SUCCESS',
-    resource: 'Session',
-    resourceId: 'sess_490',
-    userName: 'Super Admin',
-    userEmail: 'admin@nexusblog.dev',
-    ipAddress: '192.168.1.10',
-    createdAt: '4 hours ago',
-    details: {
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0',
-      authMethod: 'Argon2id_Cookie_Session',
-    },
-  },
-  {
-    id: 'log4',
-    action: 'SESSION_REVOKED',
-    resource: 'Session',
-    resourceId: 'sess_301',
-    userName: 'Elena Rostova',
-    userEmail: 'elena@nexusblog.dev',
-    ipAddress: '172.56.21.90',
-    createdAt: 'Yesterday',
-    details: {
-      reason: 'USER_INITIATED_REVOCATION',
-    },
-  },
-];
-
 export default function AdminAuditLogsPage() {
-  const [logs, setLogs] = useState<AuditLogEntry[]>(INITIAL_LOGS);
+  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [search, setSearch] = useState('');
   const [activeJsonModal, setActiveJsonModal] = useState<AuditLogEntry | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadLogs = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await auditLogsApi.getAll(100, 0);
+      setLogs(data || []);
+    } catch (err) {
+      console.error('Failed to load audit logs:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
 
   const filtered = logs.filter(
-    (l) =>
-      l.action.toLowerCase().includes(search.toLowerCase()) ||
-      l.userEmail.toLowerCase().includes(search.toLowerCase()) ||
-      l.resource.toLowerCase().includes(search.toLowerCase()),
+    (l) => {
+      const email = l.user?.email || l.userEmail || '';
+      const action = l.action || '';
+      const res = l.resource || '';
+      return (
+        action.toLowerCase().includes(search.toLowerCase()) ||
+        email.toLowerCase().includes(search.toLowerCase()) ||
+        res.toLowerCase().includes(search.toLowerCase())
+      );
+    },
   );
 
   return (
@@ -170,9 +139,14 @@ export default function AdminAuditLogsPage() {
 
       {/* JSON Payload Inspector Modal */}
       {activeJsonModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActiveJsonModal(null);
+          }}
+        >
+          <div className="relative w-full max-w-lg rounded-2xl border border-border bg-card text-card-foreground p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div className="flex items-center gap-2">
                 <Code className="h-4 w-4 text-primary" />
                 <h3 className="font-bold text-sm text-foreground font-mono">
@@ -181,13 +155,13 @@ export default function AdminAuditLogsPage() {
               </div>
               <button
                 onClick={() => setActiveJsonModal(null)}
-                className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="rounded-xl border border-border/60 bg-muted/40 p-4 font-mono text-xs overflow-x-auto">
+            <div className="rounded-xl border border-border bg-background p-4 font-mono text-xs overflow-x-auto shadow-xs">
               <pre className="text-foreground leading-relaxed">
                 {JSON.stringify(activeJsonModal.details, null, 2)}
               </pre>
@@ -196,7 +170,7 @@ export default function AdminAuditLogsPage() {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setActiveJsonModal(null)}
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-mono font-semibold hover:opacity-90"
+                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-mono font-semibold hover:opacity-90 transition-opacity shadow-sm"
               >
                 Done
               </button>

@@ -16,22 +16,36 @@ import {
   CheckCircle2,
   Clock,
   Archive,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  getAllArticles,
-  deleteArticle,
-  togglePublishArticle,
-  ArticleData,
-} from '@/lib/articles-data';
+import { articlesApi } from '@/lib/api-client';
 
 export default function AdminArticlesPage() {
-  const [articles, setArticles] = useState<ArticleData[]>([]);
+  const [articles, setArticles] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [isLoading, setIsLoading] = useState(false);
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const refreshArticles = useCallback(() => {
-    setArticles(getAllArticles());
+  const refreshArticles = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      let items: any[] = [];
+      try {
+        const adminFeed = await articlesApi.getAdminArticles({ limit: 100 });
+        items = Array.isArray(adminFeed) ? adminFeed : adminFeed?.items || [];
+      } catch {
+        const publicFeed = await articlesApi.getPublicFeed({ limit: 100 });
+        items = Array.isArray(publicFeed) ? publicFeed : publicFeed?.items || [];
+      }
+      setArticles(items);
+    } catch (err) {
+      console.error('Failed to load articles for admin table:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -41,26 +55,43 @@ export default function AdminArticlesPage() {
   }, [refreshArticles]);
 
   const filtered = articles.filter((art) => {
+    const categoryName = art.category?.name || art.category?.slug || art.category || '';
     const matchSearch =
-      art.title.toLowerCase().includes(search.toLowerCase()) ||
-      art.slug.toLowerCase().includes(search.toLowerCase()) ||
-      art.category.toLowerCase().includes(search.toLowerCase());
+      (art.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (art.slug || '').toLowerCase().includes(search.toLowerCase()) ||
+      categoryName.toLowerCase().includes(search.toLowerCase());
 
     const matchStatus = statusFilter === 'ALL' || art.status === statusFilter;
 
     return matchSearch && matchStatus;
   });
 
-  const handleDelete = (id: string, title: string) => {
-    deleteArticle(id);
-    refreshArticles();
-    toast.success(`Deleted article: ${title}`);
+  const confirmDeleteArticle = async () => {
+    if (!deleteConfirmItem) return;
+    setIsDeleting(true);
+    try {
+      await articlesApi.delete(deleteConfirmItem.id);
+      await refreshArticles();
+      window.dispatchEvent(new CustomEvent('nexus_articles_updated'));
+      toast.success(`Deleted article: ${deleteConfirmItem.title}`);
+      setDeleteConfirmItem(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete article');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
-  const handleTogglePublish = (id: string) => {
-    const updated = togglePublishArticle(id);
-    refreshArticles();
-    toast.success(`Article status changed to ${updated.status}`);
+  const handleTogglePublish = async (id: string, currentStatus: string) => {
+    const nextStatus = currentStatus === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
+    try {
+      await articlesApi.update(id, { status: nextStatus });
+      await refreshArticles();
+      window.dispatchEvent(new CustomEvent('nexus_articles_updated'));
+      toast.success(`Article status changed to ${nextStatus}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update article status');
+    }
   };
 
   return (
@@ -136,23 +167,39 @@ export default function AdminArticlesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
-              {filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-muted/20 transition-colors">
-                  <td className="py-3.5 px-4 min-w-[280px]">
-                    <div className="space-y-0.5">
-                      <Link
-                        href={`/admin/articles/${item.id}/edit`}
-                        className="font-bold text-foreground hover:text-primary transition-colors leading-snug line-clamp-1"
-                      >
-                        {item.title}
-                      </Link>
-                      <p className="font-mono text-[11px] text-muted-foreground">/{item.slug}</p>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-xs font-mono text-muted-foreground">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      <span>Loading articles from database...</span>
                     </div>
                   </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-xs font-mono text-muted-foreground">
+                    No articles found matching the current criteria.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((item) => (
+                  <tr key={item.id} className="hover:bg-muted/20 transition-colors">
+                    <td className="py-3.5 px-4 min-w-[280px]">
+                      <div className="space-y-0.5">
+                        <Link
+                          href={`/admin/articles/${item.id}/edit`}
+                          className="font-bold text-foreground hover:text-primary transition-colors leading-snug line-clamp-1"
+                        >
+                          {item.title}
+                        </Link>
+                        <p className="font-mono text-[11px] text-muted-foreground">/{item.slug}</p>
+                      </div>
+                    </td>
 
                   <td className="py-3.5 px-4 font-mono whitespace-nowrap">
                     <span className="rounded bg-muted px-2 py-0.5 text-foreground font-semibold">
-                      {item.category}
+                      {(typeof item.category === 'object' && item.category !== null ? item.category.name : typeof item.category === 'string' ? item.category : 'General') || 'General'}
                     </span>
                   </td>
 
@@ -163,17 +210,17 @@ export default function AdminArticlesPage() {
                   <td className="py-3.5 px-4 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
                     <div className="flex items-center gap-3">
                       <span className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" /> {item.views.toLocaleString()}
+                        <Eye className="h-3 w-3" /> {(item.viewsCount || item.views || 0).toLocaleString()}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Bookmark className="h-3 w-3" /> {item.bookmarks}
+                        <Bookmark className="h-3 w-3" /> {item.bookmarksCount || item.bookmarks || 0}
                       </span>
                     </div>
                   </td>
 
                   <td className="py-3.5 px-4 whitespace-nowrap">
                     <button
-                      onClick={() => handleTogglePublish(item.id)}
+                      onClick={() => handleTogglePublish(item.id, item.status)}
                       className={`px-2 py-0.5 rounded font-mono text-[10px] font-semibold transition-all ${
                         item.status === 'PUBLISHED'
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
@@ -181,12 +228,12 @@ export default function AdminArticlesPage() {
                       }`}
                       title="Click to toggle status"
                     >
-                      {item.status}
+                      {item.status || 'DRAFT'}
                     </button>
                   </td>
 
                   <td className="py-3.5 px-4 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
-                    {item.publishedAt}
+                    {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString() : 'Draft'}
                   </td>
 
                   <td className="py-3.5 px-4 text-right whitespace-nowrap">
@@ -209,7 +256,7 @@ export default function AdminArticlesPage() {
                         <Edit className="h-3.5 w-3.5" />
                       </Link>
                       <button
-                        onClick={() => handleDelete(item.id, item.title)}
+                        onClick={() => setDeleteConfirmItem(item)}
                         className="p-1.5 rounded-md hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
                         title="Delete article"
                       >
@@ -218,11 +265,68 @@ export default function AdminArticlesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Warning Modal */}
+      {deleteConfirmItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting) setDeleteConfirmItem(null);
+          }}
+        >
+          <div className="relative w-full max-w-md rounded-2xl border border-border bg-card text-card-foreground p-6 shadow-2xl space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <h3 className="text-base font-bold text-foreground tracking-tight">
+                  Delete Article
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Are you sure you want to permanently delete{' '}
+                  <span className="font-semibold text-foreground">&quot;{deleteConfirmItem.title}&quot;</span>?
+                  This will permanently remove the article and its associated comments and metrics from MongoDB Atlas. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmItem(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted text-xs font-mono text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => confirmDeleteArticle()}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-mono font-semibold transition-colors shadow-sm disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

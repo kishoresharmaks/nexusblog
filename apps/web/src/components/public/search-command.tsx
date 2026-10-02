@@ -36,11 +36,11 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-start justify-center pt-20 p-4"
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center pt-20 p-4"
       onClick={() => onOpenChange(false)}
     >
       <div
-        className="w-full max-w-xl rounded-xl border border-border bg-card p-0 shadow-2xl overflow-hidden font-sans text-sm animate-in fade-in zoom-in-95 duration-100"
+        className="relative w-full max-w-xl rounded-2xl border border-border bg-card text-card-foreground p-0 shadow-2xl overflow-hidden font-sans text-sm animate-in fade-in zoom-in-95 duration-100"
         onClick={(e) => e.stopPropagation()}
       >
         <Command className="w-full" label="Global Command Search">

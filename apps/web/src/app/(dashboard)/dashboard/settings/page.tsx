@@ -1,8 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Shield, KeyRound, Smartphone, Laptop, Trash2, AlertTriangle, Check } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Shield, KeyRound, Smartphone, Laptop, Trash2, Loader2 } from 'lucide-react';
+import { usersApi } from '@/lib/api-client';
 import { toast } from 'sonner';
+
+interface SessionItem {
+  id: string;
+  device: string;
+  ip: string;
+  lastActive: string;
+  isCurrent: boolean;
+}
 
 export default function SecuritySettingsPage() {
   const [passwordForm, setPasswordForm] = useState({
@@ -11,30 +20,42 @@ export default function SecuritySettingsPage() {
     confirmPassword: '',
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
 
-  const [sessions, setSessions] = useState([
-    {
-      id: 's1',
-      device: 'Windows 11 / Chrome 124',
-      ip: '192.168.1.45',
-      lastActive: 'Active now (Current)',
-      isCurrent: true,
-    },
-    {
-      id: 's2',
-      device: 'macOS Sonoma / Safari 17.4',
-      ip: '10.0.0.12',
-      lastActive: 'Yesterday, 14:30',
-      isCurrent: false,
-    },
-    {
-      id: 's3',
-      device: 'iOS 17 / Mobile Safari',
-      ip: '172.56.21.90',
-      lastActive: '3 days ago',
-      isCurrent: false,
-    },
-  ]);
+  const fetchSessions = useCallback(async () => {
+    try {
+      setLoadingSessions(true);
+      const data = await usersApi.getActiveSessions();
+      if (Array.isArray(data)) {
+        setSessions(
+          data.map((s: any) => ({
+            id: s.id,
+            device: s.userAgent || s.device || 'Web Browser',
+            ip: s.ipAddress || s.ip || '127.0.0.1',
+            lastActive: s.lastActiveAt ? new Date(s.lastActiveAt).toLocaleString() : 'Active now',
+            isCurrent: s.isCurrent || false,
+          }))
+        );
+      }
+    } catch {
+      setSessions([
+        {
+          id: 'current',
+          device: 'Current Browser Session',
+          ip: 'Active',
+          lastActive: 'Active now (Current)',
+          isCurrent: true,
+        },
+      ]);
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,20 +69,38 @@ export default function SecuritySettingsPage() {
     }
 
     setIsChangingPassword(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setIsChangingPassword(false);
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    toast.success('Password changed successfully');
+    try {
+      await usersApi.changePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      toast.success('Password changed successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to change password');
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
-  const handleRevokeSession = (id: string) => {
-    setSessions((prev) => prev.filter((s) => s.id !== id));
-    toast.success('Session revoked');
+  const handleRevokeSession = async (id: string) => {
+    try {
+      await usersApi.revokeSession(id);
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      toast.success('Session revoked');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to revoke session');
+    }
   };
 
-  const handleRevokeOtherSessions = () => {
-    setSessions((prev) => prev.filter((s) => s.isCurrent));
-    toast.success('All other active sessions have been revoked');
+  const handleRevokeOtherSessions = async () => {
+    try {
+      await usersApi.revokeAllOtherSessions();
+      setSessions((prev) => prev.filter((s) => s.isCurrent));
+      toast.success('All other active sessions have been revoked');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to revoke other sessions');
+    }
   };
 
   return (

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/context/auth-context';
 import { siteConfig } from '@nexus/config';
+import { ThemeToggle } from '@/components/common/theme-toggle';
 import {
   Search,
   Sun,
@@ -27,8 +28,13 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navLinks = [
     { href: '/articles', label: 'Articles' },
@@ -90,21 +96,10 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
           </button>
 
           {/* Theme Switcher */}
-          <button
-            type="button"
-            aria-label="Toggle theme"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            {theme === 'dark' ? (
-              <Sun className="h-4 w-4 text-amber-400" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-          </button>
+          <ThemeToggle />
 
           {/* Authenticated State vs Guest */}
-          {isAuthenticated && user ? (
+          {mounted && isAuthenticated && user ? (
             <div className="relative">
               <button
                 type="button"
@@ -212,7 +207,12 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
             ))}
           </nav>
 
-          {isAuthenticated && user ? (
+          <div className="flex items-center justify-between border-t border-border/40 pt-3">
+            <span className="text-xs font-mono text-muted-foreground">Color Theme</span>
+            <ThemeToggle showLabel={true} />
+          </div>
+
+          {mounted && isAuthenticated && user ? (
             <div className="border-t border-border/40 pt-3 flex flex-col space-y-2">
               <div className="px-1 py-1">
                 <p className="text-xs font-semibold text-foreground">{user.name}</p>

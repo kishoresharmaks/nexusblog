@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { TagsModule } from './tags/tags.module';
 import { TechnologiesModule } from './technologies/technologies.module';
+import { ArticleTypesModule } from './article-types/article-types.module';
 import { SeriesModule } from './series/series.module';
 import { MediaModule } from './media/media.module';
 import { ArticlesModule } from './articles/articles.module';
@@ -19,6 +20,8 @@ import { CommentsModule } from './comments/comments.module';
 import { GuestPostsModule } from './guest-posts/guest-posts.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { MailModule } from './mail/mail.module';
+import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 
 @Module({
@@ -30,13 +33,22 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     ServeStaticModule.forRoot({
       rootPath: path.resolve(process.cwd(), '../../storage/local/media'),
       serveRoot: '/uploads',
+      serveStaticOptions: {
+        setHeaders: (res) => {
+          res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+        },
+      },
     }),
     PrismaModule,
+    MailModule,
+    SystemSettingsModule,
     AuthModule,
     UsersModule,
     CategoriesModule,
     TagsModule,
     TechnologiesModule,
+    ArticleTypesModule,
     SeriesModule,
     MediaModule,
     ArticlesModule,

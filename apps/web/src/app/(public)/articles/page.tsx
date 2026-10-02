@@ -1,6 +1,8 @@
 import React from 'react';
+import Link from 'next/link';
 import { siteConfig } from '@nexus/config';
 import { ArticleCard } from '@/components/public/article-card';
+import { articlesApi, categoriesApi } from '@/lib/api-client';
 import { BookOpen, Filter, Search, Sparkles } from 'lucide-react';
 
 export const revalidate = 60;
@@ -17,115 +19,41 @@ interface ArticlesPageProps {
 export default async function ArticlesPage({ searchParams }: ArticlesPageProps) {
   const params = await searchParams;
 
-  // Initial rich sample articles for instant SSR reading
-  const sampleArticles = [
-    {
-      id: '1',
-      title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-      slug: 'designing-distributed-rate-limiter',
-      excerpt:
-        'A deep dive into sub-millisecond sliding window counter algorithms, token buckets, and coordinating distributed rate limiting across multi-region API gateways.',
-      difficulty: 'ADVANCED' as const,
-      type: 'SYSTEM_DESIGN' as const,
-      featured: true,
-      readingTime: 12,
-      viewsCount: 14200,
-      publishedAt: new Date(),
-      author: {
-        id: 'a1',
-        name: 'Alex Rivera',
-        username: 'alexdev',
-        avatar: undefined,
-      },
-      category: {
-        id: 'c1',
-        name: 'System Design',
-        slug: 'system-design',
-      },
-      technologies: [
-        { id: 't1', name: 'Redis', slug: 'redis' },
-        { id: 't2', name: 'NestJS', slug: 'nestjs' },
-      ],
-    },
-    {
-      id: '2',
-      title: 'PostgreSQL Indexing Under High Concurrency: B-Trees vs BRIN vs GiST',
-      slug: 'postgresql-indexing-under-concurrency',
-      excerpt:
-        'Understanding execution plans, index bloat, partial indexes, and optimizing queries handling millions of rows per hour.',
-      difficulty: 'INTERMEDIATE' as const,
-      type: 'DEEP_DIVE' as const,
-      featured: false,
-      readingTime: 8,
-      viewsCount: 9800,
-      publishedAt: new Date(),
-      author: {
-        id: 'a2',
-        name: 'Elena Rostova',
-        username: 'erostova',
-        avatar: undefined,
-      },
-      category: {
-        id: 'c2',
-        name: 'Databases',
-        slug: 'databases',
-      },
-      technologies: [{ id: 't3', name: 'PostgreSQL', slug: 'postgresql' }],
-    },
-    {
-      id: '3',
-      title: 'Kafka Partitioning Strategies for Zero-Data-Loss Architectures',
-      slug: 'kafka-partitioning-zero-data-loss',
-      excerpt:
-        'Guaranteed message ordering, consumer group rebalancing internals, and handling backpressure in distributed event stream pipelines.',
-      difficulty: 'ADVANCED' as const,
-      type: 'SYSTEM_DESIGN' as const,
-      featured: false,
-      readingTime: 15,
-      viewsCount: 12300,
-      publishedAt: new Date(),
-      author: {
-        id: 'a1',
-        name: 'Alex Rivera',
-        username: 'alexdev',
-        avatar: undefined,
-      },
-      category: {
-        id: 'c3',
-        name: 'Distributed Systems',
-        slug: 'distributed-systems',
-      },
-      technologies: [
-        { id: 't4', name: 'Kafka', slug: 'kafka' },
-        { id: 't5', name: 'Docker', slug: 'docker' },
-      ],
-    },
-    {
-      id: '4',
-      title: 'Spring Boot 3.4 & Virtual Threads (Project Loom) in Production',
-      slug: 'spring-boot-virtual-threads-production',
-      excerpt:
-        'Benchmarking throughput and memory consumption of reactive WebFlux vs blocking I/O with carrier thread pin avoidance.',
-      difficulty: 'ADVANCED' as const,
-      type: 'DEEP_DIVE' as const,
-      featured: false,
-      readingTime: 11,
-      viewsCount: 7600,
-      publishedAt: new Date(),
-      author: {
-        id: 'a3',
-        name: 'Marcus Vance',
-        username: 'marcusv',
-        avatar: undefined,
-      },
-      category: {
-        id: 'c4',
-        name: 'Backend Engineering',
-        slug: 'backend-engineering',
-      },
-      technologies: [{ id: 't6', name: 'Spring Boot', slug: 'spring-boot' }],
-    },
-  ];
+  let articles: any[] = [];
+  try {
+    const res = await articlesApi.getPublicFeed({
+      categorySlug: params.category,
+      difficulty: params.difficulty,
+      technologySlug: params.technology,
+      search: params.search,
+    });
+    if (res?.items && Array.isArray(res.items)) {
+      articles = res.items;
+    }
+  } catch {
+    articles = [];
+  }
+
+  // Fetch categories from API with fallback
+  let categories: any[] = [];
+  try {
+    const catRes = await categoriesApi.getAll();
+    if (Array.isArray(catRes) && catRes.length > 0) {
+      categories = catRes;
+    }
+  } catch {
+    categories = siteConfig.categories.map((name) => ({
+      name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    }));
+  }
+
+  if (categories.length === 0) {
+    categories = siteConfig.categories.map((name) => ({
+      name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    }));
+  }
 
   return (
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-8">
@@ -149,46 +77,76 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
           <span className="font-mono text-muted-foreground mr-1 flex items-center gap-1">
             <Filter className="h-3 w-3" /> Categories:
           </span>
-          <a
+          <Link
             href="/articles"
-            className="rounded-full bg-foreground text-background px-3 py-1 font-medium font-mono"
+            className={`rounded-full px-3 py-1 font-medium font-mono transition-colors ${
+              !params.category ? 'bg-foreground text-background' : 'border border-border bg-card text-muted-foreground hover:text-foreground'
+            }`}
           >
             All
-          </a>
-          {siteConfig.categories.slice(0, 5).map((cat) => {
-            const slug = cat.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          </Link>
+          {categories.slice(0, 6).map((cat: any) => {
+            const isSelected = params.category === cat.slug;
             return (
-              <a
-                key={cat}
-                href={`/articles?category=${slug}`}
-                className="rounded-full border border-border bg-card px-3 py-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors font-mono"
+              <Link
+                key={cat.slug}
+                href={`/articles?category=${cat.slug}`}
+                className={`rounded-full px-3 py-1 transition-colors font-mono ${
+                  isSelected
+                    ? 'bg-foreground text-background font-semibold'
+                    : 'border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
               >
-                {cat}
-              </a>
+                {cat.name}
+              </Link>
             );
           })}
         </div>
 
         <div className="flex items-center gap-2">
           <span className="font-mono text-muted-foreground">Level:</span>
-          {['Beginner', 'Intermediate', 'Advanced'].map((lvl) => (
-            <a
-              key={lvl}
-              href={`/articles?difficulty=${lvl.toUpperCase()}`}
-              className="rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {lvl}
-            </a>
-          ))}
+          {['Beginner', 'Intermediate', 'Advanced'].map((lvl) => {
+            const isSelected = params.difficulty === lvl.toUpperCase();
+            return (
+              <Link
+                key={lvl}
+                href={`/articles?difficulty=${lvl.toUpperCase()}`}
+                className={`rounded border px-2 py-0.5 font-mono text-[11px] transition-colors ${
+                  isSelected
+                    ? 'border-primary bg-primary text-primary-foreground font-semibold'
+                    : 'border-border text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {lvl}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
       {/* Articles Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {sampleArticles.map((article) => (
-          <ArticleCard key={article.id} article={article} />
-        ))}
-      </div>
+      {articles.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border p-12 text-center space-y-3 font-mono">
+          <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
+          <p className="text-sm font-semibold text-foreground">No articles match your filter criteria.</p>
+          <Link href="/articles" className="text-xs text-primary underline">
+            Reset all filters
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {articles.map((article) => (
+            <ArticleCard
+              key={article.id}
+              article={{
+                ...article,
+                category: article.category || { name: 'System Design', slug: 'system-design' },
+                author: article.author || { name: 'Alex Rivera', username: 'alexdev' },
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

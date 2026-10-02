@@ -18,6 +18,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    const apiTarget = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+    const uploadsTarget = process.env.INTERNAL_UPLOADS_URL || 'http://localhost:4000/uploads';
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${apiTarget}/:path*`,
+      },
+      {
+        source: '/uploads/:path*',
+        destination: `${uploadsTarget}/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

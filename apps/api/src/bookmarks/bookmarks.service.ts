@@ -35,6 +35,7 @@ export class BookmarksService {
                 id: true,
                 name: true,
                 slug: true,
+                image: true,
               },
             },
             technologies: {

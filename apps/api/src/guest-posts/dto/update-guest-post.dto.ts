@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateGuestPostDto } from './create-guest-post.dto';
-import { IsOptional, IsBoolean } from 'class-validator';
+import { IsOptional, IsBoolean, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateGuestPostDto extends PartialType(CreateGuestPostDto) {
@@ -8,4 +8,9 @@ export class UpdateGuestPostDto extends PartialType(CreateGuestPostDto) {
   @IsOptional()
   @IsBoolean()
   resubmit?: boolean;
+
+  @ApiPropertyOptional({ description: 'Secret edit token for anonymous guest submissions' })
+  @IsOptional()
+  @IsString()
+  editToken?: string;
 }
