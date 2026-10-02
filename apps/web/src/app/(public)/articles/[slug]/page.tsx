@@ -1,4 +1,5 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { siteConfig } from '@nexus/config';
@@ -33,6 +34,88 @@ export const revalidate = 60;
 
 interface ArticlePageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
+  const { slug } = await params;
+  let article: any = null;
+  try {
+    article = await articlesApi.getBySlug(slug);
+  } catch {
+    article = null;
+  }
+
+  if (!article) {
+    return {
+      title: 'Article Not Found',
+      description: 'The requested engineering blueprint or system design article could not be found.',
+    };
+  }
+
+  const title = article.seoTitle || article.title;
+  const description = article.seoDescription || article.excerpt || 'Technical architecture blueprint on NexusBlog.';
+  const authorName = article.guestAuthorName || article.author?.name || 'Nexus Engineering Team';
+  const categoryName = article.category?.name || 'System Design';
+
+  const ogImageUrl =
+    article.ogImage ||
+    article.coverImage ||
+    `/api/og?title=${encodeURIComponent(article.title)}&category=${encodeURIComponent(categoryName)}&author=${encodeURIComponent(authorName)}&readingTime=${article.readingTime || 10}`;
+
+  const canonicalPath = `/articles/${article.slug}`;
+
+  return {
+    title,
+    description,
+    authors: [{ name: authorName }],
+    keywords: [
+      categoryName,
+      ...(article.tags?.map((t: any) => t.name) || []),
+      ...(article.technologies?.map((t: any) => t.name) || []),
+      'system design',
+      'distributed systems',
+      'software architecture',
+      'backend engineering',
+    ],
+    alternates: {
+      canonical: article.canonicalUrl || canonicalPath,
+    },
+    openGraph: {
+      type: 'article',
+      title,
+      description,
+      url: canonicalPath,
+      siteName: siteConfig.name,
+      publishedTime: article.publishedAt ? new Date(article.publishedAt).toISOString() : undefined,
+      modifiedTime: article.updatedAt ? new Date(article.updatedAt).toISOString() : undefined,
+      authors: [authorName],
+      section: categoryName,
+      tags: article.tags?.map((t: any) => t.name) || [],
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      creator: '@nexusblog',
+      site: '@nexusblog',
+      images: [
+        {
+          url: ogImageUrl,
+          alt: title,
+          width: 1200,
+          height: 630,
+        },
+      ],
+    },
+  };
 }
 
 export default async function ArticleDetailPage({ params }: ArticlePageProps) {
@@ -284,7 +367,10 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               />
               <ShareButtons
                 title={article.title}
-                url={`${siteConfig.url}/articles/${article.slug}`}
+                url={`/articles/${article.slug}`}
+                excerpt={article.excerpt}
+                author={authorName}
+                category={categoryName}
               />
             </div>
           </div>
@@ -460,7 +546,10 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               />
               <ShareButtons
                 title={article.title}
-                url={`${siteConfig.url}/articles/${article.slug}`}
+                url={`/articles/${article.slug}`}
+                excerpt={article.excerpt}
+                author={authorName}
+                category={categoryName}
               />
             </div>
 

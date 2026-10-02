@@ -1,6 +1,8 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { siteConfig } from '@nexus/config';
 import { ArticleCard } from '@/components/public/article-card';
 import { Layers, ArrowLeft, BookOpen } from 'lucide-react';
 import { categoriesApi, articlesApi } from '@/lib/api-client';
@@ -8,6 +10,52 @@ import { IconRenderer } from '@/components/common/icon-renderer';
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug).toLowerCase();
+  let category: any = null;
+  try {
+    category = await categoriesApi.getBySlug(decodedSlug);
+  } catch {
+    category = null;
+  }
+
+  const categoryName = category?.name || decodedSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const description = category?.description || `Technical articles, system designs, and distributed systems guides for ${categoryName}.`;
+
+  return {
+    title: `${categoryName} Blueprints & Guides`,
+    description,
+    openGraph: {
+      title: `${categoryName} | NexusBlog Architecture Domain`,
+      description,
+      url: `/categories/${decodedSlug}`,
+      siteName: siteConfig.name,
+      images: [
+        {
+          url: `/api/og?title=${encodeURIComponent(categoryName)}&category=ARCHITECTURE%20DOMAIN`,
+          width: 1200,
+          height: 630,
+          alt: categoryName,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${categoryName} | NexusBlog`,
+      description,
+      images: [
+        {
+          url: `/api/og?title=${encodeURIComponent(categoryName)}&category=ARCHITECTURE%20DOMAIN`,
+          width: 1200,
+          height: 630,
+          alt: categoryName,
+        },
+      ],
+    },
+  };
 }
 
 export default async function CategoryDetailPage({ params }: CategoryPageProps) {

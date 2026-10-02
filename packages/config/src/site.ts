@@ -7,14 +7,25 @@ function normalizeApiUrl(rawUrl?: string, fallback = 'http://127.0.0.1:4000/api'
   return url.startsWith('/') ? (url.endsWith('/api') ? url : `${url}/api`) : `/${url}`;
 }
 
-export const siteConfig = {
-  name: 'NexusBlog',
-  description: 'Production-Grade Technical Publishing Platform & Developer Knowledge Portal',
-  url:
+function getSiteUrl(): string {
+  const envUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.SITE_URL ||
-    'http://localhost:3000',
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+  if (envUrl) {
+    return envUrl.trim().replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
+    return window.location.origin;
+  }
+  return process.env.NODE_ENV === 'production' ? 'https://nexusblog.dev' : 'http://localhost:3000';
+}
+
+export const siteConfig = {
+  name: 'NexusBlog',
+  description: 'Production-Grade Technical Publishing Platform & Developer Knowledge Portal',
+  url: getSiteUrl(),
   apiUrl:
     typeof window === 'undefined'
       ? normalizeApiUrl(process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL, 'http://127.0.0.1:4000/api')

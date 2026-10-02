@@ -1,6 +1,8 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { siteConfig } from '@nexus/config';
 import { ArticleCard } from '@/components/public/article-card';
 import { Cpu, ExternalLink, ArrowLeft, BookOpen } from 'lucide-react';
 import { technologiesApi, articlesApi } from '@/lib/api-client';
@@ -23,6 +25,52 @@ const TECH_DOCS: Record<string, string> = {
   clickhouse: 'https://clickhouse.com/docs',
   elasticsearch: 'https://www.elastic.co/guide/index.html',
 };
+
+export async function generateMetadata({ params }: TechnologyPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug).toLowerCase();
+  let technology: any = null;
+  try {
+    technology = await technologiesApi.getBySlug(decodedSlug);
+  } catch {
+    technology = null;
+  }
+
+  const techName = technology?.name || decodedSlug.split(/[-_ ]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const description = technology?.description || `Engineering benchmarks, architecture patterns, and production deep dives using ${techName}.`;
+
+  return {
+    title: `${techName} Stack Architecture & Blueprints`,
+    description,
+    openGraph: {
+      title: `${techName} Architecture Stack | NexusBlog`,
+      description,
+      url: `/technologies/${decodedSlug}`,
+      siteName: siteConfig.name,
+      images: [
+        {
+          url: `/api/og?title=${encodeURIComponent(techName)}&category=INFRASTRUCTURE%20STACK`,
+          width: 1200,
+          height: 630,
+          alt: techName,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${techName} Stack | NexusBlog`,
+      description,
+      images: [
+        {
+          url: `/api/og?title=${encodeURIComponent(techName)}&category=INFRASTRUCTURE%20STACK`,
+          width: 1200,
+          height: 630,
+          alt: techName,
+        },
+      ],
+    },
+  };
+}
 
 export default async function TechnologyDetailPage({ params }: TechnologyPageProps) {
   const { slug } = await params;

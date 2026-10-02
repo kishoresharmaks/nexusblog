@@ -1,5 +1,7 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { siteConfig } from '@nexus/config';
 import { articlesApi } from '@/lib/api-client';
 import {
   Bookmark,
@@ -18,6 +20,41 @@ import {
 } from 'lucide-react';
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: 'Industry Architecture Case Studies & Postmortems',
+  description:
+    'Deep architectural teardowns and failure postmortems of high-throughput production systems, distributed databases, and multi-region infrastructure.',
+  openGraph: {
+    title: 'Industry Architecture Case Studies & Postmortems | NexusBlog',
+    description:
+      'Deep architectural teardowns and failure postmortems of high-throughput production systems, distributed databases, and multi-region infrastructure.',
+    url: '/case-studies',
+    siteName: siteConfig.name,
+    images: [
+      {
+        url: '/api/og?title=Industry%20Architecture%20Case%20Studies&category=CASE%20STUDIES',
+        width: 1200,
+        height: 630,
+        alt: 'Industry Architecture Case Studies',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Industry Architecture Case Studies & Postmortems | NexusBlog',
+    description:
+      'Deep architectural teardowns and failure postmortems of high-throughput production systems, distributed databases, and multi-region infrastructure.',
+    images: [
+      {
+        url: '/api/og?title=Industry%20Architecture%20Case%20Studies&category=CASE%20STUDIES',
+        width: 1200,
+        height: 630,
+        alt: 'Industry Architecture Case Studies',
+      },
+    ],
+  },
+};
 
 interface CaseStudiesPageProps {
   searchParams: Promise<{

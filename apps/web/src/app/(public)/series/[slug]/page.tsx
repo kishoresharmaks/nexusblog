@@ -1,11 +1,59 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { siteConfig } from '@nexus/config';
 import { Layers, ArrowLeft, BookOpen, Clock, CheckCircle2, ChevronRight, User, ShieldCheck, Sparkles, ArrowRight } from 'lucide-react';
 import { seriesApi } from '@/lib/api-client';
 
 interface SeriesPageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: SeriesPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug).toLowerCase();
+  let series: any = null;
+  try {
+    series = await seriesApi.getBySlug(decodedSlug);
+  } catch {
+    series = null;
+  }
+
+  const title = series?.title || decodedSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const description = series?.description || `Masterclass engineering curriculum: ${title}`;
+
+  return {
+    title: `${title} | Learning Track`,
+    description,
+    openGraph: {
+      title: `${title} | Architecture Track`,
+      description,
+      url: `/series/${decodedSlug}`,
+      siteName: siteConfig.name,
+      images: [
+        {
+          url: series?.coverImage || `/api/og?title=${encodeURIComponent(title)}&category=LEARNING%20TRACK`,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | Architecture Track`,
+      description,
+      images: [
+        {
+          url: series?.coverImage || `/api/og?title=${encodeURIComponent(title)}&category=LEARNING%20TRACK`,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+  };
 }
 
 export default async function SeriesDetailPage({ params }: SeriesPageProps) {
