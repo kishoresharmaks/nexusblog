@@ -11,6 +11,10 @@ import {
   BarChart3,
   GitPullRequest,
   BookOpen,
+  FileText,
+  AlertTriangle,
+  Code2,
+  HelpCircle,
 } from 'lucide-react';
 
 export default function WriteForUsPage() {
@@ -25,7 +29,7 @@ export default function WriteForUsPage() {
     },
     {
       title: 'Database Engineering',
-      description: 'B-tree vs LSM-tree storage engines, Write-Ahead Logging (WAL), query planners, distributed transactions (2PC/Saga), and Timescale/ClickHouse analytics.',
+      description: 'B-tree vs LSM-tree storage engines, Write-Ahead Logging (WAL), query planners, distributed transactions (2PC/Saga), and ClickHouse/PostgreSQL analytics.',
     },
     {
       title: 'Cloud Infrastructure & DevOps',
@@ -40,15 +44,15 @@ export default function WriteForUsPage() {
   const expectations = [
     {
       title: 'Rigorous Technical Depth',
-      desc: 'We publish actionable, engineering-first content. Skip basic boilerplate introductions and dive directly into real problems, trade-offs, and solutions.',
+      desc: 'We publish actionable, engineering-first content. Skip generic introductions and dive directly into concrete problems, system topologies, and trade-offs.',
     },
     {
       title: 'Runnable Code & Architecture Diagrams',
-      desc: 'Include reproducible code blocks and clear system diagrams (Mermaid, React Flow, or SVGs) to visualize distributed topologies and sequence flows.',
+      desc: 'Include reproducible code blocks and clear system diagrams (Mermaid flowcharts, sequence diagrams, or SVGs) to visualize distributed flows.',
     },
     {
       title: 'Honest Trade-off Analysis',
-      desc: 'No technology is a silver bullet. Explain where your chosen architecture breaks, performance limitations, operational overhead, and what alternatives were evaluated.',
+      desc: 'No technology is a silver bullet. Explain where your chosen architecture breaks, performance limitations, operational overhead, and failure modes.',
     },
     {
       title: '100% Original Work',
@@ -83,31 +87,55 @@ export default function WriteForUsPage() {
     <div className="container mx-auto max-w-5xl px-4 sm:px-6 py-12 sm:py-16 space-y-16 font-sans">
       {/* Hero */}
       <div className="text-center space-y-4 max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-3.5 py-1 text-xs font-mono text-muted-foreground">
-          <PenTool className="h-3.5 w-3.5 text-primary" />
-          <span>Contributor Program</span>
+        <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1 text-xs font-mono text-primary font-semibold">
+          <PenTool className="h-3.5 w-3.5" />
+          <span>Contributor Program • Technical Writing</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground leading-tight">
           Write for NexusBlog
         </h1>
         <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-          Share your real-world engineering experiences, architecture case studies, and performance breakthroughs with tens of thousands of staff engineers and system architects.
+          Share your real-world engineering experiences, architecture blueprints, and performance benchmarks with tens of thousands of staff engineers and distributed systems architects.
         </p>
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/guest-post/submit"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all shadow-md"
           >
-            <span>Submit a Guest Post</span>
+            <span>Submit a Guest Blueprint</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href="/articles"
+            href="/author-guidelines"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-border bg-card text-foreground font-semibold text-sm hover:bg-muted transition-all"
           >
-            <span>Explore Published Guides</span>
+            <FileText className="h-4 w-4 text-primary" />
+            <span>Read Author Guidelines &amp; Rules</span>
           </Link>
         </div>
+      </div>
+
+      {/* Rules & Guidelines Banner */}
+      <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 via-card to-card p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xs">
+        <div className="space-y-2 max-w-2xl">
+          <div className="flex items-center gap-2 text-xs font-mono text-primary font-bold">
+            <ShieldCheck className="h-4 w-4 text-emerald-500" />
+            <span>Posting Rules &amp; Quality Mandate</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">
+            Author Guidelines, Formatting &amp; Review Lifecycle
+          </h2>
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            All submitted articles undergo peer review by our editorial engineering staff. Ensure your draft complies with our MDX formatting standards, code conventions, and zero-plagiarism policy.
+          </p>
+        </div>
+        <Link
+          href="/author-guidelines"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-foreground text-background font-mono text-xs font-bold hover:bg-foreground/90 transition-all shrink-0 shadow-xs"
+        >
+          <span>View Detailed Guidelines</span>
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
 
       {/* Topics accepted */}
@@ -169,7 +197,7 @@ export default function WriteForUsPage() {
       <div className="space-y-6">
         <div className="space-y-1 border-b border-border/60 pb-4">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono">
-            Editorial & Review Process
+            Editorial &amp; Review Process
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground">
             Transparent review stages from submission to publication.
@@ -195,18 +223,26 @@ export default function WriteForUsPage() {
       </div>
 
       {/* CTA Box */}
-      <div className="rounded-2xl border border-primary/30 bg-primary/5 p-8 sm:p-10 text-center space-y-5">
-        <h2 className="text-2xl font-bold text-foreground">Ready to share your engineering story?</h2>
-        <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+      <div className="rounded-3xl border border-primary/30 bg-primary/5 p-8 sm:p-12 text-center space-y-5">
+        <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Ready to share your engineering story?</h2>
+        <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
           Start writing in our interactive MDX draft editor. Save drafts, preview diagrams in real-time, and submit whenever you are ready.
         </p>
-        <Link
-          href="/guest-post/submit"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all shadow-sm"
-        >
-          <span>Open Guest Post Editor</span>
-          <ArrowRight className="h-4 w-4" />
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+          <Link
+            href="/guest-post/submit"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all shadow-sm"
+          >
+            <span>Open Guest Post Editor</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/author-guidelines"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-card text-foreground font-semibold text-sm hover:bg-muted transition-all"
+          >
+            <span>Read Author Guidelines</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { MailModule } from './mail/mail.module';
 import { SystemSettingsModule } from './system-settings/system-settings.module';
+import { PagesModule } from './pages/pages.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 
 @Module({
@@ -58,6 +59,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     GuestPostsModule,
     AuditLogsModule,
     NewsletterModule,
+    PagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

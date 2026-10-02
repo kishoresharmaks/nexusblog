@@ -159,8 +159,8 @@ export function Footer() {
 
         {/* Multi-Column Directory: 2-Columns on Mobile, 3-Columns on Tablet, 5-Columns on Desktop */}
         <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-6 sm:gap-y-8 md:grid-cols-3 lg:grid-cols-5 pt-2">
-          {/* Section 1: Brand & Operational Status (Spans 2-columns on mobile for clean top placement) */}
-          <div className="col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-1 space-y-3.5 pb-2 lg:pb-0 border-b lg:border-b-0 border-border/40">
+          {/* Section 1: Brand */}
+          <div className="col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-1 space-y-3 pb-2 lg:pb-0 border-b lg:border-b-0 border-border/40">
             <Link
               href="/"
               className="inline-flex items-center gap-2.5 font-bold text-lg tracking-tight text-foreground group"
@@ -169,22 +169,11 @@ export function Footer() {
             </Link>
 
             <p className="text-xs text-muted-foreground leading-relaxed max-w-sm lg:max-w-none">
-              Production-grade technical publishing platform &amp; developer knowledge portal for distributed systems engineering.
+              Open engineering publications, systems architecture blueprints, and developer guides.
             </p>
-
-            {/* Live Operational Status */}
-            <div className="pt-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-mono text-emerald-400">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span>All Systems Operational</span>
-              </div>
-            </div>
           </div>
 
-          {/* Section 2: Architecture Topics (Left Column on Mobile) */}
+          {/* Section 2: Architecture Topics */}
           <div className="col-span-1 space-y-3 text-xs">
             <span className="font-mono font-bold uppercase tracking-wider text-foreground text-[11px] flex items-center gap-1.5">
               <Layers className="h-3.5 w-3.5 text-primary" />
@@ -230,7 +219,7 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Section 3: Technology Hubs (Right Column on Mobile) */}
+          {/* Section 3: Technology Hubs */}
           <div className="col-span-1 space-y-3 text-xs">
             <span className="font-mono font-bold uppercase tracking-wider text-foreground text-[11px] flex items-center gap-1.5">
               <Cpu className="h-3.5 w-3.5 text-primary" />
@@ -276,7 +265,7 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Section 4: Knowledge Hub (Left Column on Mobile) */}
+          {/* Section 4: Knowledge Hub */}
           <div className="col-span-1 space-y-3 text-xs">
             <span className="font-mono font-bold uppercase tracking-wider text-foreground text-[11px] flex items-center gap-1.5">
               <Bookmark className="h-3.5 w-3.5 text-primary" />
@@ -304,7 +293,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/write-for-us" className="hover:text-primary transition-colors block py-0.5">
+                <Link href="/write-for-us" className="hover:text-primary transition-colors block py-0.5 font-medium text-foreground">
                   Author Guidelines
                 </Link>
               </li>
@@ -317,11 +306,11 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Section 5: Platform & Tools (Right Column on Mobile) */}
+          {/* Section 5: Platform & Legal */}
           <div className="col-span-1 space-y-3 text-xs">
             <span className="font-mono font-bold uppercase tracking-wider text-foreground text-[11px] flex items-center gap-1.5">
               <Terminal className="h-3.5 w-3.5 text-primary" />
-              <span>Platform</span>
+              <span>Platform &amp; Legal</span>
             </span>
             <ul className="space-y-1.5 text-muted-foreground font-sans">
               <li>
@@ -330,38 +319,50 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/series" className="hover:text-primary transition-colors block py-0.5">
-                  Learning Series
+                <Link href="/privacy-policy" className="hover:text-primary transition-colors block py-0.5">
+                  Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/login" className="hover:text-primary transition-colors block py-0.5">
-                  Sign In
+                <Link href="/terms-of-service" className="hover:text-primary transition-colors block py-0.5">
+                  Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="/register" className="hover:text-primary transition-colors block py-0.5">
-                  Create Account
+                <Link href="/disclaimer" className="hover:text-primary transition-colors block py-0.5">
+                  Disclaimer
                 </Link>
               </li>
               <li>
-                <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono text-muted-foreground/80 pt-1">
-                  <ShieldCheck className="h-3 w-3 text-emerald-500" />
-                  <span>Production Ready</span>
-                </span>
+                <Link href="/content-policy" className="hover:text-primary transition-colors block py-0.5">
+                  Content Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-primary transition-colors block py-0.5 font-semibold text-primary">
+                  Contact Us
+                </Link>
               </li>
             </ul>
           </div>
         </div>
 
         {/* Bottom Sub-Footer Bar */}
-        <div className="pt-6 sm:pt-8 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-muted-foreground">
-          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-4 text-center sm:text-left">
+        <div className="pt-6 sm:pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-3.5 gap-y-1.5 text-center md:text-left text-[11px]">
             <p>© {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
-            <span className="hidden sm:inline-block text-border">•</span>
-            <p className="text-[11px] text-muted-foreground/80">
-              Next.js 15 • NestJS • Tailwind CSS • MDX
-            </p>
+            <span className="hidden md:inline-block text-border">•</span>
+            <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
+            <span className="text-border">•</span>
+            <Link href="/terms-of-service" className="hover:text-foreground transition-colors">Terms</Link>
+            <span className="text-border">•</span>
+            <Link href="/disclaimer" className="hover:text-foreground transition-colors">Disclaimer</Link>
+            <span className="text-border">•</span>
+            <Link href="/content-policy" className="hover:text-foreground transition-colors">Content Policy</Link>
+            <span className="text-border">•</span>
+            <Link href="/cookie-policy" className="hover:text-foreground transition-colors">Cookies</Link>
+            <span className="text-border">•</span>
+            <Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link>
           </div>
 
           {/* Social Icons & Back to Top */}

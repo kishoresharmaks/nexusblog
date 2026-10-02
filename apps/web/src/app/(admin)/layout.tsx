@@ -28,11 +28,13 @@ import {
   PenSquare,
   ShieldCheck,
   Sliders,
+  FileCode2,
 } from 'lucide-react';
 
 const ADMIN_NAV = [
   { name: 'Dashboard Overview', href: '/admin', icon: LayoutDashboard },
   { name: 'Articles Management', href: '/admin/articles', icon: FileText },
+  { name: 'Pages & Legal CMS', href: '/admin/pages', icon: FileCode2 },
   { name: 'Guest Post Queue', href: '/admin/guest-posts', icon: Inbox },
   { name: 'Series & Roadmaps', href: '/admin/series', icon: Layers },
   { name: 'Taxonomy & Categories', href: '/admin/categories', icon: FolderTree },

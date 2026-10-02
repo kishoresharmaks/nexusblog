@@ -683,4 +683,36 @@ export const usersApi = {
   },
 };
 
+// Pages API (Dynamic Legal, CMS, and Institutional Pages)
+export const pagesApi = {
+  async getAll(all?: boolean) {
+    const endpoint = all ? '/pages?all=true' : '/pages';
+    return request<any[]>(endpoint);
+  },
+  async getBySlug(slug: string) {
+    return request<any>(`/pages/${slug}`);
+  },
+  async getAdminDetail(id: string) {
+    return request<any>(`/pages/admin/detail/${id}`, {}, true);
+  },
+  async create(payload: any) {
+    return request<any>('/pages', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async update(id: string, payload: any) {
+    return request<any>(`/pages/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async delete(id: string) {
+    return request<any>(`/pages/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+};
+
+
 
