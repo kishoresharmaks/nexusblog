@@ -41,6 +41,11 @@ export class UsersService {
 
     return {
       ...user,
+      socialLinks: {
+        website: user.website || '',
+        github: user.github || '',
+        linkedin: user.linkedin || '',
+      },
       stats: {
         bookmarksCount: user._count.bookmarks,
         readingHistoryCount: user._count.readingHistories,
@@ -80,6 +85,11 @@ export class UsersService {
 
     return {
       ...user,
+      socialLinks: {
+        website: user.website || '',
+        github: user.github || '',
+        linkedin: user.linkedin || '',
+      },
       stats: {
         articlesCount: user._count.articles,
       },
@@ -87,15 +97,19 @@ export class UsersService {
   }
 
   async updateProfile(userId: string, dto: UpdateUserProfileDto) {
-    return this.prisma.user.update({
+    const website = dto.socialLinks?.website !== undefined ? dto.socialLinks.website : dto.website;
+    const github = dto.socialLinks?.github !== undefined ? dto.socialLinks.github : dto.github;
+    const linkedin = dto.socialLinks?.linkedin !== undefined ? dto.socialLinks.linkedin : dto.linkedin;
+
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.bio !== undefined && { bio: dto.bio }),
         ...(dto.avatar !== undefined && { avatar: dto.avatar }),
-        ...(dto.website !== undefined && { website: dto.website }),
-        ...(dto.github !== undefined && { github: dto.github }),
-        ...(dto.linkedin !== undefined && { linkedin: dto.linkedin }),
+        ...(website !== undefined && { website }),
+        ...(github !== undefined && { github }),
+        ...(linkedin !== undefined && { linkedin }),
       },
       select: {
         id: true,
@@ -112,6 +126,15 @@ export class UsersService {
         updatedAt: true,
       },
     });
+
+    return {
+      ...updated,
+      socialLinks: {
+        website: updated.website || '',
+        github: updated.github || '',
+        linkedin: updated.linkedin || '',
+      },
+    };
   }
 
   async getActiveSessions(userId: string) {

@@ -8,7 +8,7 @@ import { usersApi } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 export default function ProfileSettingsPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -37,9 +37,9 @@ export default function ProfileSettingsPage() {
             email: profile.email || '',
             bio: profile.bio || '',
             avatar: profile.avatar || '',
-            website: socials.website || '',
-            github: socials.github || '',
-            linkedin: socials.linkedin || '',
+            website: profile.website || socials.website || '',
+            github: profile.github || socials.github || '',
+            linkedin: profile.linkedin || socials.linkedin || '',
           });
         }
       } catch {
@@ -59,12 +59,16 @@ export default function ProfileSettingsPage() {
         name: formData.name,
         bio: formData.bio,
         avatar: formData.avatar,
+        website: formData.website,
+        github: formData.github,
+        linkedin: formData.linkedin,
         socialLinks: {
           website: formData.website,
           github: formData.github,
           linkedin: formData.linkedin,
         },
       });
+      await refreshUser?.();
       toast.success('Profile updated successfully');
     } catch (err: any) {
       toast.error(err.message || 'Failed to update profile');
