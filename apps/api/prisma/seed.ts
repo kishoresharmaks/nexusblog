@@ -4,23 +4,39 @@ import * as fs from 'fs';
 import { PrismaClient, Role, ArticleStatus, DifficultyLevel, ArticleType, GuestPostStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
 
-// Automatically locate and load .env from monorepo root or apps/api
-const envPaths = [
-  path.resolve(__dirname, '../.env'),
-  path.resolve(__dirname, '../../.env'),
-  path.resolve(process.cwd(), '.env'),
-  path.resolve(process.cwd(), 'apps/api/.env'),
-  path.resolve(__dirname, '.env'),
+// Automatically locate and load .env / .env.local / .env.production from monorepo root or apps/api
+const envFiles = ['.env', '.env.local', '.env.production'];
+const baseDirs = [
+  path.resolve(__dirname, '..'),
+  path.resolve(__dirname, '../..'),
+  process.cwd(),
+  path.resolve(process.cwd(), 'apps/api'),
+  __dirname,
 ];
 
-for (const envPath of envPaths) {
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath });
+for (const dir of baseDirs) {
+  for (const file of envFiles) {
+    const fullPath = path.join(dir, file);
+    if (fs.existsSync(fullPath)) {
+      dotenv.config({ path: fullPath });
+    }
   }
 }
 dotenv.config();
 
-const prisma = new PrismaClient();
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  'mongodb+srv://krishkishoreks_db_user:NEH0AePPKevyWWNS@cluster0.u3idvmr.mongodb.net/nexusblog?retryWrites=true&w=majority&appName=Cluster0';
+
+process.env.DATABASE_URL = databaseUrl;
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: databaseUrl,
+    },
+  },
+});
 
 async function hashPassword(password: string): Promise<string> {
   return argon2.hash(password, {
