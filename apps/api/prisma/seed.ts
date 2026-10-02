@@ -1,5 +1,24 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+import * as fs from 'fs';
 import { PrismaClient, Role, ArticleStatus, DifficultyLevel, ArticleType, GuestPostStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
+
+// Automatically locate and load .env from monorepo root or apps/api
+const envPaths = [
+  path.resolve(__dirname, '../.env'),
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'apps/api/.env'),
+  path.resolve(__dirname, '.env'),
+];
+
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+  }
+}
+dotenv.config();
 
 const prisma = new PrismaClient();
 
