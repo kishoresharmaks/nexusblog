@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArticleCard } from '@/components/public/article-card';
 import { Cpu, ExternalLink, ArrowLeft, BookOpen } from 'lucide-react';
 import { technologiesApi, articlesApi } from '@/lib/api-client';
+import { IconRenderer } from '@/components/common/icon-renderer';
 
 interface TechnologyPageProps {
   params: Promise<{ slug: string }>;
@@ -63,17 +64,22 @@ export default async function TechnologyDetailPage({ params }: TechnologyPagePro
         </Link>
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-6">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs font-mono text-muted-foreground">
-              <Cpu className="h-3.5 w-3.5 text-primary" />
-              <span>Technology Stack</span>
+          <div className="flex items-start gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-muted/40 border border-border/60 flex items-center justify-center p-3 shrink-0 shadow-xs">
+              <IconRenderer value={technology?.logo || decodedSlug || techName} defaultIcon="Cpu" className="h-8 w-8" />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground font-mono">
-              {techName}
-            </h1>
-            <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-              {techDescription}
-            </p>
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs font-mono text-muted-foreground">
+                <Cpu className="h-3.5 w-3.5 text-primary" />
+                <span>Technology Stack</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground font-mono">
+                {techName}
+              </h1>
+              <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
+                {techDescription}
+              </p>
+            </div>
           </div>
 
           <div>

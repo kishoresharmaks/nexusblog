@@ -193,15 +193,15 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
           {technologies.slice(0, 6).map((tech: any) => (
             <Link
               key={tech.slug}
               href={`/technologies/${tech.slug}`}
-              className="flex flex-col items-center justify-center p-4 rounded-xl border border-border/70 bg-card/60 hover:bg-card hover:border-border hover:shadow transition-all text-center group"
+              className="flex flex-col items-center justify-center p-4 sm:p-5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200 text-center group"
             >
-              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-2 font-mono font-bold text-xs group-hover:scale-105 transition-transform p-2">
-                <IconRenderer value={tech.logo} defaultIcon="Database" className="h-6 w-6 text-primary" />
+              <div className="h-12 w-12 rounded-xl bg-muted/40 border border-border/40 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200 p-2.5">
+                <IconRenderer value={tech.logo || tech.slug || tech.name} defaultIcon="Cpu" className="h-7 w-7" />
               </div>
               <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors font-mono">
                 {tech.name}

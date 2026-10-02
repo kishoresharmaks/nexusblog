@@ -54,8 +54,8 @@ export default async function TechnologiesPage() {
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="h-11 w-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center p-2 text-primary font-mono font-bold text-sm group-hover:scale-105 transition-transform shrink-0">
-                  <IconRenderer value={tech.logo} defaultIcon="Cpu" className="h-6 w-6 text-primary" />
+                <div className="h-12 w-12 rounded-xl bg-muted/40 border border-border/40 flex items-center justify-center p-2.5 group-hover:scale-110 transition-transform shrink-0">
+                  <IconRenderer value={tech.logo || tech.slug || tech.name} defaultIcon="Cpu" className="h-7 w-7" />
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
               </div>
