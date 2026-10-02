@@ -33,7 +33,7 @@ export class CreateGuestPostDto {
   @IsNotEmpty()
   content!: string;
 
-  @ApiPropertyOptional({ example: 'https://cdn.nexusblog.dev/covers/redis.jpg' })
+  @ApiPropertyOptional({ example: 'https://cdn.nexusnation.in/covers/redis.jpg' })
   @IsOptional()
   @IsString()
   coverImage?: string;
@@ -70,7 +70,7 @@ export class CreateGuestPostDto {
   @IsString()
   authorBio?: string;
 
-  @ApiPropertyOptional({ example: 'https://cdn.nexusblog.dev/avatars/me.jpg' })
+  @ApiPropertyOptional({ example: 'https://cdn.nexusnation.in/avatars/me.jpg' })
   @IsOptional()
   @IsString()
   authorAvatar?: string;

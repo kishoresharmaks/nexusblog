@@ -19,7 +19,7 @@ function getSiteUrl(): string {
   if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
     return window.location.origin;
   }
-  return process.env.NODE_ENV === 'production' ? 'https://nexusblog.dev' : 'http://localhost:3000';
+  return process.env.NODE_ENV === 'production' ? 'https://nexusnation.in' : 'http://localhost:3000';
 }
 
 export const siteConfig = {
@@ -37,7 +37,7 @@ export const siteConfig = {
   },
   author: {
     name: 'Nexus Engineering Team',
-    website: 'https://nexusblog.dev',
+    website: 'https://nexusnation.in',
   },
   categories: [
     'System Design',

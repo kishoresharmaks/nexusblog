@@ -54,13 +54,13 @@ export class MailService {
       brevoSenderEmail:
         configMap['brevoSenderEmail'] ||
         process.env.BREVO_SENDER_EMAIL ||
-        'newsletter@nexusblog.dev',
+        'newsletter@nexusnation.in',
       brevoSenderName:
         configMap['brevoSenderName'] ||
         process.env.BREVO_SENDER_NAME ||
-        'NexusBlog Engineering Dispatch',
+        'NexusNation Engineering Dispatch',
       mailProvider: configMap['mailProvider'] || 'brevo',
-      siteUrl: configMap['siteUrl'] || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      siteUrl: configMap['siteUrl'] || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://nexusnation.in',
     };
   }
 
@@ -496,8 +496,8 @@ All existing active sessions across other devices and browsers have been termina
                 You received this email because you subscribed to the NexusBlog Engineering Dispatch.
               </p>
               <p style="margin:0;font-size:11px;color:#475569;font-family:monospace;">
-                NexusBlog &copy; ${new Date().getFullYear()} &bull; High-scale Technical Publishing &bull; 
-                <a href="https://nexusblog.dev" style="color:#0ea5e9;text-decoration:none;">Visit Portal</a>
+                NexusNation &copy; ${new Date().getFullYear()} &bull; High-scale Technical Publishing &bull; 
+                <a href="https://nexusnation.in" style="color:#0ea5e9;text-decoration:none;">Visit Portal</a>
               </p>
             </td>
           </tr>

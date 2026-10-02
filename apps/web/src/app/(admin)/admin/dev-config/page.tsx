@@ -111,7 +111,7 @@ export default function AdminDevConfigPage() {
 
       if (settingsData) {
         setBrevoApiKey(settingsData.brevoApiKey?.value || '');
-        setBrevoSenderEmail(settingsData.brevoSenderEmail?.value || 'newsletter@nexusblog.dev');
+        setBrevoSenderEmail(settingsData.brevoSenderEmail?.value || 'newsletter@nexusnation.in');
         setBrevoSenderName(settingsData.brevoSenderName?.value || 'NexusBlog Engineering Dispatch');
         setSiteUrl(settingsData.siteUrl?.value || 'http://localhost:3000');
         setSiteName(settingsData.siteName?.value || 'NexusBlog');
@@ -433,7 +433,7 @@ ROBOTS_INDEXING_MODE=${robotsIndexingMode}
                 <input
                   type="email"
                   required
-                  placeholder="e.g. newsletter@nexusblog.dev"
+                  placeholder="e.g. newsletter@nexusnation.in"
                   value={brevoSenderEmail}
                   onChange={(e) => setBrevoSenderEmail(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
@@ -622,7 +622,7 @@ ROBOTS_INDEXING_MODE=${robotsIndexingMode}
                 <input
                   type="url"
                   required
-                  placeholder="https://nexusblog.dev"
+                  placeholder="https://nexusnation.in"
                   value={siteUrl}
                   onChange={(e) => setSiteUrl(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"

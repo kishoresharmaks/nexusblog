@@ -15,7 +15,7 @@ function escapeXml(unsafe: string | null | undefined): string {
 }
 
 export async function GET() {
-  const baseUrl = (siteConfig.url || 'https://nexusblog.dev').replace(/\/$/, '');
+  const baseUrl = (siteConfig.url || 'https://nexusnation.in').replace(/\/$/, '');
 
   let feedArticles: any[] = [];
   try {

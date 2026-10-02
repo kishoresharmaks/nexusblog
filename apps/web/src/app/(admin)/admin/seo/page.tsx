@@ -96,7 +96,7 @@ export default function AdminSeoDiagnosticsPage() {
   };
 
   const getComputedRobotsPreview = () => {
-    const cleanUrl = (siteUrl || 'https://nexusblog.dev').replace(/\/+$/, '');
+    const cleanUrl = (siteUrl || 'https://nexusnation.in').replace(/\/+$/, '');
     if (robotsIndexingMode === 'disallow_all') {
       return `# ==========================================
 # Robots.txt - Search Engine Indexing Disabled
@@ -134,7 +134,7 @@ Sitemap: ${cleanUrl}/sitemap.xml`;
   };
 
   const applyPreset = (type: 'dev' | 'prod' | 'strict') => {
-    const cleanUrl = (siteUrl || 'https://nexusblog.dev').replace(/\/+$/, '');
+    const cleanUrl = (siteUrl || 'https://nexusnation.in').replace(/\/+$/, '');
     if (type === 'dev') {
       setRobotsIndexingMode('disallow_all');
       toast.info('Switched to Development / Testing mode (All indexing blocked)');
@@ -654,11 +654,11 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
                           </div>
                         )}
                         <div className="absolute bottom-2 left-2 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-mono text-white">
-                          nexusblog.dev
+                          nexusnation.in
                         </div>
                       </div>
                       <div className="p-4 space-y-1 bg-card">
-                        <p className="text-[11px] font-mono text-muted-foreground">nexusblog.dev</p>
+                        <p className="text-[11px] font-mono text-muted-foreground">nexusnation.in</p>
                         <h4 className="text-sm font-bold text-foreground leading-snug line-clamp-2">
                           {selectedArticle.seoTitle || selectedArticle.title}
                         </h4>
@@ -688,7 +688,7 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
                       </div>
                       <div className="p-3.5 space-y-1 bg-muted/20 border-t border-border/40">
                         <p className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
-                          nexusblog.dev • 5 min read
+                          nexusnation.in • 5 min read
                         </p>
                         <h4 className="text-xs font-bold text-foreground leading-snug line-clamp-1">
                           {selectedArticle.seoTitle || selectedArticle.title}

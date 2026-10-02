@@ -138,7 +138,7 @@ export class CreateArticleDto {
   @IsOptional()
   seoDescription?: string;
 
-  @ApiPropertyOptional({ example: 'https://nexusblog.dev/articles/designing-distributed-rate-limiter' })
+  @ApiPropertyOptional({ example: 'https://nexusnation.in/articles/designing-distributed-rate-limiter' })
   @IsString()
   @IsOptional()
   canonicalUrl?: string;

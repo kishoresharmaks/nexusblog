@@ -37,7 +37,7 @@ export class UpdateUserProfileDto {
   @MaxLength(500)
   bio?: string;
 
-  @ApiPropertyOptional({ example: 'https://cdn.nexusblog.dev/avatars/alex.jpg' })
+  @ApiPropertyOptional({ example: 'https://cdn.nexusnation.in/avatars/alex.jpg' })
   @IsOptional()
   @IsString()
   avatar?: string;

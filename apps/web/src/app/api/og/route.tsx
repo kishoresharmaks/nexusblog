@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
               >
                 N
               </div>
-              <span>NexusBlog.dev</span>
+              <span>NexusNation.in</span>
             </div>
 
             <div

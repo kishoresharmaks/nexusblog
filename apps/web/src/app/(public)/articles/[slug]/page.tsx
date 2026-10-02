@@ -246,12 +246,12 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
       />
       <BreadcrumbJsonLd
         items={[
-          { name: 'Home', item: 'https://nexusblog.dev' },
-          { name: 'Articles', item: 'https://nexusblog.dev/articles' },
+          { name: 'Home', item: `${(siteConfig.url || 'https://nexusnation.in').replace(/\/$/, '')}` },
+          { name: 'Articles', item: `${(siteConfig.url || 'https://nexusnation.in').replace(/\/$/, '')}/articles` },
           ...(series
-            ? [{ name: series.title, item: `https://nexusblog.dev/series/${series.slug}` }]
-            : [{ name: categoryName, item: `https://nexusblog.dev/categories/${categorySlug}` }]),
-          { name: article.title, item: `https://nexusblog.dev/articles/${article.slug}` },
+            ? [{ name: series.title, item: `${(siteConfig.url || 'https://nexusnation.in').replace(/\/$/, '')}/series/${series.slug}` }]
+            : [{ name: categoryName, item: `${(siteConfig.url || 'https://nexusnation.in').replace(/\/$/, '')}/categories/${categorySlug}` }]),
+          { name: article.title, item: `${(siteConfig.url || 'https://nexusnation.in').replace(/\/$/, '')}/articles/${article.slug}` },
         ]}
       />
       <ReadingProgress
@@ -525,7 +525,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 </div>
                 <div className="flex items-center gap-3 font-mono text-[11px]">
                   <a
-                    href="mailto:editorial@nexusblog.dev?subject=Technical%20Correction%20Report"
+                    href="mailto:editorial@nexusnation.in?subject=Technical%20Correction%20Report"
                     className="text-primary hover:underline font-semibold"
                   >
                     Submit Errata

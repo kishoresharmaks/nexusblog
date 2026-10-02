@@ -42,12 +42,12 @@ export class SystemSettingsService {
         description: 'Brevo API Key (v3) for email dispatch',
       },
       brevoSenderEmail: {
-        defaultValue: process.env.BREVO_SENDER_EMAIL || 'newsletter@nexusblog.dev',
+        defaultValue: process.env.BREVO_SENDER_EMAIL || 'newsletter@nexusnation.in',
         isSecret: false,
         description: 'Verified sender email address registered in Brevo',
       },
       brevoSenderName: {
-        defaultValue: process.env.BREVO_SENDER_NAME || 'NexusBlog Engineering Dispatch',
+        defaultValue: process.env.BREVO_SENDER_NAME || 'NexusNation Engineering Dispatch',
         isSecret: false,
         description: 'Sender display name appearing in subscriber inboxes',
       },
@@ -61,7 +61,7 @@ export class SystemSettingsService {
           process.env.NEXT_PUBLIC_SITE_URL ||
           process.env.NEXT_PUBLIC_APP_URL ||
           process.env.SITE_URL ||
-          'http://localhost:3000',
+          'https://nexusnation.in',
         isSecret: false,
         description: 'Public production URL for canonical links, sitemaps, and dispatch footers',
       },

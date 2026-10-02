@@ -96,7 +96,7 @@ Depending on your jurisdiction (such as under GDPR or CCPA), you have the right 
 - **Right to Restrict or Object:** Object to legitimate interest processing or withdraw email newsletter consent instantly.
 - **Non-Discrimination:** We will never deny services, degrade quality, or alter pricing because you exercised your privacy rights.
 
-To submit a data access or deletion request, please reach out directly to **privacy@nexusblog.dev** or submit our [Contact Form](/contact).
+To submit a data access or deletion request, please reach out directly to **privacy@nexusnation.in** or submit our [Contact Form](/contact).
 
 ---
 
@@ -112,7 +112,7 @@ We may revise this Privacy Policy periodically to reflect architectural changes 
 
 **Contact Privacy Office:**  
 Nexus Engineering Group  
-Email: **privacy@nexusblog.dev**  
+Email: **privacy@nexusnation.in**  
 Inquiries: [Contact Page](/contact)`,
   },
 
@@ -145,7 +145,7 @@ By accessing NexusBlog, you represent and warrant that:
 ## 2. Account Registration & Security
 
 - **Account Authenticity:** When creating an account, you agree to provide truthful, accurate, and up-to-date credentials. Impersonating other developers, organizations, or public figures is strictly prohibited.
-- **Credential Protection:** You are responsible for safeguarding your password and session tokens. You must immediately notify **security@nexusblog.dev** if you suspect unauthorized access to your account.
+- **Credential Protection:** You are responsible for safeguarding your password and session tokens. You must immediately notify **security@nexusnation.in** if you suspect unauthorized access to your account.
 - **Account Liability:** You are solely liable for all activities, submissions, and comments generated under your authenticated session.
 
 ---
@@ -192,7 +192,7 @@ We reserve the right, at our sole discretion, to suspend or terminate your accou
 - Your account is implicated in security breaches, spam distribution, or denial-of-service attempts.
 - Required by judicial, governmental, or law enforcement mandates.
 
-You may terminate your account at any time by contacting **support@nexusblog.dev** or executing account deletion from your user profile settings.
+You may terminate your account at any time by contacting **support@nexusnation.in** or executing account deletion from your user profile settings.
 
 ---
 
@@ -223,7 +223,7 @@ We reserve the right to amend these Terms at any time. Material modifications wi
 
 **Contact Legal Team:**  
 Nexus Engineering Group  
-Email: **legal@nexusblog.dev**  
+Email: **legal@nexusnation.in**  
 Inquiries: [Contact Us](/contact)`,
   },
 
@@ -296,7 +296,7 @@ NexusBlog and its authors make no representations or warranties, express or impl
 In no event shall NexusBlog, its parent entity, authors, reviewers, or affiliated engineers be liable for any direct, indirect, special, incidental, consequential, or punitive damages arising out of the use of, or inability to use, the information, code snippets, or architectural blueprints provided on this platform.
 
 **Editorial Inquiries & Inaccuracy Reports:**  
-If you identify a technical inaccuracy, outdated benchmark parameter, or code defect in any published article, please submit an issue to **editorial@nexusblog.dev** or reach out via our [Contact Page](/contact).`,
+If you identify a technical inaccuracy, outdated benchmark parameter, or code defect in any published article, please submit an issue to **editorial@nexusnation.in** or reach out via our [Contact Page](/contact).`,
   },
 
   'content-policy': {
@@ -372,10 +372,10 @@ We cultivate a collegial, high-signal engineering forum. Comments posted on arti
 
 - All guest contributions undergo rigorous peer review by our staff editorial engineers prior to publication.
 - If revisions are requested, editors will provide actionable inline feedback markers outlining necessary clarifications.
-- If you believe an editorial decision was made in error or wish to appeal a rejection, you may contact **editorial@nexusblog.dev** with your rationale.
+- If you believe an editorial decision was made in error or wish to appeal a rejection, you may contact **editorial@nexusnation.in** with your rationale.
 
 **Reporting Violations & Plagiarism:**  
-If you suspect an article published on NexusBlog infringes copyright, contains plagiarized material, or violates these standards, please submit a formal report to **editorial@nexusblog.dev** or via our [Contact Form](/contact).`,
+If you suspect an article published on NexusBlog infringes copyright, contains plagiarized material, or violates these standards, please submit a formal report to **editorial@nexusnation.in** or via our [Contact Form](/contact).`,
   },
 
   'cookie-policy': {
@@ -450,7 +450,7 @@ Most modern web browsers allow you to control cookie preferences through their s
 We may update this Cookie Policy occasionally to align with technical modifications or evolving data protection laws. Any changes will be reflected with an updated "Last Revised" date at the top of this page.
 
 **Questions About Cookies?**  
-Please direct any inquiries regarding our cookie or storage practices to **privacy@nexusblog.dev** or through our [Contact Page](/contact).`,
+Please direct any inquiries regarding our cookie or storage practices to **privacy@nexusnation.in** or through our [Contact Page](/contact).`,
   },
 
   'author-guidelines': {
@@ -531,22 +531,22 @@ Have questions regarding our technical blueprints, suggestions for new architect
 ## 1. Directory of Communication Channels
 
 ### A. Editorial & Contributor Desk
-- **Guest Blueprints & Contributor Inquiries:** Submit your draft through the [Guest Post Editor](/guest-post/submit) or email **editorial@nexusblog.dev**.
-- **Topic Pitches & Case Study Collaborations:** **authors@nexusblog.dev**
-- **Content Policy & Inaccuracy Reports:** **editorial@nexusblog.dev**
+- **Guest Blueprints & Contributor Inquiries:** Submit your draft through the [Guest Post Editor](/guest-post/submit) or email **editorial@nexusnation.in**.
+- **Topic Pitches & Case Study Collaborations:** **authors@nexusnation.in**
+- **Content Policy & Inaccuracy Reports:** **editorial@nexusnation.in**
 
 ### B. Reader Support & Account Services
-- **General Platform Support:** **support@nexusblog.dev**
-- **Account Recovery & Authentication Help:** **auth-support@nexusblog.dev**
-- **Dispatch & Newsletter Queries:** **dispatch@nexusblog.dev**
+- **General Platform Support:** **support@nexusnation.in**
+- **Account Recovery & Authentication Help:** **auth-support@nexusnation.in**
+- **Dispatch & Newsletter Queries:** **dispatch@nexusnation.in**
 
 ### C. Security & Vulnerability Reporting
-- **Security Vulnerability Disclosure:** **security@nexusblog.dev**
+- **Security Vulnerability Disclosure:** **security@nexusnation.in**
 - We support coordinated vulnerability disclosures and prioritize prompt remediation of reported issues. Please include reproducible proof-of-concept steps.
 
 ### D. Legal, Privacy & Compliance
-- **Data Protection Inquiries & GDPR/CCPA Requests:** **privacy@nexusblog.dev**
-- **Copyright & DMCA Inquiries:** **legal@nexusblog.dev**
+- **Data Protection Inquiries & GDPR/CCPA Requests:** **privacy@nexusnation.in**
+- **Copyright & DMCA Inquiries:** **legal@nexusnation.in**
 
 ---
 
@@ -569,9 +569,9 @@ NexusBlog is operated by a globally distributed engineering collective:
   Bengaluru, Karnataka, India  
   San Francisco, California, USA  
 
-- **Official Web Platform:** [https://nexusblog.dev](https://nexusblog.dev)  
+- **Official Web Platform:** [https://nexusnation.in](https://nexusnation.in)  
 - **Technical Dispatch:** [Subscribe Free on the Home Page](/)  
-- **RSS Feed:** [https://nexusblog.dev/rss.xml](/rss.xml)
+- **RSS Feed:** [https://nexusnation.in/rss.xml](/rss.xml)
 
 ---
 

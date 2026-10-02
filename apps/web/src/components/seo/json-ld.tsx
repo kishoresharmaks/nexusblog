@@ -1,4 +1,5 @@
 import React from 'react';
+import { siteConfig } from '@nexus/config';
 
 interface ArticleJsonLdProps {
   title: string;
@@ -23,8 +24,9 @@ export function ArticleJsonLd({
   category,
   images = [],
 }: ArticleJsonLdProps) {
-  const url = `https://nexusblog.dev/articles/${slug}`;
-  const defaultOg = `https://nexusblog.dev/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}&author=${encodeURIComponent(authorName)}`;
+  const base = (siteConfig.url || 'https://nexusnation.in').replace(/\/$/, '');
+  const url = `${base}/articles/${slug}`;
+  const defaultOg = `${base}/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}&author=${encodeURIComponent(authorName)}`;
 
   const schema = {
     '@context': 'https://schema.org',
@@ -44,7 +46,7 @@ export function ArticleJsonLd({
       name: 'NexusBlog',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://nexusblog.dev/logo.png',
+        url: `${base}/brand/png/transparent-background/nexus-192px-transparent.png`,
       },
     },
     mainEntityOfPage: {

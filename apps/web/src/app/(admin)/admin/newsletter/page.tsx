@@ -48,19 +48,19 @@ const TEMPLATES = [
     name: 'Weekly Dispatch',
     subject: 'NexusBlog #42: Designing Multi-Region Active-Active CockroachDB',
     preview: 'Zero-loss priority queues, sliding window Lua scripts, and eBPF tracing.',
-    content: `Hi engineers,\n\nIn this week's issue of **NexusBlog Engineering Dispatch**:\n\n## 1. Multi-Region Consensus at Scale\nWe dive into CockroachDB range leaseholder election mechanisms and how to minimize cross-continental Raft latencies under WAN partition events.\n\n\`\`\`go\n// Range leaseholder rebalancing under network partition\ntype LeaseholderGroup struct {\n    RangeID   uint64\n    Replicas  []NodeID\n    LeaseEpoch uint64\n}\n\`\`\`\n\n## 2. Low-Latency Sliding Window Counters\nImplementing distributed sliding window rate limiters in Redis using atomic Lua evaluation with sub-millisecond execution guarantees.\n\n> "Consistency is not just an algorithm; it is the contract between your distributed storage and your users."\n\nRead the full technical guides at https://nexusblog.dev\n\nHappy building,\n**NexusBlog Core Architecture Team**`,
+    content: `Hi engineers,\n\nIn this week's issue of **NexusBlog Engineering Dispatch**:\n\n## 1. Multi-Region Consensus at Scale\nWe dive into CockroachDB range leaseholder election mechanisms and how to minimize cross-continental Raft latencies under WAN partition events.\n\n\`\`\`go\n// Range leaseholder rebalancing under network partition\ntype LeaseholderGroup struct {\n    RangeID   uint64\n    Replicas  []NodeID\n    LeaseEpoch uint64\n}\n\`\`\`\n\n## 2. Low-Latency Sliding Window Counters\nImplementing distributed sliding window rate limiters in Redis using atomic Lua evaluation with sub-millisecond execution guarantees.\n\n> "Consistency is not just an algorithm; it is the contract between your distributed storage and your users."\n\nRead the full technical guides at https://nexusnation.in\n\nHappy building,\n**NexusBlog Core Architecture Team**`,
   },
   {
     name: 'Architecture Deep Dive',
     subject: 'Deep Dive: Zero-Copy Serialization & Memory Models in Rust and Go',
     preview: 'Exploring FlatBuffers, Cap\'n Proto, and memory safety without GC overhead.',
-    content: `Hi engineers,\n\nWelcome to an architectural deep-dive into **Zero-Copy Serialization and Memory Models**.\n\n## Why Traditional JSON / Protobuf Fall Short\nWhen serving 500,000 requests/sec, CPU cache misses and byte allocation in serialization layers become the primary bottleneck.\n\n### Key Takeaways:\n- **Direct Buffer Offsets**: Reading nested structures without unmarshaling bytes.\n- **Zero Heap Allocations**: Memory alignment strategies for SIMD vectorization.\n- **Benchmarking Results**: 14x latency reduction over standard JSON parsers.\n\nExplore the interactive architecture blueprint on NexusBlog: https://nexusblog.dev/articles/zero-copy-serialization\n\nBest,\n**NexusBlog Systems Group**`,
+    content: `Hi engineers,\n\nWelcome to an architectural deep-dive into **Zero-Copy Serialization and Memory Models**.\n\n## Why Traditional JSON / Protobuf Fall Short\nWhen serving 500,000 requests/sec, CPU cache misses and byte allocation in serialization layers become the primary bottleneck.\n\n### Key Takeaways:\n- **Direct Buffer Offsets**: Reading nested structures without unmarshaling bytes.\n- **Zero Heap Allocations**: Memory alignment strategies for SIMD vectorization.\n- **Benchmarking Results**: 14x latency reduction over standard JSON parsers.\n\nExplore the interactive architecture blueprint on NexusBlog: https://nexusnation.in/articles/zero-copy-serialization\n\nBest,\n**NexusBlog Systems Group**`,
   },
   {
     name: 'Security Advisory',
     subject: 'Security Notice: Mitigating Replay Attacks in Distributed Token Validation',
     preview: 'Critical recommendations for microservice JWT replay attack prevention.',
-    content: `Hi engineers,\n\nHere is an essential security brief on **Distributed Token Security and Nonce Rotation**.\n\n## Threat Modeling\nStateless JWT tokens without distributed revocation allow replay attacks during key compromise windows.\n\n### Recommended Mitigations:\n1. Implement Bloom filter-backed short-lived token caches in Redis.\n2. Enforce strict DPoP (Demonstrating Proof-of-Possession) bindings.\n3. Rotate asymmetric verification keys automatically every 24 hours.\n\nRead our complete mitigation blueprint at https://nexusblog.dev/articles/jwt-replay-mitigation\n\nStay secure,\n**NexusBlog Security Architecture**`,
+    content: `Hi engineers,\n\nHere is an essential security brief on **Distributed Token Security and Nonce Rotation**.\n\n## Threat Modeling\nStateless JWT tokens without distributed revocation allow replay attacks during key compromise windows.\n\n### Recommended Mitigations:\n1. Implement Bloom filter-backed short-lived token caches in Redis.\n2. Enforce strict DPoP (Demonstrating Proof-of-Possession) bindings.\n3. Rotate asymmetric verification keys automatically every 24 hours.\n\nRead our complete mitigation blueprint at https://nexusnation.in/articles/jwt-replay-mitigation\n\nStay secure,\n**NexusBlog Security Architecture**`,
   },
 ];
 
@@ -498,7 +498,7 @@ export default function AdminNewsletterPage() {
                 <textarea
                   rows={9}
                   required
-                  placeholder={`Hi engineers,\n\nIn this week's issue of NexusBlog Engineering Dispatch:\n\n- **Distributed Consensus**: Deep dive into CockroachDB range leaseholder election.\n- **Performance Tuning**: Zero-loss Redis priority queues.\n\nRead the full technical guides at https://nexusblog.dev\n\nHappy building,\nThe NexusBlog Team`}
+                  placeholder={`Hi engineers,\n\nIn this week's issue of NexusBlog Engineering Dispatch:\n\n- **Distributed Consensus**: Deep dive into CockroachDB range leaseholder election.\n- **Performance Tuning**: Zero-loss Redis priority queues.\n\nRead the full technical guides at https://nexusnation.in\n\nHappy building,\nThe NexusBlog Team`}
                   value={broadcastContent}
                   onChange={(e) => setBroadcastContent(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background p-3.5 text-xs text-foreground font-mono placeholder:text-muted-foreground focus:border-primary focus:outline-none leading-relaxed min-h-[220px]"
