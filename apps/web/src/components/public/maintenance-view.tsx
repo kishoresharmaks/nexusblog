@@ -4,15 +4,12 @@ import React, { useState } from 'react';
 import {
   Wrench,
   RefreshCw,
-  Database,
-  Server,
   Activity,
-  Cpu,
-  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { systemSettingsApi } from '@/lib/api-client';
 import { ThemeToggle } from '@/components/common/theme-toggle';
+import { MaintenanceGame } from './maintenance-game';
 
 interface MaintenanceViewProps {
   siteName?: string;
@@ -53,7 +50,7 @@ export function MaintenanceView({
       <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20 pointer-events-none" />
 
       {/* Header */}
-      <header className="relative z-10 w-full border-b border-border bg-background/90 backdrop-blur-sm">
+      <header className="relative z-10 w-full border-b border-border bg-background/90 backdrop-blur-sm shrink-0">
         <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center space-x-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-foreground">
@@ -75,8 +72,8 @@ export function MaintenanceView({
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 my-auto flex flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
-        <div className="mx-auto max-w-2xl space-y-8">
+      <main className="relative z-10 my-auto flex flex-col items-center justify-center px-4 py-8 sm:py-12 text-center sm:px-6">
+        <div className="mx-auto max-w-2xl space-y-6 sm:space-y-8">
           {/* Status Chip */}
           <div className="inline-flex items-center space-x-2 rounded-full border border-border bg-card px-4 py-1 text-xs font-mono font-medium text-foreground shadow-xs">
             <Wrench className="h-3.5 w-3.5" />
@@ -84,57 +81,18 @@ export function MaintenanceView({
           </div>
 
           {/* Heading & Notice */}
-          <div className="space-y-4">
-            <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl font-mono">
+          <div className="space-y-3">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-foreground font-mono">
               Under Maintenance
             </h1>
-            <p className="mx-auto max-w-xl text-sm sm:text-base text-muted-foreground leading-relaxed">
-              We are currently performing scheduled platform maintenance, database optimizations, and system enhancements. Access to <strong className="text-foreground">{siteName}</strong> is temporarily paused and will resume shortly.
+            <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed">
+              We are currently performing scheduled platform maintenance, database index optimizations, and core system upgrades.
             </p>
           </div>
 
-          {/* Telemetry Status Cards (Pure Monochrome) */}
-          <div className="mx-auto max-w-xl rounded-xl border border-border bg-card p-5 text-left shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                <Cpu className="h-3.5 w-3.5" /> Subsystem Telemetry
-              </span>
-              <span className="font-mono text-[11px] text-muted-foreground">
-                STATUS: ACTIVE
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 font-medium text-foreground">
-                    <Database className="h-3 w-3 text-muted-foreground" /> Database
-                  </span>
-                  <span className="text-[10px] font-mono text-muted-foreground font-semibold">SYNCING</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground font-mono">Index tuning</p>
-              </div>
-
-              <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 font-medium text-foreground">
-                    <Server className="h-3 w-3 text-muted-foreground" /> Edge CDN
-                  </span>
-                  <span className="text-[10px] font-mono text-muted-foreground font-semibold">STANDBY</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground font-mono">Purging cache</p>
-              </div>
-
-              <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1.5 font-medium text-foreground">
-                    <Shield className="h-3 w-3 text-muted-foreground" /> Security
-                  </span>
-                  <span className="text-[10px] font-mono text-muted-foreground font-semibold">ACTIVE</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground font-mono">Encryption verified</p>
-              </div>
-            </div>
+          {/* Interactive Feature: Retro Snake Arcade / Dev Trivia / Terminal Console */}
+          <div className="pt-1">
+            <MaintenanceGame />
           </div>
 
           {/* Action: Check Status Only (No Login Buttons) */}
@@ -142,7 +100,7 @@ export function MaintenanceView({
             <button
               onClick={handleCheckStatus}
               disabled={isChecking}
-              className="inline-flex items-center justify-center space-x-2 rounded-lg bg-foreground text-background px-6 py-2.5 text-xs font-semibold hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer font-mono"
+              className="inline-flex items-center justify-center space-x-2 rounded-lg bg-foreground text-background px-6 py-2.5 text-xs font-semibold hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer font-mono shadow-xs"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isChecking ? 'animate-spin' : ''}`} />
               <span>{isChecking ? 'Checking Platform...' : 'Check System Status'}</span>
@@ -152,7 +110,7 @@ export function MaintenanceView({
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full border-t border-border bg-background py-4 text-center text-xs text-muted-foreground font-mono">
+      <footer className="relative z-10 w-full border-t border-border bg-background py-4 text-center text-xs text-muted-foreground font-mono shrink-0">
         <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 px-4 sm:px-6 max-w-5xl">
           <div className="flex items-center space-x-2">
             <span className="h-1.5 w-1.5 rounded-full bg-foreground inline-block" />
