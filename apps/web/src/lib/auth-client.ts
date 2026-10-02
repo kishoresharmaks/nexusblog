@@ -77,15 +77,34 @@ class AuthClient {
       }
     }
 
-    const data: ApiResponse<T> = await response.json();
+    let data: any = null;
+    try {
+      data = await response.json();
+    } catch {
+      // Ignore JSON parse failure
+    }
 
-    if (!response.ok || !data.success) {
-      const errorMessage =
-        (data as any)?.error?.message || `Request failed with status ${response.status}`;
+    if (!response.ok || (data && data.success === false)) {
+      let errorMessage = `Request failed with status ${response.status}`;
+      if (data) {
+        if (data.error?.message) {
+          errorMessage = Array.isArray(data.error.message)
+            ? data.error.message.join('. ')
+            : String(data.error.message);
+        } else if (data.error?.details && Array.isArray(data.error.details)) {
+          errorMessage = data.error.details.join('. ');
+        } else if (data.message) {
+          errorMessage = Array.isArray(data.message)
+            ? data.message.join('. ')
+            : String(data.message);
+        } else if (typeof data.error === 'string') {
+          errorMessage = data.error;
+        }
+      }
       throw new Error(errorMessage);
     }
 
-    return data.data;
+    return data?.data !== undefined ? data.data : data;
   }
 
   async register(payload: {

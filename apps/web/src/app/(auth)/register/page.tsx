@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   RefreshCw,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/common/brand-logo';
 
@@ -163,8 +164,9 @@ export default function RegisterPage() {
       </div>
 
       {errorMessage && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive font-medium">
-          {errorMessage}
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive font-medium flex items-start gap-2.5">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>{errorMessage}</span>
         </div>
       )}
 

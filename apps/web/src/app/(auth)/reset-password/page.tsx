@@ -4,7 +4,7 @@ import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
-import { Lock, ArrowRight, Loader2, KeyRound, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Lock, ArrowRight, Loader2, KeyRound, CheckCircle2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { BrandLogo } from '@/components/common/brand-logo';
 
 function ResetPasswordForm() {
@@ -90,8 +90,9 @@ function ResetPasswordForm() {
       </div>
 
       {errorMessage && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive font-medium">
-          {errorMessage}
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive font-medium flex items-start gap-2.5">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>{errorMessage}</span>
         </div>
       )}
 

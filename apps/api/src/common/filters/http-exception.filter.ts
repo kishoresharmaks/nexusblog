@@ -32,12 +32,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message = errorResponse;
       } else if (typeof errorResponse === 'object' && errorResponse !== null) {
         const res = errorResponse as Record<string, unknown>;
-        message = (res['message'] as string) || message;
         code = (res['error'] as string) || code;
         if (Array.isArray(res['message'])) {
           details = res['message'];
-          message = 'Validation failed';
-          code = 'VALIDATION_ERROR';
+          message = (res['message'] as string[]).join('. ');
+          code = (res['error'] as string) || 'VALIDATION_ERROR';
+        } else if (typeof res['message'] === 'string') {
+          message = res['message'];
         }
       }
     } else if (exception instanceof Error) {

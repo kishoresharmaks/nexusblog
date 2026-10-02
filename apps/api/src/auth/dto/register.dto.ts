@@ -3,27 +3,27 @@ import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, Matches } from 'c
 
 export class RegisterDto {
   @ApiProperty({ example: 'Alex Developer' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Full name must be a string' })
+  @IsNotEmpty({ message: 'Full name is required' })
   name!: string;
 
   @ApiProperty({ example: 'alexdev' })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(3)
+  @IsString({ message: 'Username must be a string' })
+  @IsNotEmpty({ message: 'Username is required' })
+  @MinLength(3, { message: 'Username must be at least 3 characters long' })
   @Matches(/^[a-zA-Z0-9_-]+$/, {
-    message: 'Username can only contain alphanumeric characters, underscores, and hyphens',
+    message: 'Username can only contain letters, numbers, underscores, and hyphens',
   })
   username!: string;
 
   @ApiProperty({ example: 'alex@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
+  @IsEmail({}, { message: 'Please enter a valid email address' })
+  @IsNotEmpty({ message: 'Email address is required' })
   email!: string;
 
   @ApiProperty({ example: 'SuperSecurePassword123!' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Password must be a string' })
+  @IsNotEmpty({ message: 'Password is required' })
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   password!: string;
 
