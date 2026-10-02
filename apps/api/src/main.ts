@@ -13,7 +13,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-  const port = process.env.PORT || 4000;
+  const port = process.env.API_PORT || 4000;
 
   // Security Headers
   app.use(
