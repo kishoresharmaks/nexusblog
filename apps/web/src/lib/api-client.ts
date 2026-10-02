@@ -669,9 +669,16 @@ export const usersApi = {
       body: JSON.stringify({ status }),
     }, true);
   },
-  async deleteUser(id: string) {
-    return request<any>(`/users/admin/${id}`, {
+  async deleteUser(id: string, reassignToUserId?: string) {
+    const qs = reassignToUserId ? `?reassignTo=${encodeURIComponent(reassignToUserId)}` : '';
+    return request<any>(`/users/admin/${id}${qs}`, {
       method: 'DELETE',
+    }, true);
+  },
+  async reassignArticles(sourceUserId: string, targetUserId: string) {
+    return request<any>(`/users/admin/${sourceUserId}/reassign-articles`, {
+      method: 'POST',
+      body: JSON.stringify({ targetUserId }),
     }, true);
   },
 };

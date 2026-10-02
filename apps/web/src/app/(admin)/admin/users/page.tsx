@@ -18,6 +18,7 @@ import {
   Save,
   UserCheck,
   UserX,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usersApi } from '@/lib/api-client';
@@ -58,8 +59,11 @@ export default function AdminUsersPage() {
   const [selectedRole, setSelectedRole] = useState<string>('USER');
   const [selectedStatus, setSelectedStatus] = useState<string>('ACTIVE');
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserDirectoryItem | null>(null);
+  const [reassignModalUser, setReassignModalUser] = useState<UserDirectoryItem | null>(null);
+  const [reassignTargetUserId, setReassignTargetUserId] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReassigning, setIsReassigning] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
@@ -91,6 +95,18 @@ export default function AdminUsersPage() {
     setSelectedStatus(u.status || 'ACTIVE');
   };
 
+  const handleOpenDelete = (u: UserDirectoryItem) => {
+    setDeleteConfirmUser(u);
+    const candidate = users.find((x) => x.id !== u.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(x.role));
+    setReassignTargetUserId(candidate ? candidate.id : '');
+  };
+
+  const handleOpenReassign = (u: UserDirectoryItem) => {
+    setReassignModalUser(u);
+    const candidate = users.find((x) => x.id !== u.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(x.role));
+    setReassignTargetUserId(candidate ? candidate.id : '');
+  };
+
   const handleSaveRoleAndStatus = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
@@ -112,14 +128,42 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleReassignArticles = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reassignModalUser || !reassignTargetUserId) return;
+    setIsReassigning(true);
+    try {
+      const res = await usersApi.reassignArticles(reassignModalUser.id, reassignTargetUserId);
+      toast.success(res.message || 'Articles reassigned successfully');
+      setReassignModalUser(null);
+      await loadUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reassign articles');
+    } finally {
+      setIsReassigning(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteConfirmUser) return;
     setIsDeleting(true);
     try {
-      await usersApi.deleteUser(deleteConfirmUser.id);
+      const hasArticles = (deleteConfirmUser.articlesCount || 0) > 0;
+      if (hasArticles && !reassignTargetUserId) {
+        toast.error('Please select an author to reassign the articles to.');
+        setIsDeleting(false);
+        return;
+      }
+      const reassignTo = hasArticles ? reassignTargetUserId : undefined;
+      await usersApi.deleteUser(deleteConfirmUser.id, reassignTo);
       setUsers((prev) => prev.filter((u) => u.id !== deleteConfirmUser.id));
-      toast.success(`User account @${deleteConfirmUser.username} removed`);
+      toast.success(
+        reassignTo
+          ? `Articles reassigned and user @${deleteConfirmUser.username} removed.`
+          : `User account @${deleteConfirmUser.username} removed.`,
+      );
       setDeleteConfirmUser(null);
+      await loadUsers();
     } catch (err: any) {
       toast.error(err.message || 'Failed to remove user account');
     } finally {
@@ -278,6 +322,15 @@ export default function AdminUsersPage() {
 
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
+                        {u.articlesCount && u.articlesCount > 0 ? (
+                          <button
+                            onClick={() => handleOpenReassign(u)}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
+                            title={`Reassign ${u.articlesCount} Article(s)`}
+                          >
+                            <ArrowRightLeft className="h-3.5 w-3.5" />
+                          </button>
+                        ) : null}
                         <button
                           onClick={() => handleOpenEdit(u)}
                           className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
@@ -287,7 +340,7 @@ export default function AdminUsersPage() {
                         </button>
                         {u.id !== currentUser?.id && (
                           <button
-                            onClick={() => setDeleteConfirmUser(u)}
+                            onClick={() => handleOpenDelete(u)}
                             className="p-1.5 rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
                             title="Delete User"
                           >
@@ -391,6 +444,83 @@ export default function AdminUsersPage() {
         </div>
       )}
 
+      {/* Standalone Reassign Articles Modal */}
+      {reassignModalUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setReassignModalUser(null);
+          }}
+        >
+          <div className="relative w-full max-w-md rounded-2xl border border-amber-500/30 bg-card p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2">
+                <ArrowRightLeft className="h-5 w-5 text-amber-500" />
+                <div>
+                  <h3 className="text-sm font-bold text-foreground font-mono">
+                    Reassign Authored Articles
+                  </h3>
+                  <p className="text-[11px] font-mono text-muted-foreground">
+                    From @{reassignModalUser.username} ({reassignModalUser.articlesCount} posts)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setReassignModalUser(null)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleReassignArticles} className="space-y-4 text-xs font-sans">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Transfer all <strong className="text-foreground">{reassignModalUser.articlesCount}</strong> technical articles currently authored by <strong className="text-foreground">@{reassignModalUser.username}</strong> to another staff member or author.
+              </p>
+
+              <div className="space-y-1.5">
+                <label className="font-mono text-[11px] font-bold text-foreground uppercase tracking-wider">
+                  Select Destination Author
+                </label>
+                <select
+                  required
+                  value={reassignTargetUserId}
+                  onChange={(e) => setReassignTargetUserId(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background py-2 px-3 text-xs text-foreground focus:border-primary focus:outline-none"
+                >
+                  <option value="">-- Choose Destination Author --</option>
+                  {users
+                    .filter((u) => u.id !== reassignModalUser.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(u.role))
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} (@{u.username}) — {u.role}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="pt-3 border-t border-border/40 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReassignModalUser(null)}
+                  className="px-3.5 py-1.5 rounded-lg border border-border text-xs font-mono text-foreground hover:bg-muted transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isReassigning || !reassignTargetUserId}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 text-black text-xs font-mono font-bold hover:bg-amber-400 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <ArrowRightLeft className="h-3.5 w-3.5" />
+                  <span>{isReassigning ? 'Transferring...' : 'Transfer Ownership'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Delete User Modal */}
       {deleteConfirmUser && (
         <div
@@ -414,6 +544,37 @@ export default function AdminUsersPage() {
               Are you sure you want to delete user account <strong className="text-foreground">@{deleteConfirmUser.username}</strong> ({deleteConfirmUser.email})?
             </p>
 
+            {deleteConfirmUser.articlesCount && deleteConfirmUser.articlesCount > 0 ? (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-amber-500 font-bold">
+                  <FileText className="h-4 w-4 shrink-0" />
+                  <span>{deleteConfirmUser.articlesCount} Authored Article(s) Detected</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  This user has published/draft articles. Choose an active author below to reassign ownership of these articles upon account deletion:
+                </p>
+                <div className="space-y-1 pt-1">
+                  <label className="text-[10px] font-mono font-bold uppercase text-foreground">
+                    Reassign Articles To:
+                  </label>
+                  <select
+                    value={reassignTargetUserId}
+                    onChange={(e) => setReassignTargetUserId(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-background py-2 px-3 text-xs text-foreground focus:border-primary focus:outline-none"
+                  >
+                    <option value="">-- Choose Replacement Author --</option>
+                    {users
+                      .filter((u) => u.id !== deleteConfirmUser.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(u.role))
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} (@{u.username}) — {u.role}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+            ) : null}
+
             <div className="pt-3 border-t border-border/40 flex items-center justify-end gap-2">
               <button
                 onClick={() => setDeleteConfirmUser(null)}
@@ -423,11 +584,17 @@ export default function AdminUsersPage() {
               </button>
               <button
                 onClick={handleDelete}
-                disabled={isDeleting}
-                className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-rose-500 text-white text-xs font-mono font-bold hover:bg-rose-600 transition-colors disabled:opacity-50"
+                disabled={isDeleting || (!!deleteConfirmUser.articlesCount && deleteConfirmUser.articlesCount > 0 && !reassignTargetUserId)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-500 text-white text-xs font-mono font-bold hover:bg-rose-600 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                <span>{isDeleting ? 'Deleting...' : 'Confirm Remove'}</span>
+                <span>
+                  {isDeleting
+                    ? 'Processing...'
+                    : deleteConfirmUser.articlesCount && deleteConfirmUser.articlesCount > 0
+                    ? 'Reassign & Remove'
+                    : 'Confirm Remove'}
+                </span>
               </button>
             </div>
           </div>

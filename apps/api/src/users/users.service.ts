@@ -263,7 +263,36 @@ export class UsersService {
     });
   }
 
-  async deleteUser(userId: string) {
+  async reassignArticles(sourceUserId: string, targetUserId: string) {
+    if (!targetUserId || sourceUserId === targetUserId) {
+      throw new BadRequestException('Please select a different target author');
+    }
+
+    const [sourceUser, targetUser] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: sourceUserId } }),
+      this.prisma.user.findUnique({ where: { id: targetUserId } }),
+    ]);
+
+    if (!sourceUser) {
+      throw new NotFoundException('Source user not found');
+    }
+    if (!targetUser) {
+      throw new NotFoundException('Target user not found');
+    }
+
+    const updated = await this.prisma.article.updateMany({
+      where: { authorId: sourceUserId },
+      data: { authorId: targetUserId },
+    });
+
+    return {
+      success: true,
+      message: `Successfully reassigned ${updated.count} article(s) from @${sourceUser.username} to @${targetUser.username}`,
+      count: updated.count,
+    };
+  }
+
+  async deleteUser(userId: string, reassignToUserId?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -289,9 +318,29 @@ export class UsersService {
     }
 
     if (user._count.articles > 0) {
-      throw new BadRequestException(
-        `Cannot delete user "${user.name}" (@${user.username}) because they have authored ${user._count.articles} article(s). Please reassign or delete their articles first, or set their account status to DEACTIVATED or SUSPENDED.`,
-      );
+      if (!reassignToUserId) {
+        throw new BadRequestException(
+          `Cannot delete user "${user.name}" (@${user.username}) because they have authored ${user._count.articles} article(s). Please select an author to reassign their articles to, or set their account status to DEACTIVATED or SUSPENDED.`,
+        );
+      }
+
+      if (reassignToUserId === userId) {
+        throw new BadRequestException('Cannot reassign articles to the user being deleted');
+      }
+
+      const targetAuthor = await this.prisma.user.findUnique({
+        where: { id: reassignToUserId },
+      });
+
+      if (!targetAuthor) {
+        throw new NotFoundException('Target replacement author not found');
+      }
+
+      // Reassign all articles to target author
+      await this.prisma.article.updateMany({
+        where: { authorId: userId },
+        data: { authorId: reassignToUserId },
+      });
     }
 
     // Safely clean up dependent records in a transaction

@@ -73,6 +73,11 @@ export class CreateArticleDto {
   @IsOptional()
   readingTime?: number;
 
+  @ApiPropertyOptional({ example: '674e1234abcd5678ef901230' })
+  @IsString()
+  @IsOptional()
+  authorId?: string;
+
   @ApiPropertyOptional({ example: '674e1234abcd5678ef901234' })
   @IsString()
   @IsOptional()

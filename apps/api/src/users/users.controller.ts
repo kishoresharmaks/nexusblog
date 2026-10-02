@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Body,
@@ -66,10 +67,23 @@ export class UsersController {
   }
 
   @Roles('SUPER_ADMIN', 'ADMIN')
+  @Post('admin/:id/reassign-articles')
+  @ApiOperation({ summary: 'Reassign all articles from one user to another author (Admin only)' })
+  reassignArticles(
+    @Param('id') sourceUserId: string,
+    @Body('targetUserId') targetUserId: string,
+  ) {
+    return this.usersService.reassignArticles(sourceUserId, targetUserId);
+  }
+
+  @Roles('SUPER_ADMIN', 'ADMIN')
   @Delete('admin/:id')
-  @ApiOperation({ summary: 'Delete user account (Admin only)' })
-  deleteUser(@Param('id') id: string) {
-    return this.usersService.deleteUser(id);
+  @ApiOperation({ summary: 'Delete user account with optional article reassignment (Admin only)' })
+  deleteUser(
+    @Param('id') id: string,
+    @Query('reassignTo') reassignTo?: string,
+  ) {
+    return this.usersService.deleteUser(id, reassignTo);
   }
 
   @Public()

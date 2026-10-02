@@ -69,9 +69,11 @@ export class ArticlesController {
   @ApiOperation({ summary: 'Create a new technical article (Staff)' })
   create(
     @Body() dto: CreateArticleDto,
-    @CurrentUser('id') authorId: string,
+    @CurrentUser() user: { id: string; role: Role },
   ) {
-    return this.articlesService.create(dto, authorId);
+    const isStaff = ['SUPER_ADMIN', 'ADMIN', 'EDITOR'].includes(user.role);
+    const targetAuthorId = isStaff && dto.authorId ? dto.authorId : user.id;
+    return this.articlesService.create(dto, targetAuthorId);
   }
 
   @UseGuards(JwtAuthGuard)

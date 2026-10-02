@@ -507,6 +507,7 @@ export class ArticlesService {
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.featured !== undefined && { featured: dto.featured }),
         ...(dto.readingTime !== undefined && { readingTime: dto.readingTime }),
+        ...(isStaff && dto.authorId && { authorId: dto.authorId }),
         ...(categoryId && { categoryId }),
         ...(dto.tagIds !== undefined && { tagIds: dto.tagIds }),
         ...(dto.technologyIds !== undefined && { technologyIds: dto.technologyIds }),

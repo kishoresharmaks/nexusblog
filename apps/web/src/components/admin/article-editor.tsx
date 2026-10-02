@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ClientMdxRenderer } from '@/components/mdx/client-mdx-renderer';
-import { articlesApi, categoriesApi, articleTypesApi, technologiesApi, tagsApi, seriesApi } from '@/lib/api-client';
+import { articlesApi, categoriesApi, articleTypesApi, technologiesApi, tagsApi, seriesApi, usersApi } from '@/lib/api-client';
 import {
   Save,
   Send,
@@ -128,6 +128,8 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string>('');
   const [seriesOrder, setSeriesOrder] = useState<number>(1);
+  const [authorId, setAuthorId] = useState<string>(initialData?.author?.id || initialData?.authorId || '');
+  const [authorsList, setAuthorsList] = useState<any[]>([]);
   const [seoTitle, setSeoTitle] = useState(initialData?.seoTitle || '');
   const [seoDescription, setSeoDescription] = useState(initialData?.seoDescription || '');
   const [isSlugLocked, setIsSlugLocked] = useState(true);
@@ -190,6 +192,15 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
         }
       })
       .catch(() => {});
+
+    usersApi
+      .getAdminUsers({ limit: 100 })
+      .then((res) => {
+        if (Array.isArray(res?.items)) {
+          setAuthorsList(res.items);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Fetch article if editing and not supplied in SSR props
@@ -225,6 +236,8 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
       if (data.featured !== undefined) setFeatured(data.featured);
       if (data.seoTitle !== undefined) setSeoTitle(data.seoTitle);
       if (data.seoDescription !== undefined) setSeoDescription(data.seoDescription);
+      if (data.authorId) setAuthorId(data.authorId);
+      else if (data.author?.id) setAuthorId(data.author.id);
 
       // Multi-dimensional taxonomy sync
       if (data.technologies && Array.isArray(data.technologies)) {
@@ -289,6 +302,7 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
       tagIds: selectedTagIds,
       seriesId: selectedSeriesId || null,
       seriesOrder: selectedSeriesId ? seriesOrder : null,
+      ...(authorId ? { authorId } : {}),
       seoTitle: seoTitle || undefined,
       seoDescription: seoDescription || undefined,
     };
@@ -581,6 +595,24 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
                   }}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground font-mono text-[11px] focus:border-primary focus:outline-none"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-mono font-semibold text-foreground flex items-center justify-between">
+                  <span>Author / Contributor</span>
+                </label>
+                <select
+                  value={authorId}
+                  onChange={(e) => setAuthorId(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none text-xs"
+                >
+                  <option value="">-- Current Author / Default --</option>
+                  {authorsList.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} (@{a.username}) — {a.role}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1.5">
