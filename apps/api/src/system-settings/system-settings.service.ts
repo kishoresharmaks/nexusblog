@@ -288,7 +288,7 @@ export class SystemSettingsService {
       process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.SITE_URL ||
-      'http://localhost:3000';
+      (process.env.NODE_ENV === 'production' ? 'https://nexusnation.in' : 'http://localhost:3000');
 
     const robotsIndexingMode =
       settingsMap.robotsIndexingMode ||

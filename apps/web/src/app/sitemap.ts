@@ -1,12 +1,32 @@
 import { MetadataRoute } from 'next';
+import { headers } from 'next/headers';
 import { siteConfig } from '@nexus/config';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  let siteUrl = siteConfig.url || 'http://localhost:3000';
+  let siteUrl = siteConfig.url || 'https://nexusnation.in';
 
+  // 1. Detect live incoming request host from Next.js headers
+  try {
+    const headerList = await headers();
+    const host =
+      headerList.get('x-forwarded-host') ||
+      headerList.get('host') ||
+      '';
+    const proto =
+      headerList.get('x-forwarded-proto') ||
+      (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
+
+    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+      siteUrl = `${proto}://${host}`;
+    }
+  } catch {
+    // Graceful fallback
+  }
+
+  // 2. Fetch live settings if available
   try {
     const res = await fetch(`${siteConfig.apiUrl}/system-settings/public`, {
       next: { revalidate: 60 },
@@ -17,15 +37,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (res.ok) {
       const data = await res.json();
       const payload = data?.data || data;
-      if (payload?.siteUrl) {
-        siteUrl = payload.siteUrl;
+      if (payload?.siteUrl && typeof payload.siteUrl === 'string' && payload.siteUrl.trim().length > 0) {
+        const configuredUrl = payload.siteUrl.trim();
+        // Only use configured URL if it is not localhost (or if we are on localhost)
+        if (!configuredUrl.includes('localhost') && !configuredUrl.includes('127.0.0.1')) {
+          siteUrl = configuredUrl;
+        } else if (!siteUrl || siteUrl.includes('localhost')) {
+          siteUrl = configuredUrl;
+        }
       }
     }
   } catch {
-    // Fallback to siteConfig.url
+    // Fallback
   }
 
-  const baseUrl = siteUrl.replace(/\/+$/, '');
+  // 3. Final production safeguard: never output localhost if running in production
+  if (process.env.NODE_ENV === 'production' && (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1'))) {
+    siteUrl = 'https://nexusnation.in';
+  }
+
+  const baseUrl = (siteUrl || 'https://nexusnation.in').replace(/\/+$/, '');
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {

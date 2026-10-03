@@ -14,8 +14,28 @@ function escapeXml(unsafe: string | null | undefined): string {
     .replace(/'/g, '&apos;');
 }
 
-export async function GET() {
-  const baseUrl = (siteConfig.url || 'https://nexusnation.in').replace(/\/$/, '');
+export async function GET(request: Request) {
+  let siteUrl = siteConfig.url || 'https://nexusnation.in';
+
+  if (request) {
+    const host =
+      request.headers.get('x-forwarded-host') ||
+      request.headers.get('host') ||
+      '';
+    const proto =
+      request.headers.get('x-forwarded-proto') ||
+      (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
+
+    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+      siteUrl = `${proto}://${host}`;
+    }
+  }
+
+  if (process.env.NODE_ENV === 'production' && (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1'))) {
+    siteUrl = 'https://nexusnation.in';
+  }
+
+  const baseUrl = (siteUrl || 'https://nexusnation.in').replace(/\/+$/, '');
 
   let feedArticles: any[] = [];
   try {

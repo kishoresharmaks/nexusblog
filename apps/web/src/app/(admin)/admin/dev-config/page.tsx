@@ -113,7 +113,7 @@ export default function AdminDevConfigPage() {
         setBrevoApiKey(settingsData.brevoApiKey?.value || '');
         setBrevoSenderEmail(settingsData.brevoSenderEmail?.value || 'newsletter@nexusnation.in');
         setBrevoSenderName(settingsData.brevoSenderName?.value || 'NexusBlog Engineering Dispatch');
-        setSiteUrl(settingsData.siteUrl?.value || 'http://localhost:3000');
+        setSiteUrl(settingsData.siteUrl?.value || 'https://nexusnation.in');
         setSiteName(settingsData.siteName?.value || 'NexusBlog');
         setNewsletterAutoWelcome(settingsData.newsletterAutoWelcome?.value !== 'false');
         setMaintenanceMode(settingsData.maintenanceMode?.value === 'true');

@@ -12,14 +12,19 @@ function getSiteUrl(): string {
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.SITE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined) ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
-  if (envUrl) {
+
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
     return envUrl.trim().replace(/\/+$/, '');
   }
   if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
-    return window.location.origin;
+    return window.location.origin.replace(/\/+$/, '');
   }
-  return process.env.NODE_ENV === 'production' ? 'https://nexusnation.in' : 'http://localhost:3000';
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://nexusnation.in';
+  }
+  return envUrl ? envUrl.trim().replace(/\/+$/, '') : 'http://localhost:3000';
 }
 
 export const siteConfig = {

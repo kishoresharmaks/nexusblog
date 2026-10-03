@@ -53,7 +53,7 @@ export default function AdminSeoDiagnosticsPage() {
           data.robotsCustomContent?.value ||
             '# Custom robots.txt directives\nUser-Agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /api/*',
         );
-        setSiteUrl(data.siteUrl?.value || 'http://localhost:3000');
+        setSiteUrl(data.siteUrl?.value || 'https://nexusnation.in');
       }
     } catch {
       // Fallback

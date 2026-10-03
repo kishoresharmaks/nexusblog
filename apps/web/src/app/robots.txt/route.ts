@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET(request: Request) {
-  let siteUrl = siteConfig.url || 'http://localhost:3000';
+  let siteUrl = siteConfig.url || 'https://nexusnation.in';
   let indexingMode = 'allow';
   let customContent = '';
 
@@ -21,8 +21,13 @@ export async function GET(request: Request) {
     if (res.ok) {
       const data = await res.json();
       const payload = data?.data || data;
-      if (payload?.siteUrl) {
-        siteUrl = payload.siteUrl;
+      if (payload?.siteUrl && typeof payload.siteUrl === 'string' && payload.siteUrl.trim().length > 0) {
+        const configuredUrl = payload.siteUrl.trim();
+        if (!configuredUrl.includes('localhost') && !configuredUrl.includes('127.0.0.1')) {
+          siteUrl = configuredUrl;
+        } else if (!siteUrl || siteUrl.includes('localhost')) {
+          siteUrl = configuredUrl;
+        }
       }
       if (payload?.robotsIndexingMode) {
         indexingMode = payload.robotsIndexingMode;
@@ -35,7 +40,7 @@ export async function GET(request: Request) {
     // Graceful fallback to env / config defaults if API is temporarily unreachable
   }
 
-  // 2. Dynamic host detection: If siteUrl is localhost or default, but request comes from a real domain (e.g. nexusnation.in), infer live host
+  // 2. Dynamic host detection: If request comes from a real domain (e.g. nexusnation.in), infer live host
   const host =
     request.headers.get('x-forwarded-host') ||
     request.headers.get('host') ||
@@ -45,13 +50,16 @@ export async function GET(request: Request) {
     (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
 
   if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
-    if (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1')) {
-      siteUrl = `${proto}://${host}`;
-    }
+    siteUrl = `${proto}://${host}`;
+  }
+
+  // 3. Final production fallback
+  if (process.env.NODE_ENV === 'production' && (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1'))) {
+    siteUrl = 'https://nexusnation.in';
   }
 
   // Normalize siteUrl (strip trailing slash)
-  const baseUrl = siteUrl.replace(/\/+$/, '');
+  const baseUrl = (siteUrl || 'https://nexusnation.in').replace(/\/+$/, '');
 
   let robotsContent = '';
 
