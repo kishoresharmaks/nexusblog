@@ -24,26 +24,21 @@ import {
   Clock,
   Code2,
   Bookmark,
-  Share2,
   Search,
   AlertCircle,
   RefreshCw,
-  Sparkles,
   Layers,
   Cpu,
   Monitor,
   Globe2,
   ArrowUpRight,
   ArrowDownRight,
-  Radio,
-  FileText,
+  Minus,
   ChevronRight,
   ExternalLink,
-  ShieldCheck,
 } from 'lucide-react';
 
 const CATEGORY_COLORS = ['#38bdf8', '#818cf8', '#34d399', '#f472b6', '#fbbf24', '#a78bfa'];
-const TECH_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6'];
 
 export default function AdminAnalyticsPage() {
   const [timeWindow, setTimeWindow] = useState<'24h' | '7d' | '30d' | '90d' | 'all'>('7d');
@@ -87,26 +82,54 @@ export default function AdminAnalyticsPage() {
   // Periodic Realtime Pulse Update (every 30 seconds)
   useEffect(() => {
     const timer = setInterval(() => {
-      analyticsApi.getRealtimePulse().then((res) => {
-        if (res) setRealtime(res);
-      }).catch(() => {});
+      analyticsApi
+        .getRealtimePulse()
+        .then((res) => {
+          if (res) setRealtime(res);
+        })
+        .catch(() => {});
     }, 30000);
     return () => clearInterval(timer);
   }, []);
 
   const summary = overview?.summary || {
-    totalPageviews: 1420,
-    pageviewsDelta: 14.8,
-    uniqueVisitors: 980,
-    visitorsDelta: 11.2,
-    avgReadTimeMinutes: 4.8,
-    avgScrollDepthPercent: 74,
-    codeCopies: 215,
-    bookmarksCount: 78,
-    bookmarkConversionRate: 7.9,
+    totalPageviews: 0,
+    pageviewsDelta: 0,
+    uniqueVisitors: 0,
+    visitorsDelta: 0,
+    avgReadTimeMinutes: 0,
+    avgScrollDepthPercent: 0,
+    codeCopies: 0,
+    bookmarksCount: 0,
+    bookmarkConversionRate: 0,
   };
 
   const timeSeries = overview?.timeSeries || [];
+
+  const renderDelta = (delta: number) => {
+    if (delta > 0) {
+      return (
+        <div className="flex items-center gap-1 text-[11px] font-mono font-semibold text-emerald-400">
+          <ArrowUpRight className="h-3 w-3" />
+          <span>+{delta}% vs prev</span>
+        </div>
+      );
+    }
+    if (delta < 0) {
+      return (
+        <div className="flex items-center gap-1 text-[11px] font-mono font-semibold text-rose-400">
+          <ArrowDownRight className="h-3 w-3" />
+          <span>{delta}% vs prev</span>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-1 text-[11px] font-mono text-muted-foreground">
+        <Minus className="h-3 w-3" />
+        <span>0% vs prev</span>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8 pb-12">
@@ -132,7 +155,7 @@ export default function AdminAnalyticsPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-            <span>{realtime?.activeReaders || 4} Live Readers</span>
+            <span>{realtime?.activeReaders || 0} Live Readers</span>
           </div>
 
           {/* Time Window Segmented Control */}
@@ -183,10 +206,7 @@ export default function AdminAnalyticsPage() {
           <div className="text-xl sm:text-2xl font-black tracking-tight text-foreground font-mono">
             {summary.uniqueVisitors.toLocaleString()}
           </div>
-          <div className="flex items-center gap-1 text-[11px] font-mono font-semibold text-emerald-400">
-            <ArrowUpRight className="h-3 w-3" />
-            <span>+{summary.visitorsDelta}% vs prev</span>
-          </div>
+          {renderDelta(summary.visitorsDelta)}
         </div>
 
         {/* Metric 2: Total Pageviews */}
@@ -198,10 +218,7 @@ export default function AdminAnalyticsPage() {
           <div className="text-xl sm:text-2xl font-black tracking-tight text-foreground font-mono">
             {summary.totalPageviews.toLocaleString()}
           </div>
-          <div className="flex items-center gap-1 text-[11px] font-mono font-semibold text-emerald-400">
-            <ArrowUpRight className="h-3 w-3" />
-            <span>+{summary.pageviewsDelta}% vs prev</span>
-          </div>
+          {renderDelta(summary.pageviewsDelta)}
         </div>
 
         {/* Metric 3: Avg Read Duration */}
@@ -285,69 +302,75 @@ export default function AdminAnalyticsPage() {
         </div>
 
         <div className="h-[280px] sm:h-[320px] w-full pt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={timeSeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="pageviewsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.0} />
-                </linearGradient>
-                <linearGradient id="visitorsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#a855f7" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="date"
-                stroke="#888888"
-                fontSize={11}
-                tickLine={false}
-                axisLine={{ stroke: '#333333' }}
-              />
-              <YAxis
-                stroke="#888888"
-                fontSize={11}
-                tickLine={false}
-                axisLine={{ stroke: '#333333' }}
-              />
-              <Tooltip
-                content={({ active, payload, label }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="rounded-xl border border-border/80 bg-card/95 backdrop-blur-xl p-3 shadow-2xl font-mono text-xs space-y-1">
-                        <p className="font-bold text-foreground">{label}</p>
-                        <p className="text-sky-400 flex items-center justify-between gap-4">
-                          <span>Pageviews:</span>
-                          <span className="font-bold">{payload[0]?.value}</span>
-                        </p>
-                        <p className="text-purple-400 flex items-center justify-between gap-4">
-                          <span>Unique Readers:</span>
-                          <span className="font-bold">{payload[1]?.value}</span>
-                        </p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="pageviews"
-                stroke="#38bdf8"
-                strokeWidth={2.5}
-                fillOpacity={1}
-                fill="url(#pageviewsGradient)"
-              />
-              <Area
-                type="monotone"
-                dataKey="visitors"
-                stroke="#a855f7"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#visitorsGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          {timeSeries.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={timeSeries} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="pageviewsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.0} />
+                  </linearGradient>
+                  <linearGradient id="visitorsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="date"
+                  stroke="#888888"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#333333' }}
+                />
+                <YAxis
+                  stroke="#888888"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={{ stroke: '#333333' }}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="rounded-xl border border-border/80 bg-card/95 backdrop-blur-xl p-3 shadow-2xl font-mono text-xs space-y-1">
+                          <p className="font-bold text-foreground">{label}</p>
+                          <p className="text-sky-400 flex items-center justify-between gap-4">
+                            <span>Pageviews:</span>
+                            <span className="font-bold">{payload[0]?.value}</span>
+                          </p>
+                          <p className="text-purple-400 flex items-center justify-between gap-4">
+                            <span>Unique Readers:</span>
+                            <span className="font-bold">{payload[1]?.value}</span>
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="pageviews"
+                  stroke="#38bdf8"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#pageviewsGradient)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="visitors"
+                  stroke="#a855f7"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#visitorsGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full flex items-center justify-center font-mono text-xs text-muted-foreground">
+              {loading ? 'Aggregating telemetry data...' : 'No telemetry data recorded in this timeframe.'}
+            </div>
+          )}
         </div>
       </div>
 
@@ -386,51 +409,59 @@ export default function AdminAnalyticsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40 font-sans">
-              {blueprints.map((item) => (
-                <tr key={item.id} className="hover:bg-muted/40 transition-colors group">
-                  <td className="py-3 px-3 font-mono font-bold text-muted-foreground group-hover:text-primary">
-                    #{item.rank}
-                  </td>
-                  <td className="py-3 px-3 font-medium text-foreground max-w-sm">
-                    <Link
-                      href={`/articles/${item.slug}`}
-                      target="_blank"
-                      className="hover:text-primary transition-colors flex items-center gap-1.5 group-hover:underline line-clamp-1"
-                    >
-                      <span>{item.title}</span>
-                      <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                    </Link>
-                  </td>
-                  <td className="py-3 px-3 font-mono text-[11px]">
-                    <span className="rounded bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 whitespace-nowrap">
-                      {item.categoryName}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono font-bold text-foreground">
-                    {item.viewsCount.toLocaleString()}
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono text-muted-foreground">
-                    {item.uniqueReaders.toLocaleString()}
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono">
-                    <div className="flex items-center justify-end gap-2">
-                      <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-500 rounded-full"
-                          style={{ width: `${item.scrollCompletionPercent}%` }}
-                        />
+              {blueprints.length > 0 ? (
+                blueprints.map((item) => (
+                  <tr key={item.id} className="hover:bg-muted/40 transition-colors group">
+                    <td className="py-3 px-3 font-mono font-bold text-muted-foreground group-hover:text-primary">
+                      #{item.rank}
+                    </td>
+                    <td className="py-3 px-3 font-medium text-foreground max-w-sm">
+                      <Link
+                        href={`/articles/${item.slug}`}
+                        target="_blank"
+                        className="hover:text-primary transition-colors flex items-center gap-1.5 group-hover:underline line-clamp-1"
+                      >
+                        <span>{item.title}</span>
+                        <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      </Link>
+                    </td>
+                    <td className="py-3 px-3 font-mono text-[11px]">
+                      <span className="rounded bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 whitespace-nowrap">
+                        {item.categoryName}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono font-bold text-foreground">
+                      {item.viewsCount.toLocaleString()}
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono text-muted-foreground">
+                      {item.uniqueReaders.toLocaleString()}
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono">
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-500 rounded-full"
+                            style={{ width: `${Math.min(100, item.scrollCompletionPercent)}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] text-muted-foreground">{item.scrollCompletionPercent}%</span>
                       </div>
-                      <span className="text-[11px] text-muted-foreground">{item.scrollCompletionPercent}%</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono text-cyan-400 font-semibold">
-                    {item.codeCopiesCount}
-                  </td>
-                  <td className="py-3 px-3 text-right font-mono text-rose-400 font-semibold">
-                    {item.bookmarksCount}
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono text-cyan-400 font-semibold">
+                      {item.codeCopiesCount}
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono text-rose-400 font-semibold">
+                      {item.bookmarksCount}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-muted-foreground font-mono text-xs">
+                    {loading ? 'Loading blueprint telemetry...' : 'No blueprint telemetry recorded yet.'}
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -445,7 +476,7 @@ export default function AdminAnalyticsPage() {
               <Layers className="h-4 w-4 text-primary" />
               <h3 className="text-base font-bold text-foreground">Domain Category Share</h3>
             </div>
-            <span className="text-xs font-mono text-muted-foreground">By Total Readership</span>
+            <span className="text-xs font-mono text-muted-foreground">Published Articles</span>
           </div>
 
           <div className="h-56 w-full flex items-center justify-center">
@@ -472,7 +503,7 @@ export default function AdminAnalyticsPage() {
                         return (
                           <div className="rounded-xl border border-border bg-card p-2 text-xs font-mono shadow-md">
                             <p className="font-bold text-foreground">{payload[0].name}</p>
-                            <p className="text-primary">{payload[0].value} views</p>
+                            <p className="text-primary">{payload[0].value} articles</p>
                           </div>
                         );
                       }
@@ -482,7 +513,9 @@ export default function AdminAnalyticsPage() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="text-xs font-mono text-muted-foreground">Gathering category distributions...</div>
+              <div className="text-xs font-mono text-muted-foreground">
+                {loading ? 'Gathering category telemetry...' : 'No domain categories with articles.'}
+              </div>
             )}
           </div>
 
@@ -506,9 +539,9 @@ export default function AdminAnalyticsPage() {
           <div className="flex items-center justify-between border-b border-border/50 pb-3">
             <div className="flex items-center gap-2">
               <Cpu className="h-4 w-4 text-emerald-400" />
-              <h3 className="text-base font-bold text-foreground">Technology Stacks Popularity</h3>
+              <h3 className="text-base font-bold text-foreground">Technology Stacks Tagged</h3>
             </div>
-            <span className="text-xs font-mono text-muted-foreground">Blueprint Tagging</span>
+            <span className="text-xs font-mono text-muted-foreground">Blueprint Indexing</span>
           </div>
 
           <div className="h-56 w-full pt-2">
@@ -531,7 +564,7 @@ export default function AdminAnalyticsPage() {
                         return (
                           <div className="rounded-xl border border-border bg-card p-2 text-xs font-mono shadow-md">
                             <p className="font-bold text-foreground">{payload[0].payload.name}</p>
-                            <p className="text-emerald-400">{payload[0].value} articles &amp; views</p>
+                            <p className="text-emerald-400">{payload[0].value} articles</p>
                           </div>
                         );
                       }
@@ -543,13 +576,13 @@ export default function AdminAnalyticsPage() {
               </ResponsiveContainer>
             ) : (
               <div className="text-xs font-mono text-muted-foreground text-center pt-20">
-                Loading stack telemetry...
+                {loading ? 'Loading technology telemetry...' : 'No technologies tagged in articles.'}
               </div>
             )}
           </div>
 
           <div className="pt-2 border-t border-border/40 text-[11px] font-mono text-muted-foreground flex items-center justify-between">
-            <span>Primary framework indexing</span>
+            <span>Framework and tool indexing</span>
             <Link href="/admin/technologies" className="text-primary hover:underline">
               View Hubs &rarr;
             </Link>
@@ -566,20 +599,26 @@ export default function AdminAnalyticsPage() {
             <h3 className="text-sm font-bold text-foreground">Developer Operating Systems</h3>
           </div>
           <div className="space-y-3 font-mono text-xs">
-            {techGeo?.operatingSystems?.map((os: any) => (
-              <div key={os.name} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground font-semibold">{os.name}</span>
-                  <span className="text-muted-foreground">{os.percentage}%</span>
+            {techGeo?.operatingSystems && techGeo.operatingSystems.length > 0 ? (
+              techGeo.operatingSystems.map((os: any) => (
+                <div key={os.name} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground font-semibold">{os.name}</span>
+                    <span className="text-muted-foreground">{os.percentage}%</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${os.percentage}%`, backgroundColor: os.color || '#38bdf8' }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${os.percentage}%`, backgroundColor: os.color || '#38bdf8' }}
-                  />
-                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-muted-foreground font-mono text-xs">
+                {loading ? 'Gathering OS metrics...' : 'No OS telemetry recorded yet.'}
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -590,20 +629,26 @@ export default function AdminAnalyticsPage() {
             <h3 className="text-sm font-bold text-foreground">Browser Engines</h3>
           </div>
           <div className="space-y-3 font-mono text-xs">
-            {techGeo?.browsers?.map((br: any) => (
-              <div key={br.name} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground font-semibold">{br.name}</span>
-                  <span className="text-muted-foreground">{br.percentage}%</span>
+            {techGeo?.browsers && techGeo.browsers.length > 0 ? (
+              techGeo.browsers.map((br: any) => (
+                <div key={br.name} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground font-semibold">{br.name}</span>
+                    <span className="text-muted-foreground">{br.percentage}%</span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500 rounded-full"
+                      style={{ width: `${br.percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-purple-500 rounded-full"
-                    style={{ width: `${br.percentage}%` }}
-                  />
-                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-muted-foreground font-mono text-xs">
+                {loading ? 'Gathering browser metrics...' : 'No browser telemetry recorded yet.'}
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -614,18 +659,24 @@ export default function AdminAnalyticsPage() {
             <h3 className="text-sm font-bold text-foreground">Global Reader Geo</h3>
           </div>
           <div className="space-y-2.5 font-mono text-xs max-h-56 overflow-y-auto no-scrollbar">
-            {techGeo?.countries?.map((c: any) => (
-              <div key={c.code} className="flex items-center justify-between p-2 rounded-xl bg-muted/30 hover:bg-muted/60 transition-colors">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="font-bold text-primary">{c.code}</span>
-                  <span className="text-foreground truncate">{c.name}</span>
+            {techGeo?.countries && techGeo.countries.length > 0 ? (
+              techGeo.countries.map((c: any) => (
+                <div key={c.code} className="flex items-center justify-between p-2 rounded-xl bg-muted/30 hover:bg-muted/60 transition-colors">
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="font-bold text-primary">{c.code}</span>
+                    <span className="text-foreground truncate">{c.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-bold text-foreground">{c.percentage}%</span>
+                    <span className="text-[10px] text-muted-foreground">({c.readers})</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-bold text-foreground">{c.percentage}%</span>
-                  <span className="text-[10px] text-muted-foreground">({c.readers})</span>
-                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-muted-foreground font-mono text-xs">
+                {loading ? 'Gathering geographical telemetry...' : 'No geographical telemetry recorded yet.'}
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -643,20 +694,26 @@ export default function AdminAnalyticsPage() {
           </div>
 
           <div className="space-y-2 font-mono text-xs">
-            {searchIntel?.topQueries?.map((sq: any) => (
-              <div
-                key={sq.query}
-                className="flex items-center justify-between p-2.5 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/50 transition-colors"
-              >
-                <span className="text-foreground font-semibold flex items-center gap-2">
-                  <span className="text-muted-foreground">🔍</span>
-                  <span>{sq.query}</span>
-                </span>
-                <span className="rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5 text-[10px] font-bold">
-                  {sq.searchesCount} queries
-                </span>
+            {searchIntel?.topQueries && searchIntel.topQueries.length > 0 ? (
+              searchIntel.topQueries.map((sq: any) => (
+                <div
+                  key={sq.query}
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-foreground font-semibold flex items-center gap-2">
+                    <span className="text-muted-foreground">🔍</span>
+                    <span>{sq.query}</span>
+                  </span>
+                  <span className="rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2 py-0.5 text-[10px] font-bold">
+                    {sq.searchesCount} queries
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-muted-foreground font-mono text-xs">
+                {loading ? 'Loading search telemetry...' : 'No search queries recorded yet.'}
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -671,27 +728,33 @@ export default function AdminAnalyticsPage() {
           </div>
 
           <div className="space-y-2 font-mono text-xs">
-            {searchIntel?.contentGaps?.map((gap: any) => (
-              <div
-                key={gap.query}
-                className="flex items-center justify-between p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-colors"
-              >
-                <div className="truncate space-y-0.5">
-                  <span className="text-foreground font-semibold block truncate">
-                    {gap.query}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {gap.missedSearchesCount} engineers searched for this topic
-                  </span>
-                </div>
-                <Link
-                  href="/admin/articles/new"
-                  className="rounded-lg bg-primary text-primary-foreground font-bold px-2.5 py-1 text-[10px] hover:opacity-90 shrink-0 ml-2 shadow-2xs"
+            {searchIntel?.contentGaps && searchIntel.contentGaps.length > 0 ? (
+              searchIntel.contentGaps.map((gap: any) => (
+                <div
+                  key={gap.query}
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-colors"
                 >
-                  Write &rarr;
-                </Link>
+                  <div className="truncate space-y-0.5">
+                    <span className="text-foreground font-semibold block truncate">
+                      {gap.query}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {gap.missedSearchesCount} engineers searched for this topic
+                    </span>
+                  </div>
+                  <Link
+                    href="/admin/articles/new"
+                    className="rounded-lg bg-primary text-primary-foreground font-bold px-2.5 py-1 text-[10px] hover:opacity-90 shrink-0 ml-2 shadow-2xs"
+                  >
+                    Write &rarr;
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-muted-foreground font-mono text-xs">
+                {loading ? 'Checking content gaps...' : 'No zero-result search gaps detected.'}
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

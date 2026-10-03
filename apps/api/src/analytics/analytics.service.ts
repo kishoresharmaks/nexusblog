@@ -1,7 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CollectEventDto, SearchQueryDto, AnalyticsEventTypeDto } from './dto/collect-event.dto';
-import { format, subDays, subHours, startOfDay, endOfDay, eachDayOfInterval, eachHourOfInterval } from 'date-fns';
+import {
+  format,
+  subDays,
+  subHours,
+  startOfDay,
+  endOfDay,
+  startOfHour,
+  endOfHour,
+  eachDayOfInterval,
+  eachHourOfInterval,
+  isWithinInterval,
+} from 'date-fns';
 
 @Injectable()
 export class AnalyticsService {
@@ -14,20 +25,19 @@ export class AnalyticsService {
    */
   async collectEvent(dto: CollectEventDto, ip?: string, userAgent?: string) {
     try {
-      // Parse device & browser hints if missing
       const parsedOs = dto.os || this.detectOs(userAgent);
       const parsedBrowser = dto.browser || this.detectBrowser(userAgent);
       const parsedDevice = dto.device || this.detectDevice(userAgent);
 
       // Extract article slug if path is /articles/[slug]
       let detectedSlug = dto.articleSlug;
-      if (!detectedSlug && dto.path.startsWith('/articles/')) {
+      if (!detectedSlug && dto.path && dto.path.startsWith('/articles/')) {
         const parts = dto.path.split('/articles/')[1]?.split('?')[0]?.split('#')[0];
         if (parts) detectedSlug = parts;
       }
 
-      // If article pageview, increment article views counter in background
-      let articleId = undefined;
+      // If article pageview, increment article views counter
+      let articleId: string | undefined = undefined;
       if (detectedSlug && dto.eventType === AnalyticsEventTypeDto.PAGEVIEW) {
         try {
           const article = await this.prisma.article.findUnique({
@@ -49,7 +59,7 @@ export class AnalyticsService {
         }
       }
 
-      // Store telemetry event
+      // Store authentic telemetry event
       await this.prisma.analyticsEvent.create({
         data: {
           eventType: dto.eventType as any,
@@ -59,16 +69,16 @@ export class AnalyticsService {
           categorySlug: dto.categorySlug,
           visitorId: dto.visitorId,
           sessionId: dto.sessionId,
-          referrer: dto.referrer,
-          utmSource: dto.utmSource,
-          utmMedium: dto.utmMedium,
-          utmCampaign: dto.utmCampaign,
+          referrer: dto.referrer || null,
+          utmSource: dto.utmSource || null,
+          utmMedium: dto.utmMedium || null,
+          utmCampaign: dto.utmCampaign || null,
           os: parsedOs,
           browser: parsedBrowser,
           device: parsedDevice,
-          country: dto.country || 'US',
-          countryName: dto.countryName || 'United States',
-          scrollDepth: dto.scrollDepth,
+          country: dto.country || null,
+          countryName: dto.countryName || null,
+          scrollDepth: dto.scrollDepth || null,
           metadata: dto.metadata || undefined,
         },
       });
@@ -90,7 +100,7 @@ export class AnalyticsService {
         data: {
           query: dto.query.trim().toLowerCase(),
           resultsCount: dto.resultsCount || 0,
-          visitorId: dto.visitorId,
+          visitorId: dto.visitorId || null,
         },
       });
       return { success: true };
@@ -100,13 +110,12 @@ export class AnalyticsService {
   }
 
   /**
-   * 3. Overview KPIs & Time-Series traffic chart
+   * 3. Overview KPIs & Pure Real-Data Time-Series Chart
    */
   async getOverview(timeWindow: string = '7d') {
     const { startDate, prevStartDate, isHourly, intervals } = this.resolveTimeIntervals(timeWindow);
 
     try {
-      // Total events in current window
       const [
         totalPageviews,
         uniqueVisitorsRaw,
@@ -114,14 +123,15 @@ export class AnalyticsService {
         bookmarksCount,
         prevPageviews,
         prevUniqueVisitorsRaw,
-        articlesTotal,
         readingHistoryStats,
+        articleStats,
+        pageviewEvents,
       ] = await Promise.all([
         this.prisma.analyticsEvent.count({
           where: { eventType: 'PAGEVIEW', timestamp: { gte: startDate } },
         }),
         this.prisma.analyticsEvent.findMany({
-          where: { timestamp: { gte: startDate } },
+          where: { timestamp: { gte: startDate }, visitorId: { not: null } },
           distinct: ['visitorId'],
           select: { visitorId: true },
         }),
@@ -135,49 +145,74 @@ export class AnalyticsService {
           where: { eventType: 'PAGEVIEW', timestamp: { gte: prevStartDate, lt: startDate } },
         }),
         this.prisma.analyticsEvent.findMany({
-          where: { timestamp: { gte: prevStartDate, lt: startDate } },
+          where: { timestamp: { gte: prevStartDate, lt: startDate }, visitorId: { not: null } },
           distinct: ['visitorId'],
           select: { visitorId: true },
         }),
-        this.prisma.article.count({ where: { status: 'PUBLISHED' } }),
         this.prisma.readingHistory.aggregate({
           where: { updatedAt: { gte: startDate } },
           _avg: { completionPercentage: true },
           _count: true,
         }),
+        this.prisma.article.aggregate({
+          where: { status: 'PUBLISHED' },
+          _avg: { readingTime: true },
+        }),
+        this.prisma.analyticsEvent.findMany({
+          where: {
+            eventType: 'PAGEVIEW',
+            timestamp: { gte: startDate },
+          },
+          select: { timestamp: true, visitorId: true },
+        }),
       ]);
 
-      const uniqueVisitors = Math.max(uniqueVisitorsRaw.length, Math.round(totalPageviews * 0.68) || (articlesTotal > 0 ? 12 : 0));
-      const prevUnique = Math.max(prevUniqueVisitorsRaw.length, Math.round(prevPageviews * 0.68) || 1);
+      const uniqueVisitors = uniqueVisitorsRaw.length;
+      const prevUnique = prevUniqueVisitorsRaw.length;
 
-      // Baseline views if database is fresh
-      const displayViews = totalPageviews > 0 ? totalPageviews : articlesTotal * 14 + 28;
-      const displayVisitors = uniqueVisitors > 0 ? uniqueVisitors : Math.round(displayViews * 0.72);
-      const displayCodeCopies = codeCopies > 0 ? codeCopies : Math.round(displayViews * 0.18) + 4;
-      const displayBookmarks = bookmarksCount > 0 ? bookmarksCount : Math.round(displayViews * 0.08) + 2;
+      // Delta percentage calculation
+      const viewsDelta =
+        prevPageviews > 0
+          ? Number((((totalPageviews - prevPageviews) / prevPageviews) * 100).toFixed(1))
+          : totalPageviews > 0
+          ? 100.0
+          : 0.0;
 
-      const viewsDelta = prevPageviews > 0
-        ? Number((((displayViews - prevPageviews) / prevPageviews) * 100).toFixed(1))
-        : 14.8;
-      const visitorsDelta = prevUnique > 0
-        ? Number((((displayVisitors - prevUnique) / prevUnique) * 100).toFixed(1))
-        : 11.4;
+      const visitorsDelta =
+        prevUnique > 0
+          ? Number((((uniqueVisitors - prevUnique) / prevUnique) * 100).toFixed(1))
+          : uniqueVisitors > 0
+          ? 100.0
+          : 0.0;
 
-      const avgScroll = readingHistoryStats._avg.completionPercentage
+      const avgScroll = readingHistoryStats?._avg?.completionPercentage
         ? Math.round(readingHistoryStats._avg.completionPercentage)
-        : 74;
+        : 0;
 
-      // Build Time Series Curve
+      const avgReadTimeMinutes = articleStats?._avg?.readingTime
+        ? Number(articleStats._avg.readingTime.toFixed(1))
+        : 0;
+
+      const bookmarkConversionRate =
+        uniqueVisitors > 0
+          ? Number(((bookmarksCount / uniqueVisitors) * 100).toFixed(1))
+          : 0;
+
+      // Build 100% Real Time Series Curve from recorded events
       const timeSeries = intervals.map((intervalDate: Date) => {
         const label = isHourly
           ? format(intervalDate, 'ha')
           : format(intervalDate, 'MMM dd');
 
-        // Distribute views across curve with natural weekday peak
-        const dayFactor = isHourly ? 1 : (intervalDate.getDay() === 0 || intervalDate.getDay() === 6 ? 0.65 : 1.15);
-        const randomVariance = 0.85 + ((intervalDate.getTime() % 100) / 300);
-        const bucketViews = Math.max(1, Math.round((displayViews / intervals.length) * dayFactor * randomVariance));
-        const bucketVisitors = Math.max(1, Math.round(bucketViews * 0.72));
+        const intervalStart = isHourly ? startOfHour(intervalDate) : startOfDay(intervalDate);
+        const intervalEnd = isHourly ? endOfHour(intervalDate) : endOfDay(intervalDate);
+
+        const bucketEvents = pageviewEvents.filter((ev) =>
+          isWithinInterval(new Date(ev.timestamp), { start: intervalStart, end: intervalEnd })
+        );
+
+        const bucketViews = bucketEvents.length;
+        const bucketVisitors = new Set(bucketEvents.map((e) => e.visitorId).filter(Boolean)).size;
 
         return {
           date: label,
@@ -189,28 +224,43 @@ export class AnalyticsService {
 
       return {
         summary: {
-          totalPageviews: displayViews,
+          totalPageviews,
           pageviewsDelta: viewsDelta,
-          uniqueVisitors: displayVisitors,
+          uniqueVisitors,
           visitorsDelta,
-          avgReadTimeMinutes: 4.8,
+          avgReadTimeMinutes,
           avgScrollDepthPercent: avgScroll,
-          codeCopies: displayCodeCopies,
-          bookmarksCount: displayBookmarks,
-          bookmarkConversionRate: Number(((displayBookmarks / (displayVisitors || 1)) * 100).toFixed(1)),
+          codeCopies,
+          bookmarksCount,
+          bookmarkConversionRate,
         },
         timeSeries,
       };
     } catch (err: any) {
       this.logger.error(`Failed to aggregate overview analytics: ${err.message}`);
-      return this.generateFallbackOverview(timeWindow);
+      return {
+        summary: {
+          totalPageviews: 0,
+          pageviewsDelta: 0,
+          uniqueVisitors: 0,
+          visitorsDelta: 0,
+          avgReadTimeMinutes: 0,
+          avgScrollDepthPercent: 0,
+          codeCopies: 0,
+          bookmarksCount: 0,
+          bookmarkConversionRate: 0,
+        },
+        timeSeries: [],
+      };
     }
   }
 
   /**
-   * 4. Top Performing Blueprints Leaderboard
+   * 4. Top Performing Blueprints Leaderboard (Pure Real Data)
    */
   async getTopBlueprints(timeWindow: string = '7d', limit: number = 10) {
+    const { startDate } = this.resolveTimeIntervals(timeWindow);
+
     try {
       const articles = await this.prisma.article.findMany({
         where: { status: 'PUBLISHED' },
@@ -223,26 +273,55 @@ export class AnalyticsService {
         },
       });
 
+      if (articles.length === 0) return [];
+
+      const articleSlugs = articles.map((a) => a.slug);
+      const articleIds = articles.map((a) => a.id);
+
+      const [articleEvents, readingHistories] = await Promise.all([
+        this.prisma.analyticsEvent.findMany({
+          where: {
+            articleSlug: { in: articleSlugs },
+            timestamp: { gte: startDate },
+          },
+          select: { articleSlug: true, eventType: true, visitorId: true },
+        }),
+        this.prisma.readingHistory.findMany({
+          where: {
+            articleId: { in: articleIds },
+          },
+          select: { articleId: true, completionPercentage: true },
+        }),
+      ]);
+
       return articles.map((art, idx) => {
-        const views = art.viewsCount > 0 ? art.viewsCount : (limit - idx) * 35 + 40;
-        const unique = Math.max(1, Math.round(views * 0.76));
-        const codeCopies = Math.max(1, Math.round(views * 0.16));
-        const scrollCompletion = 65 + ((idx * 7) % 25);
+        const eventsForArt = articleEvents.filter((e) => e.articleSlug === art.slug);
+        const uniqueReaders = new Set(eventsForArt.map((e) => e.visitorId).filter(Boolean)).size;
+        const codeCopies = eventsForArt.filter((e) => e.eventType === 'CODE_COPY').length;
+
+        const historiesForArt = readingHistories.filter((h) => h.articleId === art.id);
+        const avgScroll =
+          historiesForArt.length > 0
+            ? Math.round(
+                historiesForArt.reduce((acc, h) => acc + (h.completionPercentage || 0), 0) /
+                  historiesForArt.length
+              )
+            : 0;
 
         return {
           id: art.id,
           rank: idx + 1,
           title: art.title,
           slug: art.slug,
-          categoryName: art.category?.name || 'System Design',
-          categorySlug: art.category?.slug || 'system-design',
-          authorName: art.author?.name || 'Architect',
-          viewsCount: views,
-          uniqueReaders: unique,
-          readingTimeMinutes: art.readingTime || 6,
-          scrollCompletionPercent: scrollCompletion,
+          categoryName: art.category?.name || 'Uncategorized',
+          categorySlug: art.category?.slug || '',
+          authorName: art.author?.name || 'Author',
+          viewsCount: art.viewsCount || 0,
+          uniqueReaders,
+          readingTimeMinutes: art.readingTime || 0,
+          scrollCompletionPercent: avgScroll,
           codeCopiesCount: codeCopies,
-          bookmarksCount: art._count.bookmarks || Math.round(views * 0.08),
+          bookmarksCount: art._count.bookmarks || 0,
           commentsCount: art._count.comments || 0,
           publishedAt: art.publishedAt || art.createdAt,
         };
@@ -254,75 +333,117 @@ export class AnalyticsService {
   }
 
   /**
-   * 5. Technology Taxonomy, Developer OS & Geo Matrix
+   * 5. Technology Taxonomy, Developer OS & Geo Matrix (Pure Database Telemetry)
    */
   async getTechAndGeo(timeWindow: string = '7d') {
+    const { startDate } = this.resolveTimeIntervals(timeWindow);
+
     try {
-      const [categories, technologies] = await Promise.all([
-        this.prisma.category.findMany({
-          include: { _count: { select: { articles: true } } },
-        }),
-        this.prisma.technology.findMany({
-          take: 8,
-          include: { _count: { select: { articles: true } } },
-        }),
-      ]);
+      const [categories, technologies, osGroup, browserGroup, deviceGroup, countryGroup] =
+        await Promise.all([
+          this.prisma.category.findMany({
+            include: { _count: { select: { articles: true } } },
+            orderBy: { articles: { _count: 'desc' } },
+            take: 8,
+          }),
+          this.prisma.technology.findMany({
+            include: { _count: { select: { articles: true } } },
+            orderBy: { articles: { _count: 'desc' } },
+            take: 8,
+          }),
+          this.prisma.analyticsEvent.groupBy({
+            by: ['os'],
+            where: { timestamp: { gte: startDate }, os: { not: null } },
+            _count: { os: true },
+            orderBy: { _count: { os: 'desc' } },
+          }),
+          this.prisma.analyticsEvent.groupBy({
+            by: ['browser'],
+            where: { timestamp: { gte: startDate }, browser: { not: null } },
+            _count: { browser: true },
+            orderBy: { _count: { browser: 'desc' } },
+          }),
+          this.prisma.analyticsEvent.groupBy({
+            by: ['device'],
+            where: { timestamp: { gte: startDate }, device: { not: null } },
+            _count: { device: true },
+            orderBy: { _count: { device: 'desc' } },
+          }),
+          this.prisma.analyticsEvent.groupBy({
+            by: ['country', 'countryName'],
+            where: { timestamp: { gte: startDate }, country: { not: null } },
+            _count: { country: true },
+            orderBy: { _count: { country: 'desc' } },
+            take: 10,
+          }),
+        ]);
 
-      // Category breakdown
-      const categoryShare = categories.slice(0, 5).map((cat, idx) => ({
-        name: cat.name,
-        slug: cat.slug,
-        count: cat._count.articles > 0 ? cat._count.articles * 24 + 18 : (5 - idx) * 20,
+      // Category breakdown (Actual article counts)
+      const categoryShare = categories
+        .filter((cat) => cat._count.articles > 0)
+        .map((cat) => ({
+          name: cat.name,
+          slug: cat.slug,
+          count: cat._count.articles,
+        }));
+
+      // Stack breakdown (Actual article counts)
+      const techShare = technologies
+        .filter((tech) => tech._count.articles > 0)
+        .map((tech) => ({
+          name: tech.name,
+          slug: tech.slug,
+          count: tech._count.articles,
+        }));
+
+      // Developer OS breakdown
+      const totalOs = osGroup.reduce((acc, g) => acc + g._count.os, 0);
+      const osColorMap: Record<string, string> = {
+        macOS: '#38bdf8',
+        Linux: '#10b981',
+        Windows: '#6366f1',
+        iOS: '#f59e0b',
+        Android: '#ec4899',
+      };
+      const operatingSystems = osGroup.map((g) => ({
+        name: g.os || 'Unknown',
+        percentage: totalOs > 0 ? Math.round((g._count.os / totalOs) * 100) : 0,
+        count: g._count.os,
+        color: osColorMap[g.os || ''] || '#94a3b8',
       }));
 
-      // Stack breakdown
-      const techShare = technologies.slice(0, 6).map((tech, idx) => ({
-        name: tech.name,
-        slug: tech.slug,
-        count: tech._count.articles > 0 ? tech._count.articles * 18 + 12 : (6 - idx) * 15,
+      // Browser breakdown
+      const totalBrowser = browserGroup.reduce((acc, g) => acc + g._count.browser, 0);
+      const browsers = browserGroup.map((g) => ({
+        name: g.browser || 'Unknown',
+        percentage: totalBrowser > 0 ? Math.round((g._count.browser / totalBrowser) * 100) : 0,
+        count: g._count.browser,
       }));
 
-      // Developer OS & Client Environments
-      const osBreakdown = [
-        { name: 'macOS', percentage: 48, color: '#38bdf8' },
-        { name: 'Linux / Ubuntu', percentage: 28, color: '#10b981' },
-        { name: 'Windows', percentage: 18, color: '#6366f1' },
-        { name: 'iOS / Mobile', percentage: 4, color: '#f59e0b' },
-        { name: 'Android', percentage: 2, color: '#ec4899' },
-      ];
+      // Device breakdown
+      const totalDevice = deviceGroup.reduce((acc, g) => acc + g._count.device, 0);
+      const devices = deviceGroup.map((g) => ({
+        name: g.device || 'Unknown',
+        percentage: totalDevice > 0 ? Math.round((g._count.device / totalDevice) * 100) : 0,
+        count: g._count.device,
+      }));
 
-      const browserBreakdown = [
-        { name: 'Chrome', percentage: 62 },
-        { name: 'Firefox Developer', percentage: 16 },
-        { name: 'Safari', percentage: 12 },
-        { name: 'Arc Browser', percentage: 7 },
-        { name: 'Edge', percentage: 3 },
-      ];
-
-      const deviceBreakdown = [
-        { name: 'Desktop / Workstation', percentage: 76 },
-        { name: 'Laptop', percentage: 18 },
-        { name: 'Mobile / Tablet', percentage: 6 },
-      ];
-
-      const geoCountries = [
-        { code: 'US', name: 'United States', percentage: 42, readers: 1840 },
-        { code: 'DE', name: 'Germany', percentage: 14, readers: 610 },
-        { code: 'IN', name: 'India', percentage: 13, readers: 570 },
-        { code: 'GB', name: 'United Kingdom', percentage: 11, readers: 480 },
-        { code: 'CA', name: 'Canada', percentage: 7, readers: 310 },
-        { code: 'JP', name: 'Japan', percentage: 5, readers: 220 },
-        { code: 'NL', name: 'Netherlands', percentage: 4, readers: 175 },
-        { code: 'OTHER', name: 'Other Regions', percentage: 4, readers: 170 },
-      ];
+      // Geographic countries breakdown
+      const totalGeo = countryGroup.reduce((acc, g) => acc + g._count.country, 0);
+      const countries = countryGroup.map((g) => ({
+        code: g.country || 'OTHER',
+        name: g.countryName || g.country || 'Other Regions',
+        readers: g._count.country,
+        percentage: totalGeo > 0 ? Math.round((g._count.country / totalGeo) * 100) : 0,
+      }));
 
       return {
         categories: categoryShare,
         technologies: techShare,
-        operatingSystems: osBreakdown,
-        browsers: browserBreakdown,
-        devices: deviceBreakdown,
-        countries: geoCountries,
+        operatingSystems,
+        browsers,
+        devices,
+        countries,
       };
     } catch (err: any) {
       this.logger.error(`Failed to aggregate tech and geo: ${err.message}`);
@@ -338,7 +459,7 @@ export class AnalyticsService {
   }
 
   /**
-   * 6. Search Intelligence & Zero-Result Gap Analysis
+   * 6. Search Intelligence & Zero-Result Gap Analysis (Pure Database Records)
    */
   async getSearchIntelligence(timeWindow: string = '7d') {
     const { startDate } = this.resolveTimeIntervals(timeWindow);
@@ -361,86 +482,79 @@ export class AnalyticsService {
         }),
       ]);
 
-      const topQueries = topSearches.length > 0
-        ? topSearches.map((s) => ({ query: s.query, searchesCount: s._count.query }))
-        : [
-            { query: 'raft consensus implementation', searchesCount: 84 },
-            { query: 'redis sliding window rate limiter', searchesCount: 62 },
-            { query: 'nestjs clean architecture ddd', searchesCount: 57 },
-            { query: 'postgresql b-tree indexing internals', searchesCount: 43 },
-            { query: 'docker compose multi-stage build', searchesCount: 39 },
-          ];
+      const topQueries = topSearches.map((s) => ({
+        query: s.query,
+        searchesCount: s._count.query,
+      }));
 
-      const contentGaps = zeroResults.length > 0
-        ? zeroResults.map((s) => ({ query: s.query, missedSearchesCount: s._count.query }))
-        : [
-            { query: 'rust lock-free queue benchmarks', missedSearchesCount: 28 },
-            { query: 'distributed tracing opentelemetry nestjs', missedSearchesCount: 22 },
-            { query: 'clickhouse vs duckdb analytical queries', missedSearchesCount: 19 },
-            { query: 'grpc bidirectional streaming python', missedSearchesCount: 15 },
-          ];
+      const contentGaps = zeroResults.map((s) => ({
+        query: s.query,
+        missedSearchesCount: s._count.query,
+      }));
+
+      const totalSearches =
+        topQueries.reduce((acc, q) => acc + q.searchesCount, 0) +
+        contentGaps.reduce((acc, g) => acc + g.missedSearchesCount, 0);
 
       return {
-        totalSearches: topQueries.reduce((acc, q) => acc + q.searchesCount, 0) + contentGaps.reduce((acc, g) => acc + g.missedSearchesCount, 0),
+        totalSearches,
         topQueries,
         contentGaps,
       };
-    } catch {
+    } catch (err: any) {
+      this.logger.error(`Error loading search intelligence: ${err.message}`);
       return {
-        totalSearches: 285,
-        topQueries: [
-          { query: 'raft consensus implementation', searchesCount: 84 },
-          { query: 'redis sliding window rate limiter', searchesCount: 62 },
-          { query: 'nestjs clean architecture ddd', searchesCount: 57 },
-        ],
-        contentGaps: [
-          { query: 'rust lock-free queue benchmarks', missedSearchesCount: 28 },
-          { query: 'distributed tracing opentelemetry nestjs', missedSearchesCount: 22 },
-        ],
+        totalSearches: 0,
+        topQueries: [],
+        contentGaps: [],
       };
     }
   }
 
   /**
-   * 7. Real-Time Active Readers Pulse (Last 5 Minutes)
+   * 7. Real-Time Active Readers Pulse (Last 5 Minutes from Database)
    */
   async getRealtimePulse() {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     try {
-      const [activeEvents, articles] = await Promise.all([
-        this.prisma.analyticsEvent.findMany({
-          where: { timestamp: { gte: fiveMinutesAgo } },
-          distinct: ['visitorId'],
-          select: { path: true, articleSlug: true, country: true },
-        }),
-        this.prisma.article.findMany({
-          where: { status: 'PUBLISHED' },
-          take: 3,
-          select: { title: true, slug: true, category: { select: { name: true } } },
-        }),
-      ]);
+      const activeEvents = await this.prisma.analyticsEvent.findMany({
+        where: { timestamp: { gte: fiveMinutesAgo } },
+        select: { visitorId: true, path: true, articleSlug: true, country: true },
+      });
 
-      const activeReadersCount = Math.max(activeEvents.length, 3);
-      const activePages = articles.map((art, idx) => ({
-        title: art.title,
-        path: `/articles/${art.slug}`,
-        category: art.category?.name || 'Architecture',
-        readers: Math.max(1, Math.round(activeReadersCount / (idx + 1))),
-      }));
+      const activeVisitorsSet = new Set(activeEvents.map((e) => e.visitorId).filter(Boolean));
+      const activeReadersCount = activeVisitorsSet.size;
+
+      // Group active pages
+      const pathCounts: Record<string, { count: number; slug?: string }> = {};
+      for (const ev of activeEvents) {
+        const p = ev.path || '/';
+        if (!pathCounts[p]) {
+          pathCounts[p] = { count: 0, slug: ev.articleSlug || undefined };
+        }
+        pathCounts[p].count += 1;
+      }
+
+      const activePages = Object.entries(pathCounts)
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 5)
+        .map(([path, data]) => ({
+          title: data.slug ? data.slug.replace(/-/g, ' ') : path,
+          path,
+          readers: data.count,
+        }));
 
       return {
         activeReaders: activeReadersCount,
         lastUpdated: new Date().toISOString(),
         activePages,
       };
-    } catch {
+    } catch (err: any) {
+      this.logger.error(`Error getting realtime pulse: ${err.message}`);
       return {
-        activeReaders: 4,
+        activeReaders: 0,
         lastUpdated: new Date().toISOString(),
-        activePages: [
-          { title: 'Clean Architecture in NestJS', path: '/articles/clean-architecture-nestjs', category: 'Backend Engineering', readers: 2 },
-          { title: 'Designing High-Performance Distributed Systems', path: '/articles/designing-high-performance-distributed-systems', category: 'System Design', readers: 2 },
-        ],
+        activePages: [],
       };
     }
   }
@@ -486,54 +600,30 @@ export class AnalyticsService {
     return { startDate, prevStartDate, isHourly, intervals };
   }
 
-  private detectOs(userAgent?: string): string {
-    if (!userAgent) return 'macOS';
-    if (/mac/i.test(userAgent)) return 'macOS';
+  private detectOs(userAgent?: string): string | null {
+    if (!userAgent) return null;
+    if (/macintosh|mac os x/i.test(userAgent)) return 'macOS';
     if (/linux/i.test(userAgent)) return 'Linux';
-    if (/win/i.test(userAgent)) return 'Windows';
+    if (/windows|win32/i.test(userAgent)) return 'Windows';
     if (/iphone|ipad|ipod/i.test(userAgent)) return 'iOS';
     if (/android/i.test(userAgent)) return 'Android';
-    return 'Linux';
+    return null;
   }
 
-  private detectBrowser(userAgent?: string): string {
-    if (!userAgent) return 'Chrome';
+  private detectBrowser(userAgent?: string): string | null {
+    if (!userAgent) return null;
     if (/arc/i.test(userAgent)) return 'Arc';
-    if (/firefox/i.test(userAgent)) return 'Firefox';
-    if (/safari/i.test(userAgent) && !/chrome/i.test(userAgent)) return 'Safari';
     if (/edg/i.test(userAgent)) return 'Edge';
-    return 'Chrome';
+    if (/firefox|fxios/i.test(userAgent)) return 'Firefox';
+    if (/chrome|crios/i.test(userAgent)) return 'Chrome';
+    if (/safari/i.test(userAgent)) return 'Safari';
+    return null;
   }
 
-  private detectDevice(userAgent?: string): string {
-    if (!userAgent) return 'desktop';
-    if (/mobile/i.test(userAgent)) return 'mobile';
-    if (/tablet|ipad/i.test(userAgent)) return 'tablet';
-    return 'desktop';
-  }
-
-  private generateFallbackOverview(timeWindow: string) {
-    const days = timeWindow === '24h' ? 24 : 7;
-    const timeSeries = Array.from({ length: days }).map((_, i) => ({
-      date: `Day ${i + 1}`,
-      fullDate: new Date().toISOString(),
-      pageviews: 120 + i * 15,
-      visitors: 85 + i * 10,
-    }));
-
-    return {
-      summary: {
-        totalPageviews: 1280,
-        pageviewsDelta: 14.5,
-        uniqueVisitors: 890,
-        visitorsDelta: 12.1,
-        avgReadTimeMinutes: 4.6,
-        avgScrollDepthPercent: 72,
-        codeCopies: 194,
-        bookmarksCount: 68,
-        bookmarkConversionRate: 7.6,
-      },
-      timeSeries,
-    };
+  private detectDevice(userAgent?: string): string | null {
+    if (!userAgent) return null;
+    if (/ipad|tablet/i.test(userAgent)) return 'Tablet';
+    if (/mobile|iphone|android/i.test(userAgent)) return 'Mobile';
+    return 'Desktop';
   }
 }
