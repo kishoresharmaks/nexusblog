@@ -24,14 +24,29 @@ function getSiteUrl(): string {
   return 'https://nexusnation.in';
 }
 
+function getApiUrl(): string {
+  if (typeof window === 'undefined') {
+    return normalizeApiUrl(process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL, 'http://127.0.0.1:4000/api');
+  }
+  const isLiveOrigin =
+    window.location?.origin &&
+    !window.location.origin.includes('localhost') &&
+    !window.location.origin.includes('127.0.0.1');
+
+  const raw = process.env.NEXT_PUBLIC_API_URL;
+  if (isLiveOrigin && (!raw || raw.includes('localhost') || raw.includes('127.0.0.1'))) {
+    return '/api';
+  }
+  return normalizeApiUrl(raw, '/api');
+}
+
 export const siteConfig = {
   name: 'NexusBlog',
   description: 'Production-Grade Technical Publishing Platform & Developer Knowledge Portal',
   url: getSiteUrl(),
-  apiUrl:
-    typeof window === 'undefined'
-      ? normalizeApiUrl(process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL, 'http://127.0.0.1:4000/api')
-      : normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL, '/api'),
+  get apiUrl() {
+    return getApiUrl();
+  },
   ogImage: '/images/og-default.png',
   links: {
     github: 'https://github.com/nexusblog',

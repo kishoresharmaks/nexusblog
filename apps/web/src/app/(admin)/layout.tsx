@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
+import { AdminSidebarProvider, useAdminSidebar } from '@/context/admin-sidebar-context';
 import { ThemeToggle } from '@/components/common/theme-toggle';
 import { BrandLogo } from '@/components/common/brand-logo';
 import { SearchCommand } from '@/components/public/search-command';
@@ -37,6 +38,8 @@ import {
   ChevronDown,
   User,
   Home,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 
 interface NavGroup {
@@ -89,7 +92,16 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AdminSidebarProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AdminSidebarProvider>
+  );
+}
+
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { isCollapsed, toggleSidebar, isEditorPage } = useAdminSidebar();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -165,10 +177,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [mobileMenuOpen]);
 
-  const isEditorPage =
-    pathname?.includes('/admin/articles/') &&
-    (pathname.endsWith('/edit') || pathname.endsWith('/new'));
-
   // Determine current active page label for breadcrumbs
   const allNavItems = ADMIN_NAV_GROUPS.flatMap((g) => g.items);
   const activeNavItem =
@@ -201,13 +209,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* ========================================================================= */}
       {/* DESKTOP SIDEBAR (Laptop & Large screens) */}
       {/* ========================================================================= */}
-      <aside className="hidden md:flex w-64 lg:w-72 border-r border-border/70 bg-card/60 backdrop-blur-xl flex-col justify-between shrink-0 sticky top-0 h-screen z-40 overflow-hidden">
+      <aside
+        className={`hidden md:flex border-r border-border/70 bg-card/60 backdrop-blur-xl flex-col justify-between shrink-0 sticky top-0 h-screen z-40 transition-all duration-300 ease-in-out ${
+          isCollapsed
+            ? 'w-0 opacity-0 -translate-x-full border-r-0 pointer-events-none overflow-hidden'
+            : 'w-64 lg:w-72 opacity-100 translate-x-0 overflow-hidden'
+        }`}
+      >
         {/* Top Header & Brand */}
         <div className="p-4 lg:p-5 border-b border-border/40 space-y-3 shrink-0">
           <div className="flex items-center justify-between">
             <Link href="/" className="inline-block group focus:outline-none">
               <BrandLogo variant="admin" size="sm" showPulse={true} pulseColor="emerald" />
             </Link>
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="p-1.5 rounded-xl border border-border/60 bg-muted/30 hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-2xs"
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
           </div>
 
           <div className="flex items-center justify-between text-[11px] font-mono">
@@ -508,8 +531,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Desktop Top Navbar Bar */}
         {!isEditorPage && (
           <header className="hidden md:flex h-16 border-b border-border/60 bg-background/80 backdrop-blur-xl px-6 lg:px-8 items-center justify-between shrink-0 z-30">
-            {/* Left: Breadcrumbs & Current Section */}
+            {/* Left: Sidebar Toggle (when collapsed), Breadcrumbs & Current Section */}
             <div className="flex items-center space-x-2.5">
+              {isCollapsed && (
+                <button
+                  type="button"
+                  onClick={toggleSidebar}
+                  className="p-2 rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shadow-2xs mr-1"
+                  title="Expand sidebar"
+                  aria-label="Expand sidebar"
+                >
+                  <PanelLeftOpen className="h-4 w-4" />
+                </button>
+              )}
               <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center">
                 <ActiveIcon className="h-4 w-4" />
               </div>
