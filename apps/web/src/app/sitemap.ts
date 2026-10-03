@@ -51,8 +51,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Fallback
   }
 
-  // 3. Final production safeguard: never output localhost if running in production
-  if (process.env.NODE_ENV === 'production' && (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1'))) {
+  // 3. Final safeguard: never output localhost for canonical sitemaps
+  if (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1')) {
     siteUrl = 'https://nexusnation.in';
   }
 

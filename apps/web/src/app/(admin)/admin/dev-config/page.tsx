@@ -113,7 +113,13 @@ export default function AdminDevConfigPage() {
         setBrevoApiKey(settingsData.brevoApiKey?.value || '');
         setBrevoSenderEmail(settingsData.brevoSenderEmail?.value || 'newsletter@nexusnation.in');
         setBrevoSenderName(settingsData.brevoSenderName?.value || 'NexusBlog Engineering Dispatch');
-        setSiteUrl(settingsData.siteUrl?.value || 'https://nexusnation.in');
+        const resolvedSiteUrl =
+          settingsData.siteUrl?.value && !settingsData.siteUrl.value.includes('localhost') && !settingsData.siteUrl.value.includes('127.0.0.1')
+            ? settingsData.siteUrl.value.trim().replace(/\/+$/, '')
+            : typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')
+              ? window.location.origin.replace(/\/+$/, '')
+              : 'https://nexusnation.in';
+        setSiteUrl(resolvedSiteUrl);
         setSiteName(settingsData.siteName?.value || 'NexusBlog');
         setNewsletterAutoWelcome(settingsData.newsletterAutoWelcome?.value !== 'false');
         setMaintenanceMode(settingsData.maintenanceMode?.value === 'true');
@@ -139,11 +145,16 @@ export default function AdminDevConfigPage() {
     if (e) e.preventDefault();
     setIsSaving(true);
     try {
+      const cleanSiteUrl =
+        siteUrl && !siteUrl.includes('localhost') && !siteUrl.includes('127.0.0.1')
+          ? siteUrl.trim().replace(/\/+$/, '')
+          : 'https://nexusnation.in';
+
       const payload: Record<string, string> = {
         brevoApiKey: brevoApiKey.trim(),
         brevoSenderEmail: brevoSenderEmail.trim(),
         brevoSenderName: brevoSenderName.trim(),
-        siteUrl: siteUrl.trim(),
+        siteUrl: cleanSiteUrl,
         siteName: siteName.trim(),
         newsletterAutoWelcome: String(newsletterAutoWelcome),
         maintenanceMode: String(maintenanceMode),

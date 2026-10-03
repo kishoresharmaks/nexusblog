@@ -53,8 +53,8 @@ export async function GET(request: Request) {
     siteUrl = `${proto}://${host}`;
   }
 
-  // 3. Final production fallback
-  if (process.env.NODE_ENV === 'production' && (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1'))) {
+  // 3. Final fallback: never output localhost in Sitemap directive
+  if (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1')) {
     siteUrl = 'https://nexusnation.in';
   }
 

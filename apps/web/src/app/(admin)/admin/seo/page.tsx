@@ -79,6 +79,16 @@ export default function AdminSeoDiagnosticsPage() {
   const [copiedJsonLd, setCopiedJsonLd] = useState(false);
   const [copiedOgUrl, setCopiedOgUrl] = useState(false);
 
+  const getEffectiveSiteUrl = useCallback((rawUrl?: string): string => {
+    if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
+      return window.location.origin.replace(/\/+$/, '');
+    }
+    if (rawUrl && !rawUrl.includes('localhost') && !rawUrl.includes('127.0.0.1')) {
+      return rawUrl.trim().replace(/\/+$/, '');
+    }
+    return 'https://nexusnation.in';
+  }, []);
+
   const loadRobotsConfig = useCallback(async () => {
     try {
       setLoadingRobots(true);
@@ -89,14 +99,14 @@ export default function AdminSeoDiagnosticsPage() {
           data.robotsCustomContent?.value ||
             '# Custom robots.txt directives\nUser-Agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /api/*',
         );
-        setSiteUrl(data.siteUrl?.value || 'https://nexusnation.in');
+        setSiteUrl(getEffectiveSiteUrl(data.siteUrl?.value));
       }
     } catch {
-      // Fallback
+      setSiteUrl(getEffectiveSiteUrl());
     } finally {
       setLoadingRobots(false);
     }
-  }, []);
+  }, [getEffectiveSiteUrl]);
 
   const runHealthCheck = useCallback(async (key: string, endpointUrl: string) => {
     setEndpointHealth((prev) => ({
@@ -229,7 +239,7 @@ export default function AdminSeoDiagnosticsPage() {
   const handlePingSearchEngines = async () => {
     setIsPingingSearchEngines(true);
     try {
-      const cleanUrl = (siteUrl || 'https://nexusnation.in').replace(/\/+$/, '');
+      const cleanUrl = getEffectiveSiteUrl(siteUrl);
       const sitemapUrl = `${cleanUrl}/sitemap.xml`;
 
       // Simulating search console notify calls
@@ -246,7 +256,7 @@ export default function AdminSeoDiagnosticsPage() {
   };
 
   const getComputedRobotsPreview = () => {
-    const cleanUrl = (siteUrl || 'https://nexusnation.in').replace(/\/+$/, '');
+    const cleanUrl = getEffectiveSiteUrl(siteUrl);
     if (robotsIndexingMode === 'disallow_all') {
       return `# ==========================================
 # Robots.txt - Search Engine Indexing Disabled
@@ -285,7 +295,7 @@ Sitemap: ${cleanUrl}/sitemap.xml`;
   };
 
   const applyPreset = (type: 'dev' | 'prod' | 'strict' | 'ai_block') => {
-    const cleanUrl = (siteUrl || 'https://nexusnation.in').replace(/\/+$/, '');
+    const cleanUrl = getEffectiveSiteUrl(siteUrl);
     if (type === 'dev') {
       setRobotsIndexingMode('disallow_all');
       toast.info('Switched to Development / Testing mode (All indexing blocked)');
@@ -341,7 +351,7 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
   const currentAuthor = isCustomOg ? customOgAuthor : selectedArticle?.author?.name || 'Nexus Engineering';
   const currentReadingTime = isCustomOg ? customOgReadingTime : String(selectedArticle?.readingTime || 10);
 
-  const cleanBase = (siteUrl || 'https://nexusnation.in').replace(/\/+$/, '');
+  const cleanBase = getEffectiveSiteUrl(siteUrl);
   const computedOgUrl = `${cleanBase}/api/og?title=${encodeURIComponent(currentTitle)}&category=${encodeURIComponent(currentCategory)}&author=${encodeURIComponent(currentAuthor)}&readingTime=${encodeURIComponent(currentReadingTime)}`;
 
   // JSON-LD schema builder
@@ -363,7 +373,7 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
       name: 'NexusNation Engineering',
       logo: {
         '@type': 'ImageObject',
-        url: `${cleanBase}/logo.png`,
+        url: `${cleanBase}/brand/png/transparent-background/nexus-192px-transparent.png`,
       },
     },
     mainEntityOfPage: {
@@ -624,7 +634,7 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
                 <span>Self-Referencing Canonical Directives</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                All articles and landing pages enforce strict trailing-slash-free canonical headers matching <code className="text-primary font-mono">{siteUrl}</code>, preventing duplicate content dilution.
+                All articles and landing pages enforce strict trailing-slash-free canonical headers matching <code className="text-primary font-mono">{getEffectiveSiteUrl(siteUrl)}</code>, preventing duplicate content dilution.
               </p>
             </div>
 

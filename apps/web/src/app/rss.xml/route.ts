@@ -31,7 +31,8 @@ export async function GET(request: Request) {
     }
   }
 
-  if (process.env.NODE_ENV === 'production' && (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1'))) {
+  // Final fallback: never output localhost for RSS syndication
+  if (!siteUrl || siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1')) {
     siteUrl = 'https://nexusnation.in';
   }
 

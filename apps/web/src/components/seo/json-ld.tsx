@@ -24,7 +24,13 @@ export function ArticleJsonLd({
   category,
   images = [],
 }: ArticleJsonLdProps) {
-  const base = (siteConfig.url || 'https://nexusnation.in').replace(/\/$/, '');
+  const base = (() => {
+    const raw = siteConfig.url;
+    if (raw && !raw.includes('localhost') && !raw.includes('127.0.0.1')) {
+      return raw.replace(/\/+$/, '');
+    }
+    return 'https://nexusnation.in';
+  })();
   const url = `${base}/articles/${slug}`;
   const defaultOg = `${base}/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}&author=${encodeURIComponent(authorName)}`;
 
@@ -43,7 +49,7 @@ export function ArticleJsonLd({
     },
     publisher: {
       '@type': 'Organization',
-      name: 'NexusBlog',
+      name: 'NexusNation Engineering',
       logo: {
         '@type': 'ImageObject',
         url: `${base}/brand/png/transparent-background/nexus-192px-transparent.png`,

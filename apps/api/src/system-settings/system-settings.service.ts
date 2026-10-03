@@ -94,20 +94,40 @@ export class SystemSettingsService {
       },
     };
 
+    const sanitizeSiteUrl = (raw?: string): string => {
+      if (raw && !raw.includes('localhost') && !raw.includes('127.0.0.1')) {
+        return raw.trim().replace(/\/+$/, '');
+      }
+      return (
+        process.env.NEXT_PUBLIC_SITE_URL ||
+        process.env.NEXT_PUBLIC_APP_URL ||
+        process.env.SITE_URL ||
+        'https://nexusnation.in'
+      ).replace(/\/+$/, '');
+    };
+
     const result: Record<string, any> = {};
 
     for (const [key, meta] of Object.entries(defaultKeys)) {
       if (settingsMap[key]) {
+        let val = settingsMap[key].value;
+        if (key === 'siteUrl') {
+          val = sanitizeSiteUrl(val);
+        }
         result[key] = {
-          value: settingsMap[key].value,
+          value: val,
           isSecret: meta.isSecret,
           isSet: settingsMap[key].isSet,
           description: meta.description,
         };
       } else {
         const envVal = process.env[key.toUpperCase()] || meta.defaultValue;
+        let finalVal = meta.isSecret && envVal ? this.maskSecret(envVal) : envVal;
+        if (key === 'siteUrl') {
+          finalVal = sanitizeSiteUrl(finalVal);
+        }
         result[key] = {
-          value: meta.isSecret && envVal ? this.maskSecret(envVal) : envVal,
+          value: finalVal,
           isSecret: meta.isSecret,
           isSet: Boolean(envVal && envVal.length > 0),
           description: meta.description,
@@ -126,7 +146,11 @@ export class SystemSettingsService {
 
     for (const [key, rawValue] of Object.entries(updates)) {
       if (rawValue === undefined || rawValue === null) continue;
-      const strValue = String(rawValue).trim();
+      let strValue = String(rawValue).trim();
+
+      if (key === 'siteUrl' && (strValue.includes('localhost') || strValue.includes('127.0.0.1') || !strValue)) {
+        strValue = 'https://nexusnation.in';
+      }
 
       // If user submitted masked placeholder string (e.g. contains '...'), skip updating the secret
       if (SENSITIVE_KEYS.includes(key) && strValue.includes('...')) {
@@ -283,12 +307,17 @@ export class SystemSettingsService {
     const siteName =
       settingsMap.siteName || process.env.SITE_NAME || 'NexusBlog';
 
-    const siteUrl =
+    let rawSiteUrl =
       settingsMap.siteUrl ||
       process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.SITE_URL ||
-      (process.env.NODE_ENV === 'production' ? 'https://nexusnation.in' : 'http://localhost:3000');
+      'https://nexusnation.in';
+
+    if (!rawSiteUrl || rawSiteUrl.includes('localhost') || rawSiteUrl.includes('127.0.0.1')) {
+      rawSiteUrl = 'https://nexusnation.in';
+    }
+    const siteUrl = rawSiteUrl.trim().replace(/\/+$/, '');
 
     const robotsIndexingMode =
       settingsMap.robotsIndexingMode ||

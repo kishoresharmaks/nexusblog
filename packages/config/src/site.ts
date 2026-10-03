@@ -21,10 +21,7 @@ function getSiteUrl(): string {
   if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
     return window.location.origin.replace(/\/+$/, '');
   }
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://nexusnation.in';
-  }
-  return envUrl ? envUrl.trim().replace(/\/+$/, '') : 'http://localhost:3000';
+  return 'https://nexusnation.in';
 }
 
 export const siteConfig = {

@@ -60,7 +60,10 @@ export class MailService {
         process.env.BREVO_SENDER_NAME ||
         'NexusNation Engineering Dispatch',
       mailProvider: configMap['mailProvider'] || 'brevo',
-      siteUrl: configMap['siteUrl'] || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://nexusnation.in',
+      siteUrl: (() => {
+        const raw = configMap['siteUrl'] || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://nexusnation.in';
+        return (!raw || raw.includes('localhost') || raw.includes('127.0.0.1')) ? 'https://nexusnation.in' : raw.trim().replace(/\/+$/, '');
+      })(),
     };
   }
 
