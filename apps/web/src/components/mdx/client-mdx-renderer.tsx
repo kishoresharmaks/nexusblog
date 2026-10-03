@@ -19,13 +19,33 @@ import { ApiRequest, ApiResponse } from './api-spec';
 import { KaTeX } from './katex-math';
 import { normalizeMediaUrl } from '@nexus/config';
 
-interface ClientMdxRendererProps {
+function getHeadingId(children: any): string | undefined {
+  const getText = (node: any): string => {
+    if (!node) return '';
+    if (typeof node === 'string') return node;
+    if (typeof node === 'number') return String(node);
+    if (Array.isArray(node)) return node.map(getText).join('');
+    if (node.props?.children) return getText(node.props.children);
+    return '';
+  };
+  const text = getText(children).replace(/`|\*/g, '').trim();
+  if (!text) return undefined;
+  return text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+}
+
+export interface ClientMdxRendererProps {
   content?: string;
   source?: string;
   className?: string;
+  customComponents?: Record<string, React.ComponentType<any>>;
 }
 
-export function ClientMdxRenderer({ content, source, className = '' }: ClientMdxRendererProps) {
+export function ClientMdxRenderer({
+  content,
+  source,
+  className = '',
+  customComponents: externalComponents,
+}: ClientMdxRendererProps) {
   const rawText = content || source || '';
 
   const customComponents: any = {
@@ -173,17 +193,25 @@ export function ClientMdxRenderer({ content, source, className = '' }: ClientMdx
     ),
 
     // HTML standard elements
-    h1: ({ node, ...props }: any) => (
-      <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-10 mb-4 text-foreground scroll-m-20" {...props} />
+    h1: ({ node, children, ...props }: any) => (
+      <h1 id={getHeadingId(children)} className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-10 mb-4 text-foreground scroll-m-20" {...props}>
+        {children}
+      </h1>
     ),
-    h2: ({ node, ...props }: any) => (
-      <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mt-8 mb-3 text-foreground border-b border-border/40 pb-2 scroll-m-20" {...props} />
+    h2: ({ node, children, ...props }: any) => (
+      <h2 id={getHeadingId(children)} className="text-2xl sm:text-3xl font-bold tracking-tight mt-8 mb-3 text-foreground border-b border-border/40 pb-2 scroll-m-20" {...props}>
+        {children}
+      </h2>
     ),
-    h3: ({ node, ...props }: any) => (
-      <h3 className="text-xl font-bold tracking-tight mt-6 mb-2 text-foreground scroll-m-20" {...props} />
+    h3: ({ node, children, ...props }: any) => (
+      <h3 id={getHeadingId(children)} className="text-xl font-bold tracking-tight mt-6 mb-2 text-foreground scroll-m-20" {...props}>
+        {children}
+      </h3>
     ),
-    h4: ({ node, ...props }: any) => (
-      <h4 className="text-lg font-semibold tracking-tight mt-4 mb-2 text-foreground scroll-m-20" {...props} />
+    h4: ({ node, children, ...props }: any) => (
+      <h4 id={getHeadingId(children)} className="text-lg font-semibold tracking-tight mt-4 mb-2 text-foreground scroll-m-20" {...props}>
+        {children}
+      </h4>
     ),
     p: ({ node, ...props }: any) => (
       <p className="leading-7 text-foreground/90 my-4 text-base" {...props} />
@@ -247,6 +275,7 @@ export function ClientMdxRenderer({ content, source, className = '' }: ClientMdx
         />
       </div>
     ),
+    ...(externalComponents || {}),
   };
 
   return (

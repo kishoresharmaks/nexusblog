@@ -87,8 +87,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       description,
       url: canonicalPath,
       siteName: siteConfig.name,
-      publishedTime: article.publishedAt ? new Date(article.publishedAt).toISOString() : undefined,
-      modifiedTime: article.updatedAt ? new Date(article.updatedAt).toISOString() : undefined,
+      publishedTime: article.publishedAt && !isNaN(new Date(article.publishedAt).getTime()) ? new Date(article.publishedAt).toISOString() : undefined,
+      modifiedTime: article.updatedAt && !isNaN(new Date(article.updatedAt).getTime()) ? new Date(article.updatedAt).toISOString() : undefined,
       authors: [authorName],
       section: categoryName,
       tags: article.tags?.map((t: any) => t.name) || [],
@@ -133,9 +133,14 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     notFound();
   }
 
-  const publishedDate = article.publishedAt
-    ? format(new Date(article.publishedAt), 'MMMM dd, yyyy')
-    : 'Recently';
+  let publishedDate = 'Recently';
+  try {
+    if (article.publishedAt && !isNaN(new Date(article.publishedAt).getTime())) {
+      publishedDate = format(new Date(article.publishedAt), 'MMMM dd, yyyy');
+    }
+  } catch {
+    publishedDate = 'Recently';
+  }
 
   const isGuestPost = Boolean(article.isGuestPost || article.guestAuthorName);
   const authorName = article.guestAuthorName || article.author?.name || 'Guest Contributor';
@@ -241,7 +246,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         title={article.title}
         description={article.excerpt}
         slug={article.slug}
-        datePublished={article.publishedAt ? new Date(article.publishedAt).toISOString() : new Date().toISOString()}
+        datePublished={article.publishedAt && !isNaN(new Date(article.publishedAt).getTime()) ? new Date(article.publishedAt).toISOString() : new Date().toISOString()}
         authorName={authorName}
         category={categoryName}
       />

@@ -1,8 +1,6 @@
 import { siteConfig } from '@nexus/config';
 import { authClient } from './auth-client';
 
-const API_BASE = siteConfig.apiUrl;
-
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
@@ -33,7 +31,8 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = `${API_BASE}${endpoint}`;
+  const apiBase = siteConfig.apiUrl;
+  const url = `${apiBase}${endpoint}`;
 
   const fetchOptions: RequestInit = {
     ...options,
@@ -454,7 +453,7 @@ export const mediaApi = {
       token = authClient.getAccessToken();
     }
 
-    let res = await fetch(`${API_BASE}/media/upload`, {
+    let res = await fetch(`${siteConfig.apiUrl}/media/upload`, {
       method: 'POST',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -467,7 +466,7 @@ export const mediaApi = {
       const refreshed = await authClient.refreshToken();
       if (refreshed) {
         const freshToken = authClient.getAccessToken();
-        res = await fetch(`${API_BASE}/media/upload`, {
+        res = await fetch(`${siteConfig.apiUrl}/media/upload`, {
           method: 'POST',
           headers: {
             ...(freshToken ? { Authorization: `Bearer ${freshToken}` } : {}),

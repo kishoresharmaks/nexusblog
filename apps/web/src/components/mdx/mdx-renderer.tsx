@@ -1,36 +1,23 @@
-import React from 'react';
-import { MDXRemote } from 'next-mdx-remote/rsc';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import rehypeSlug from 'rehype-slug';
-import { mdxComponents } from './mdx-components';
+'use client';
 
-interface MdxRendererProps {
+import React from 'react';
+import { ClientMdxRenderer } from './client-mdx-renderer';
+
+export interface MdxRendererProps {
   source?: string;
   content?: string;
+  className?: string;
   customComponents?: Record<string, React.ComponentType<any>>;
 }
 
-export function MdxRenderer({ source, content, customComponents }: MdxRendererProps) {
+export function MdxRenderer({ source, content, className = '', customComponents }: MdxRendererProps) {
   const mdxSource = source || content || '';
-  const mergedComponents = {
-    ...mdxComponents,
-    ...(customComponents || {}),
-  };
-
   return (
-    <div className="prose prose-zinc dark:prose-invert max-w-none text-foreground leading-relaxed">
-      <MDXRemote
-        source={mdxSource}
-        components={mergedComponents}
-        options={{
-          mdxOptions: {
-            remarkPlugins: [remarkGfm, remarkMath],
-            rehypePlugins: [rehypeKatex, rehypeSlug],
-          },
-        }}
-      />
-    </div>
+    <ClientMdxRenderer
+      source={mdxSource}
+      className={className}
+      customComponents={customComponents}
+    />
   );
 }
+
