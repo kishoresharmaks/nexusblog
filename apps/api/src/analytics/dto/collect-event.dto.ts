@@ -11,9 +11,10 @@ export enum AnalyticsEventTypeDto {
 }
 
 export class CollectEventDto {
-  @ApiProperty({ enum: AnalyticsEventTypeDto, default: AnalyticsEventTypeDto.PAGEVIEW })
-  @IsEnum(AnalyticsEventTypeDto)
-  eventType!: AnalyticsEventTypeDto;
+  @ApiPropertyOptional({ enum: AnalyticsEventTypeDto, default: AnalyticsEventTypeDto.PAGEVIEW })
+  @IsOptional()
+  @IsString()
+  eventType?: AnalyticsEventTypeDto;
 
   @ApiProperty({ example: '/articles/distributed-consensus-raft' })
   @IsString()
@@ -43,6 +44,11 @@ export class CollectEventDto {
   @IsOptional()
   @IsString()
   referrer?: string;
+
+  @ApiPropertyOptional({ example: '1920x1080' })
+  @IsOptional()
+  @IsString()
+  screen?: string;
 
   @ApiPropertyOptional({ example: 'newsletter' })
   @IsOptional()

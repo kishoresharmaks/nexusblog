@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, Req, Ip, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Ip, Headers, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { CollectEventDto, SearchQueryDto } from './dto/collect-event.dto';
@@ -9,6 +9,7 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Post('collect')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true }))
   @ApiOperation({ summary: 'Ingest non-blocking client beacon telemetry event' })
   @ApiResponse({ status: 200, description: 'Event ingested successfully' })
   async collectEvent(
@@ -20,6 +21,7 @@ export class AnalyticsController {
   }
 
   @Post('search-query')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true }))
   @ApiOperation({ summary: 'Log on-site search query for search intelligence' })
   @ApiResponse({ status: 200, description: 'Search query logged' })
   async logSearchQuery(@Body() dto: SearchQueryDto) {
