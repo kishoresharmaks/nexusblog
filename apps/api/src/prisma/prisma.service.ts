@@ -6,12 +6,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
+    const dbUrl = (process.env.DATABASE_URL || 'mongodb+srv://krishkishoreks_db_user:QzybimkqcbeYFMEA@cluster0.u3idvmr.mongodb.net/nexusblog?retryWrites=true&w=majority&appName=Cluster0')
+      .replace('NEH0AePPKevyWWNS', 'QzybimkqcbeYFMEA');
     super({
       datasources: {
         db: {
-          url:
-            process.env.DATABASE_URL ||
-            'mongodb+srv://krishkishoreks_db_user:NEH0AePPKevyWWNS@cluster0.u3idvmr.mongodb.net/nexusblog?retryWrites=true&w=majority&appName=Cluster0',
+          url: dbUrl,
         },
       },
     });

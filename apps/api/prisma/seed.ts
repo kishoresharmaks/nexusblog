@@ -24,9 +24,11 @@ for (const dir of baseDirs) {
 }
 dotenv.config();
 
-const databaseUrl =
+const rawDatabaseUrl =
   process.env.DATABASE_URL ||
-  'mongodb+srv://krishkishoreks_db_user:NEH0AePPKevyWWNS@cluster0.u3idvmr.mongodb.net/nexusblog?retryWrites=true&w=majority&appName=Cluster0';
+  'mongodb+srv://krishkishoreks_db_user:QzybimkqcbeYFMEA@cluster0.u3idvmr.mongodb.net/nexusblog?retryWrites=true&w=majority&appName=Cluster0';
+
+const databaseUrl = rawDatabaseUrl.replace('NEH0AePPKevyWWNS', 'QzybimkqcbeYFMEA');
 
 process.env.DATABASE_URL = databaseUrl;
 
