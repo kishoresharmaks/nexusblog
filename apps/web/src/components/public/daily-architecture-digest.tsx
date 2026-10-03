@@ -146,12 +146,14 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
         {/* 1. Header Bar: Today's Edition & Multi-Article Pager */}
         <div className="flex items-center justify-between gap-2 pb-3 border-b border-border/60">
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-semibold text-primary whitespace-nowrap">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-semibold text-primary whitespace-nowrap shrink-0">
               <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
-              <span>Today&apos;s Edition • {todayFormatted}</span>
+              <span>Today&apos;s Edition</span>
+              <span className="text-muted-foreground/60 hidden xs:inline sm:inline">&bull;</span>
+              <span className="text-muted-foreground hidden xs:inline sm:inline">{todayFormatted}</span>
             </span>
             {article.featured && (
-              <span className="hidden xs:inline-block sm:inline-block rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-mono text-amber-400 font-bold whitespace-nowrap">
+              <span className="hidden sm:inline-block rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-mono text-amber-400 font-bold whitespace-nowrap">
                 EDITOR&apos;S PICK
               </span>
             )}
@@ -159,8 +161,8 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
 
           {/* Navigation between today's releases */}
           {articles.length > 1 && (
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="text-[10px] font-mono text-muted-foreground mr-1">
+            <div className="flex items-center gap-1 shrink-0 ml-auto">
+              <span className="text-[10px] font-mono text-muted-foreground mr-0.5">
                 {safeIndex + 1}/{articles.length}
               </span>
               <button

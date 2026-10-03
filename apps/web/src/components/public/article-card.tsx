@@ -86,35 +86,35 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
 
   return (
     <article
-      className={`group relative rounded-2xl border bg-card p-4 sm:p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 ${
+      className={`group relative rounded-2xl border bg-card p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 ${
         featured
           ? 'border-primary/40 bg-gradient-to-br from-card via-card to-primary/5 hover:border-primary/60'
           : 'border-border/80 hover:border-foreground/30'
       }`}
     >
-      <div className="flex flex-col md:flex-row md:items-stretch md:justify-between gap-3.5 sm:gap-4 flex-1">
+      <div className="flex flex-col md:flex-row md:items-stretch md:justify-between gap-4 flex-1">
         {/* Left Content Area */}
         <div className="flex-1 min-w-0 flex flex-col justify-between space-y-3">
           <div className="space-y-2.5">
             {/* Top Meta Bar */}
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
                 {article.category && (
                   <Link
                     href={`/categories/${article.category.slug}`}
-                    className="rounded-lg bg-primary/10 border border-primary/20 px-2 py-0.5 font-mono text-[10px] sm:text-[11px] font-bold text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
+                    className="rounded-md bg-muted/70 px-2 py-0.5 font-mono text-[11px] font-semibold text-foreground hover:bg-muted hover:text-primary transition-colors whitespace-nowrap"
                   >
                     {article.category.name}
                   </Link>
                 )}
                 <span
-                  className={`rounded-lg border px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap ${provenance.color}`}
+                  className={`rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap ${provenance.color}`}
                 >
                   {provenance.label}
                 </span>
                 {article.difficulty && (
                   <span
-                    className={`rounded-lg border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider font-semibold whitespace-nowrap ${difficultyColors}`}
+                    className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider font-semibold whitespace-nowrap ${difficultyColors}`}
                   >
                     {article.difficulty}
                   </span>
@@ -122,14 +122,13 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
               </div>
 
               {article.featured && (
-                <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono text-amber-400 font-bold bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-0.5 shrink-0 shadow-2xs whitespace-nowrap">
-                  <Sparkles className="h-3 w-3 text-amber-400 shrink-0" />
-                  <span>Featured</span>
+                <span className="flex items-center gap-1 text-[11px] font-mono text-amber-500 font-semibold shrink-0">
+                  <Sparkles className="h-3 w-3" /> Featured
                 </span>
               )}
             </div>
 
-            {/* Mobile-only Full-Width Image (Shown only on mobile screens < md) */}
+            {/* Mobile-only Full-Width Image (Rendered only on mobile screens < md) */}
             <Link
               href={`/articles/${article.slug}`}
               className="block md:hidden relative w-full aspect-[16/9] sm:aspect-[16/8] rounded-xl overflow-hidden border border-border/70 bg-muted/30 group/img transition-all duration-300 group-hover:border-primary/40"
@@ -156,13 +155,13 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
             </Link>
 
             {/* Title & Abstract Excerpt */}
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <Link href={`/articles/${article.slug}`}>
-                <h3 className="font-bold tracking-tight text-foreground text-sm sm:text-base group-hover:text-primary transition-colors leading-snug line-clamp-2">
+                <h3 className="font-bold tracking-tight text-foreground text-base sm:text-lg group-hover:text-primary transition-colors leading-snug line-clamp-2">
                   {article.title}
                 </h3>
               </Link>
-              <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-2">
                 {article.excerpt}
               </p>
             </div>
@@ -174,7 +173,7 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
                   <Link
                     key={tech.slug}
                     href={`/technologies/${tech.slug}`}
-                    className="rounded-md bg-muted/50 border border-border/50 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    className="rounded bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                   >
                     #{tech.name}
                   </Link>
@@ -184,7 +183,7 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
           </div>
 
           {/* Author & Stats Footer */}
-          <div className="pt-3 mt-auto border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="pt-3.5 mt-auto border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center space-x-2 min-w-0">
               {article.author?.avatar && !isGuest ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -202,7 +201,7 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
                   {authorDisplayName.charAt(0).toUpperCase()}
                 </div>
               )}
-              <span className="font-semibold text-xs text-foreground truncate max-w-[85px] sm:max-w-[110px] xl:max-w-[130px]">
+              <span className="font-medium text-foreground truncate max-w-[100px] sm:max-w-[130px]">
                 {authorDisplayName}
               </span>
               {isGuest && (
@@ -211,17 +210,17 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
                 </span>
               )}
               <span>•</span>
-              <span className="shrink-0 font-mono text-[10px] sm:text-[11px]" suppressHydrationWarning>
+              <span className="shrink-0 font-mono text-[11px]" suppressHydrationWarning>
                 {publishedDate}
               </span>
             </div>
 
-            <div className="flex items-center space-x-2 font-mono text-[10px] sm:text-[11px] shrink-0">
+            <div className="flex items-center space-x-3 font-mono text-[11px] shrink-0">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" /> {article.readingTime || 5}m
               </span>
               {typeof article.viewsCount === 'number' && (
-                <span className="hidden xl:flex items-center gap-1">
+                <span className="hidden sm:flex items-center gap-1">
                   <Eye className="h-3 w-3" /> {article.viewsCount}
                 </span>
               )}
@@ -232,7 +231,7 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
         {/* Desktop/Laptop Right Side Image Area (Hidden on mobile < md, visible on md+) */}
         <Link
           href={`/articles/${article.slug}`}
-          className="hidden md:block shrink-0 w-28 h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 rounded-xl overflow-hidden border border-border/70 bg-muted/30 relative transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-md self-start sm:self-stretch"
+          className="hidden md:block shrink-0 w-32 h-32 md:w-40 md:h-40 lg:w-44 lg:h-44 xl:w-48 xl:h-48 rounded-2xl overflow-hidden border border-border/70 bg-muted/30 relative transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-md self-center md:self-stretch"
         >
           {imageSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -244,7 +243,7 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-card via-muted/30 to-primary/10 p-3 text-center space-y-1">
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-card via-muted/30 to-primary/10 p-3 text-center space-y-1.5">
               <div className="p-2 rounded-lg bg-card border border-border/80 shadow-xs text-primary flex items-center justify-center">
                 <IconRenderer value={article.category?.image} defaultIcon="Layers" className="h-5 w-5 text-primary" />
               </div>
