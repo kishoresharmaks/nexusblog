@@ -26,7 +26,7 @@ export function normalizeMediaUrl(rawUrl?: any): string {
   return trimmed;
 }
 
-function normalizeApiUrl(rawUrl?: string, fallback = 'http://127.0.0.1:4000/api'): string {
+function normalizeApiUrl(rawUrl?: string, fallback = 'http://127.0.0.1:4020/api'): string {
   const url = (rawUrl || fallback).trim().replace(/\/+$/, '');
   if (!url) return fallback;
   if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -38,6 +38,7 @@ function normalizeApiUrl(rawUrl?: string, fallback = 'http://127.0.0.1:4000/api'
 function getSiteUrl(): string {
   const envUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.CLIENT_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.SITE_URL ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined) ||
@@ -54,7 +55,11 @@ function getSiteUrl(): string {
 
 function getApiUrl(): string {
   if (typeof window === 'undefined') {
-    return normalizeApiUrl(process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL, 'http://127.0.0.1:4000/api');
+    const defaultApiPort = process.env.PORT || process.env.API_PORT || 4020;
+    return normalizeApiUrl(
+      process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL,
+      `http://127.0.0.1:${defaultApiPort}/api`,
+    );
   }
   const isLiveOrigin =
     window.location?.origin &&

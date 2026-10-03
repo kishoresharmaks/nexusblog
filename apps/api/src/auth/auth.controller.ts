@@ -32,6 +32,23 @@ import { Public } from './decorators/public.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  private getRefreshMaxAgeMs(): number {
+    const duration = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+    const match = duration.toString().trim().match(/^(\d+)([smhdwy]?)$/i);
+    if (!match) return 7 * 24 * 60 * 60 * 1000;
+    const val = parseInt(match[1], 10);
+    const unit = (match[2] || 'ms').toLowerCase();
+    switch (unit) {
+      case 's': return val * 1000;
+      case 'm': return val * 60 * 1000;
+      case 'h': return val * 60 * 60 * 1000;
+      case 'd': return val * 24 * 60 * 60 * 1000;
+      case 'w': return val * 7 * 24 * 60 * 60 * 1000;
+      case 'y': return val * 365 * 24 * 60 * 60 * 1000;
+      default: return val;
+    }
+  }
+
   private setRefreshCookie(res: Response, token: string) {
     const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('refreshToken', token, {
@@ -39,7 +56,7 @@ export class AuthController {
       secure: isProduction,
       sameSite: isProduction ? 'strict' : 'lax',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: this.getRefreshMaxAgeMs(),
     });
   }
 

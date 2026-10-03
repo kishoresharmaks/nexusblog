@@ -8,8 +8,8 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
-const apiPort = process.env.API_PORT || '4000';
-const webPort = process.env.PORT || '3000';
+const apiPort = process.env.API_PORT || '4020';
+const webPort = process.env.WEB_PORT || process.env.PORT || '3000';
 
 console.log('----------------------------------------------------');
 console.log('🚀 Launching NexusBlog Fullstack Production Service');
@@ -53,8 +53,8 @@ apiProcess.stderr.on('data', (data) => {
 const webEnv = {
   ...process.env,
   PORT: webPort,
-  INTERNAL_API_URL: `http://127.0.0.1:${apiPort}/api`,
-  INTERNAL_UPLOADS_URL: `http://127.0.0.1:${apiPort}/uploads`,
+  INTERNAL_API_URL: process.env.INTERNAL_API_URL || `http://127.0.0.1:${apiPort}/api`,
+  INTERNAL_UPLOADS_URL: process.env.INTERNAL_UPLOADS_URL || `http://127.0.0.1:${apiPort}/uploads`,
 };
 
 const webProcess = spawn(npmCmd, ['--filter', '@nexus/web', 'start'], {

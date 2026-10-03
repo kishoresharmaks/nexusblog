@@ -12,8 +12,8 @@ async function bootstrap() {
   const logger = new Logger('NexusAPI');
   const app = await NestFactory.create(AppModule);
 
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-  const port = process.env.API_PORT || 4000;
+  const clientUrl = process.env.CLIENT_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://nexusnation.in';
+  const port = process.env.PORT || process.env.API_PORT || 4020;
 
   // Security Headers
   app.use(

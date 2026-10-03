@@ -1,5 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
 import { AppController } from './app.controller';
@@ -32,14 +32,29 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
-    ServeStaticModule.forRoot({
-      rootPath: path.resolve(process.cwd(), '../../storage/local/media'),
-      serveRoot: '/uploads',
-      serveStaticOptions: {
-        setHeaders: (res) => {
-          res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-          res.setHeader('Access-Control-Allow-Origin', '*');
-        },
+    ServeStaticModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const configuredDir =
+          configService.get<string>('STORAGE_LOCAL_DIR') || process.env.STORAGE_LOCAL_DIR;
+        const rootPath = configuredDir
+          ? path.isAbsolute(configuredDir)
+            ? configuredDir
+            : path.resolve(process.cwd(), configuredDir)
+          : path.resolve(process.cwd(), '../../storage/local/media');
+
+        return [
+          {
+            rootPath,
+            serveRoot: '/uploads',
+            serveStaticOptions: {
+              setHeaders: (res: any) => {
+                res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+                res.setHeader('Access-Control-Allow-Origin', '*');
+              },
+            },
+          },
+        ];
       },
     }),
     PrismaModule,

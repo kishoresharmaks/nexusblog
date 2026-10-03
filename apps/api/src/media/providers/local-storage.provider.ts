@@ -11,11 +11,13 @@ export class LocalStorageProvider implements IStorageProvider {
   private readonly baseUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    // Relative to the process working directory or project root
-    this.storageDir = path.resolve(
-      process.cwd(),
-      this.configService.get<string>('STORAGE_LOCAL_DIR') || '../../storage/local/media',
-    );
+    const configuredDir =
+      this.configService.get<string>('STORAGE_LOCAL_DIR') || process.env.STORAGE_LOCAL_DIR;
+    this.storageDir = configuredDir
+      ? path.isAbsolute(configuredDir)
+        ? configuredDir
+        : path.resolve(process.cwd(), configuredDir)
+      : path.resolve(process.cwd(), '../../storage/local/media');
     const rawApiUrl = (this.configService.get<string>('API_PUBLIC_URL') || '').trim();
     if (rawApiUrl && !rawApiUrl.includes('localhost') && !rawApiUrl.includes('127.0.0.1')) {
       this.baseUrl = rawApiUrl.endsWith('/uploads')

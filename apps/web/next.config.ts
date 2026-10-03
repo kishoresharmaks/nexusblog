@@ -19,11 +19,18 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    let apiTarget = (process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:4000/api').trim().replace(/\/+$/, '');
+    let apiTarget = (
+      process.env.INTERNAL_API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      `http://127.0.0.1:${process.env.PORT || process.env.API_PORT || 4020}/api`
+    ).trim().replace(/\/+$/, '');
     if (!apiTarget.endsWith('/api') && (apiTarget.startsWith('http://') || apiTarget.startsWith('https://'))) {
       apiTarget = `${apiTarget}/api`;
     }
-    const uploadsTarget = (process.env.INTERNAL_UPLOADS_URL || 'http://127.0.0.1:4000/uploads').trim().replace(/\/+$/, '');
+    const uploadsTarget = (
+      process.env.INTERNAL_UPLOADS_URL ||
+      `http://127.0.0.1:${process.env.PORT || process.env.API_PORT || 4020}/uploads`
+    ).trim().replace(/\/+$/, '');
     return [
       {
         source: '/api/:path*',

@@ -33,6 +33,32 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
+  private parseDurationToMs(duration?: string, defaultMs = 7 * 24 * 60 * 60 * 1000): number {
+    if (!duration) return defaultMs;
+    const match = duration.toString().trim().match(/^(\d+)([smhdwy]?)$/i);
+    if (!match) return defaultMs;
+    const val = parseInt(match[1], 10);
+    const unit = (match[2] || 'ms').toLowerCase();
+    switch (unit) {
+      case 's': return val * 1000;
+      case 'm': return val * 60 * 1000;
+      case 'h': return val * 60 * 60 * 1000;
+      case 'd': return val * 24 * 60 * 60 * 1000;
+      case 'w': return val * 7 * 24 * 60 * 60 * 1000;
+      case 'y': return val * 365 * 24 * 60 * 60 * 1000;
+      default: return val;
+    }
+  }
+
+  private getRefreshTokenExpiry(): Date {
+    const duration =
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') ||
+      process.env.JWT_REFRESH_EXPIRES_IN ||
+      '7d';
+    const ms = this.parseDurationToMs(duration, 7 * 24 * 60 * 60 * 1000);
+    return new Date(Date.now() + ms);
+  }
+
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
@@ -135,8 +161,7 @@ export class AuthService {
 
     const { accessToken, rawRefreshToken, refreshTokenHash } = await this.generateTokens(user);
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    const expiresAt = this.getRefreshTokenExpiry();
 
     await this.prisma.session.create({
       data: {
@@ -195,8 +220,7 @@ export class AuthService {
 
     const { accessToken, rawRefreshToken, refreshTokenHash } = await this.generateTokens(user);
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    const expiresAt = this.getRefreshTokenExpiry();
 
     await this.prisma.session.create({
       data: {
@@ -280,8 +304,7 @@ export class AuthService {
     const { accessToken, rawRefreshToken: newRawRefreshToken, refreshTokenHash: newRefreshTokenHash } =
       await this.generateTokens(session.user);
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    const expiresAt = this.getRefreshTokenExpiry();
 
     await this.prisma.session.create({
       data: {
