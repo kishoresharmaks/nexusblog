@@ -22,6 +22,7 @@ import {
 import { toast } from 'sonner';
 import { seriesApi } from '@/lib/api-client';
 import { MediaPickerModal } from '@/components/media/media-picker-modal';
+import { normalizeMediaUrl } from '@nexus/config';
 
 interface SeriesItem {
   id: string;
@@ -285,7 +286,7 @@ export default function AdminSeriesPage() {
               <div className="relative h-36 w-full bg-muted/40 border-b border-border/60 overflow-hidden">
                 {s.coverImage ? (
                   <img
-                    src={s.coverImage}
+                    src={normalizeMediaUrl(s.coverImage)}
                     alt={s.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -484,7 +485,7 @@ export default function AdminSeriesPage() {
                 {editingSeries.coverImage && (
                   <div className="relative mt-2 h-24 w-full rounded-lg border border-border/60 overflow-hidden bg-muted/20">
                     <img
-                      src={editingSeries.coverImage}
+                      src={normalizeMediaUrl(editingSeries.coverImage)}
                       alt="Cover Preview"
                       className="w-full h-full object-cover"
                     />
@@ -667,7 +668,7 @@ export default function AdminSeriesPage() {
         isOpen={isMediaPickerOpen}
         onClose={() => setIsMediaPickerOpen(false)}
         onSelect={(url) => {
-          setEditingSeries((prev) => (prev ? { ...prev, coverImage: url } : null));
+          setEditingSeries((prev) => (prev ? { ...prev, coverImage: normalizeMediaUrl(url) } : null));
           setIsMediaPickerOpen(false);
           toast.success('Cover image selected');
         }}

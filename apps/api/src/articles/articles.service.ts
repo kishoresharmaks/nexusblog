@@ -17,6 +17,45 @@ export class ArticlesService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  public sanitizeUrl(url?: string | null): string {
+    if (!url || typeof url !== 'string') return '';
+    return url
+      .replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/uploads\//, '/uploads/')
+      .replace(/^https?:\/\/(www\.)?nexusblog\.dev\/uploads\//, '/uploads/');
+  }
+
+  public sanitizeArticle<T>(article: T): T {
+    if (!article) return article;
+    const clone: any = { ...(article as any) };
+    if (clone.coverImage) {
+      clone.coverImage = this.sanitizeUrl(clone.coverImage);
+    }
+    if (clone.thumbnail) {
+      clone.thumbnail = this.sanitizeUrl(clone.thumbnail);
+    }
+    if (clone.ogImage) {
+      clone.ogImage = this.sanitizeUrl(clone.ogImage);
+    }
+    if (clone.content) {
+      clone.content = clone.content
+        .replace(/https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/uploads\//g, '/uploads/')
+        .replace(/https?:\/\/(www\.)?nexusblog\.dev\/uploads\//g, '/uploads/');
+    }
+    if (clone.author && clone.author.avatar) {
+      clone.author = {
+        ...clone.author,
+        avatar: this.sanitizeUrl(clone.author.avatar),
+      };
+    }
+    if (clone.category && clone.category.image) {
+      clone.category = {
+        ...clone.category,
+        image: this.sanitizeUrl(clone.category.image),
+      };
+    }
+    return clone as T;
+  }
+
   async findAdminArticles(query: QueryArticleDto) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
@@ -104,7 +143,7 @@ export class ArticlesService {
     ]);
 
     return {
-      items,
+      items: items.map((item) => this.sanitizeArticle(item)),
       meta: {
         page,
         limit,
@@ -158,7 +197,7 @@ export class ArticlesService {
       throw new NotFoundException(`Article '${idOrSlug}' not found`);
     }
 
-    return article;
+    return this.sanitizeArticle(article);
   }
 
   async findPublicFeed(query: QueryArticleDto) {
@@ -269,7 +308,7 @@ export class ArticlesService {
     ]);
 
     return {
-      items,
+      items: items.map((item) => this.sanitizeArticle(item)),
       meta: {
         page,
         limit,
@@ -347,21 +386,22 @@ export class ArticlesService {
       isBookmarked = !!bookmark;
     }
 
-    const relatedArticles = await this.findRelatedArticles(
+    const rawRelated = await this.findRelatedArticles(
       article.id,
       article.categoryId,
       article.tagIds,
     );
+    const relatedArticles = rawRelated.map((item) => this.sanitizeArticle(item));
 
-    return {
+    return this.sanitizeArticle({
       ...article,
       isBookmarked,
       relatedArticles,
-    };
+    });
   }
 
   async findRelatedArticles(currentArticleId: string, categoryId: string, tagIds: string[]) {
-    return this.prisma.article.findMany({
+    const items = await this.prisma.article.findMany({
       where: {
         id: { not: currentArticleId },
         status: ArticleStatus.PUBLISHED,
@@ -390,6 +430,8 @@ export class ArticlesService {
         },
       },
     });
+
+    return items.map((item) => this.sanitizeArticle(item));
   }
 
   async create(dto: CreateArticleDto, authorId: string) {
@@ -418,7 +460,7 @@ export class ArticlesService {
 
     const excerpt = dto.excerpt || (dto.content ? dto.content.replace(/^[#\s\n*`_-]+/, '').slice(0, 160).trim() : 'Technical article.');
 
-    return this.prisma.article.create({
+    const created = await this.prisma.article.create({
       data: {
         title: dto.title,
         slug: dto.slug.toLowerCase(),
@@ -447,6 +489,8 @@ export class ArticlesService {
         publishedAt,
       },
     });
+
+    return this.sanitizeArticle(created);
   }
 
   async update(id: string, dto: UpdateArticleDto, user: { id: string; role: Role }) {
@@ -492,7 +536,7 @@ export class ArticlesService {
       publishedAt = null as any;
     }
 
-    return this.prisma.article.update({
+    const updated = await this.prisma.article.update({
       where: { id },
       data: {
         ...(dto.title && { title: dto.title }),
@@ -527,6 +571,8 @@ export class ArticlesService {
         publishedAt,
       },
     });
+
+    return this.sanitizeArticle(updated);
   }
 
   async delete(id: string, user: { id: string; role: Role }) {

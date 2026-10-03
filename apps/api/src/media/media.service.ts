@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { IStorageProvider, STORAGE_PROVIDER } from './providers/storage-provider.interface';
@@ -15,7 +16,7 @@ import * as path from 'path';
 import { StorageProviderType } from '@prisma/client';
 
 @Injectable()
-export class MediaService {
+export class MediaService implements OnModuleInit {
   private readonly logger = new Logger(MediaService.name);
 
   constructor(
@@ -23,6 +24,101 @@ export class MediaService {
     @Inject(STORAGE_PROVIDER) private readonly storageProvider: IStorageProvider,
     private readonly imageProcessor: ImageProcessorService,
   ) {}
+
+  async onModuleInit() {
+    // Proactively clean legacy localhost URLs stored in media & article records
+    this.cleanupLegacyLocalhostUrls().catch((e) => {
+      this.logger.debug(`Background media URL cleanup: ${e.message}`);
+    });
+  }
+
+  public sanitizeUrl(url?: string | null): string {
+    if (!url || typeof url !== 'string') return '';
+    return url
+      .replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/uploads\//, '/uploads/')
+      .replace(/^https?:\/\/(www\.)?nexusblog\.dev\/uploads\//, '/uploads/');
+  }
+
+  public sanitizeMedia<T>(media: T): T {
+    if (!media) return media;
+    const clone: any = { ...(media as any) };
+    if (clone.url) {
+      clone.url = this.sanitizeUrl(clone.url);
+    }
+    if (Array.isArray(clone.variants)) {
+      clone.variants = clone.variants.map((v: any) => ({
+        ...v,
+        url: this.sanitizeUrl(v.url),
+      }));
+    }
+    return clone as T;
+  }
+
+  async cleanupLegacyLocalhostUrls() {
+    try {
+      const mediaWithLocalhost = await this.prisma.media.findMany({
+        where: {
+          OR: [
+            { url: { contains: 'localhost' } },
+            { url: { contains: '127.0.0.1' } },
+            { url: { contains: 'nexusblog.dev' } },
+          ],
+        },
+        take: 200,
+      });
+
+      for (const item of mediaWithLocalhost) {
+        const cleanedUrl = this.sanitizeUrl(item.url);
+        let cleanedVariants: any = item.variants;
+        if (Array.isArray(item.variants)) {
+          cleanedVariants = item.variants.map((v: any) => ({
+            ...v,
+            url: this.sanitizeUrl(v.url),
+          }));
+        }
+        await this.prisma.media.update({
+          where: { id: item.id },
+          data: {
+            url: cleanedUrl,
+            variants: cleanedVariants as any,
+          },
+        });
+      }
+
+      const articlesWithLocalhost = await this.prisma.article.findMany({
+        where: {
+          OR: [
+            { coverImage: { contains: 'localhost' } },
+            { thumbnail: { contains: 'localhost' } },
+            { content: { contains: 'localhost:40' } },
+            { coverImage: { contains: 'nexusblog.dev' } },
+          ],
+        },
+        take: 100,
+      });
+
+      for (const art of articlesWithLocalhost) {
+        const cleanedCover = this.sanitizeUrl(art.coverImage);
+        const cleanedThumb = this.sanitizeUrl(art.thumbnail);
+        let cleanedContent = art.content;
+        if (cleanedContent) {
+          cleanedContent = cleanedContent
+            .replace(/https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/uploads\//g, '/uploads/')
+            .replace(/https?:\/\/(www\.)?nexusblog\.dev\/uploads\//g, '/uploads/');
+        }
+        await this.prisma.article.update({
+          where: { id: art.id },
+          data: {
+            coverImage: cleanedCover || art.coverImage,
+            thumbnail: cleanedThumb || art.thumbnail,
+            content: cleanedContent,
+          },
+        });
+      }
+    } catch {
+      // Ignored if DB is not ready or fields empty
+    }
+  }
 
   private generateStoragePath(filename: string): { basePath: string; uuid: string } {
     const now = new Date();
@@ -99,7 +195,7 @@ export class MediaService {
       },
     });
 
-    return media;
+    return this.sanitizeMedia(media);
   }
 
   async createPresignedUploadUrl(dto: CreatePresignedUrlDto, _userId?: string) {
@@ -118,7 +214,10 @@ export class MediaService {
       dto.mimeType,
     );
 
-    return presigned;
+    return {
+      ...presigned,
+      publicUrl: this.sanitizeUrl(presigned.publicUrl),
+    };
   }
 
   async confirmPresignedUpload(dto: ConfirmUploadDto, userId?: string | null) {
@@ -152,7 +251,7 @@ export class MediaService {
       },
     });
 
-    return media;
+    return this.sanitizeMedia(media);
   }
 
   async findAll(query: QueryMediaDto, ownerId?: string) {
@@ -188,7 +287,7 @@ export class MediaService {
     ]);
 
     return {
-      items,
+      items: items.map((item) => this.sanitizeMedia(item)),
       meta: {
         page,
         limit,
@@ -207,19 +306,21 @@ export class MediaService {
       throw new NotFoundException(`Media with ID '${id}' not found`);
     }
 
-    return media;
+    return this.sanitizeMedia(media);
   }
 
   async update(id: string, dto: UpdateMediaDto) {
     await this.findById(id);
 
-    return this.prisma.media.update({
+    const updated = await this.prisma.media.update({
       where: { id },
       data: {
         ...(dto.alt !== undefined && { alt: dto.alt }),
         ...(dto.caption !== undefined && { caption: dto.caption }),
       },
     });
+
+    return this.sanitizeMedia(updated);
   }
 
   async delete(id: string) {

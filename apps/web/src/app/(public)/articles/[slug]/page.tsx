@@ -2,7 +2,7 @@ import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { siteConfig } from '@nexus/config';
+import { siteConfig, normalizeMediaUrl } from '@nexus/config';
 import { MdxRenderer } from '@/components/mdx';
 import { TableOfContents } from '@/components/public/table-of-contents';
 import { ReadingProgress } from '@/components/public/reading-progress';
@@ -58,9 +58,9 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   const authorName = article.guestAuthorName || article.author?.name || 'Nexus Engineering Team';
   const categoryName = article.category?.name || 'System Design';
 
+  const rawCoverOrOg = article.ogImage || article.coverImage;
   const ogImageUrl =
-    article.ogImage ||
-    article.coverImage ||
+    (rawCoverOrOg ? normalizeMediaUrl(rawCoverOrOg) : null) ||
     `/api/og?title=${encodeURIComponent(article.title)}&category=${encodeURIComponent(categoryName)}&author=${encodeURIComponent(authorName)}&readingTime=${article.readingTime || 10}`;
 
   const canonicalPath = `/articles/${article.slug}`;
@@ -261,7 +261,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         title={article.title}
         category={categoryName}
         readingTime={article.readingTime || 10}
-        coverImage={article.coverImage}
+        coverImage={normalizeMediaUrl(article.coverImage)}
       />
 
       {/* Hero / Header Section */}
@@ -430,7 +430,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               <div className="mb-8 overflow-hidden rounded-2xl border border-border bg-card shadow-sm max-h-[460px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={article.coverImage}
+                  src={normalizeMediaUrl(article.coverImage)}
                   alt={article.title}
                   crossOrigin="anonymous"
                   className="w-full h-full object-cover"

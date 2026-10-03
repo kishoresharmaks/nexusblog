@@ -31,6 +31,7 @@ import {
   Lightbulb,
 } from 'lucide-react';
 import { MediaPickerModal } from '@/components/media/media-picker-modal';
+import { normalizeMediaUrl } from '@nexus/config';
 import { toast } from 'sonner';
 
 interface RichMdxEditorProps {
@@ -1322,7 +1323,8 @@ Status: 0 packet loss, 100% idempotency verified.`,
         isOpen={isMediaPickerOpen}
         onClose={() => setIsMediaPickerOpen(false)}
         onSelect={(imgUrl, alt) => {
-          const imgMarkdown = `\n![${alt || 'Article image'}](${imgUrl})\n`;
+          const cleanImgUrl = normalizeMediaUrl(imgUrl);
+          const imgMarkdown = `\n![${alt || 'Article image'}](${cleanImgUrl})\n`;
           insertText(imgMarkdown, '', '');
           toast.success('Image inserted into article body');
         }}

@@ -16,9 +16,14 @@ export class LocalStorageProvider implements IStorageProvider {
       process.cwd(),
       this.configService.get<string>('STORAGE_LOCAL_DIR') || '../../storage/local/media',
     );
-    const port = this.configService.get<string>('PORT') || '4000';
-    this.baseUrl =
-      this.configService.get<string>('API_PUBLIC_URL') || `http://localhost:${port}/uploads`;
+    const rawApiUrl = (this.configService.get<string>('API_PUBLIC_URL') || '').trim();
+    if (rawApiUrl && !rawApiUrl.includes('localhost') && !rawApiUrl.includes('127.0.0.1')) {
+      this.baseUrl = rawApiUrl.endsWith('/uploads')
+        ? rawApiUrl.replace(/\/+$/, '')
+        : `${rawApiUrl.replace(/\/+$/, '')}/uploads`;
+    } else {
+      this.baseUrl = '/uploads';
+    }
 
     this.initDirectory();
   }
@@ -58,8 +63,11 @@ export class LocalStorageProvider implements IStorageProvider {
   }
 
   getUrl(key: string): string {
-    const normalizedKey = key.replace(/\\/g, '/');
-    return `${this.baseUrl}/${normalizedKey}`;
+    const normalizedKey = key.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (this.baseUrl.startsWith('http://') || this.baseUrl.startsWith('https://')) {
+      return `${this.baseUrl}/${normalizedKey}`;
+    }
+    return `/uploads/${normalizedKey}`;
   }
 
   async exists(key: string): Promise<boolean> {

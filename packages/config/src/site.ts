@@ -1,3 +1,31 @@
+export function normalizeMediaUrl(rawUrl?: any): string {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  // 1. Strip localhost / 127.0.0.1 origins pointing to /uploads
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/uploads\//i.test(trimmed)) {
+    return trimmed.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/uploads\//i, '/uploads/');
+  }
+
+  // 2. Strip legacy nexusblog.dev domain pointing to /uploads
+  if (/^https?:\/\/(www\.)?nexusblog\.dev\/uploads\//i.test(trimmed)) {
+    return trimmed.replace(/^https?:\/\/(www\.)?nexusblog\.dev\/uploads\//i, '/uploads/');
+  }
+
+  // 3. Fix missing leading slash for uploads
+  if (/^uploads\//i.test(trimmed)) {
+    return `/${trimmed}`;
+  }
+
+  // 4. Convert localhost media/images paths to /uploads/
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/(media|images)\//i.test(trimmed)) {
+    return trimmed.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i, '/uploads/');
+  }
+
+  return trimmed;
+}
+
 function normalizeApiUrl(rawUrl?: string, fallback = 'http://127.0.0.1:4000/api'): string {
   const url = (rawUrl || fallback).trim().replace(/\/+$/, '');
   if (!url) return fallback;

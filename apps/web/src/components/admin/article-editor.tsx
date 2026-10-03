@@ -38,6 +38,7 @@ import {
 import { useAdminSidebar } from '@/context/admin-sidebar-context';
 import { MediaPickerModal } from '@/components/media/media-picker-modal';
 import { RichMdxEditor } from '@/components/editor/rich-mdx-editor';
+import { normalizeMediaUrl } from '@nexus/config';
 import { toast } from 'sonner';
 
 interface ArticleEditorProps {
@@ -868,7 +869,7 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
                       <div className="h-28 flex items-center justify-center p-2 bg-muted/40">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={coverImage}
+                          src={normalizeMediaUrl(coverImage)}
                           alt="Cover preview"
                           crossOrigin="anonymous"
                           className="h-full w-full object-contain"
@@ -954,7 +955,7 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
         title="Select Article Cover Image"
         actionLabel="Set as Cover Image"
         onSelect={(url) => {
-          setCoverImage(url);
+          setCoverImage(normalizeMediaUrl(url));
           toast.success('Cover image selected!');
         }}
       />

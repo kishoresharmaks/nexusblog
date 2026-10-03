@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { mediaApi } from '@/lib/api-client';
 import { useAuth } from '@/context/auth-context';
+import { normalizeMediaUrl } from '@nexus/config';
 import { toast } from 'sonner';
 
 export interface MediaVariant {
@@ -119,15 +120,18 @@ export function MediaPickerModal({
               item.sizeFormatted || (item.size ? `${(item.size / 1024).toFixed(1)} KB` : 'Unknown'),
             dimensions:
               item.width && item.height ? `${item.width}x${item.height}` : 'Original',
-            url: item.url || item.variants?.original?.url || item.variants?.medium?.url || '',
+            url: normalizeMediaUrl(item.url || item.variants?.original?.url || item.variants?.medium?.url || ''),
             altText: item.altText || item.alt || '',
             uploadedAt: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently',
             variants: Array.isArray(item.variants)
-              ? item.variants
+              ? item.variants.map((v: any) => ({
+                  ...v,
+                  url: normalizeMediaUrl(v.url),
+                }))
               : typeof item.variants === 'object' && item.variants !== null
               ? Object.entries(item.variants).map(([k, v]: [string, any]) => ({
                   name: k,
-                  url: v.url || v,
+                  url: normalizeMediaUrl(v.url || v),
                   width: v.width,
                   height: v.height,
                   size: v.size,
@@ -161,8 +165,9 @@ export function MediaPickerModal({
     try {
       const uploaded = await mediaApi.upload(file, file.name.split('.')[0]);
       toast.success('Image successfully uploaded!');
-      const uploadedUrl =
+      const rawUploadedUrl =
         uploaded.url || uploaded.variants?.original?.url || uploaded.variants?.[0]?.url;
+      const uploadedUrl = normalizeMediaUrl(rawUploadedUrl);
 
       if (uploadedUrl) {
         const item: MediaItem = {
@@ -206,7 +211,8 @@ export function MediaPickerModal({
 
   const handleCopyUrl = (e: React.MouseEvent, item: MediaItem) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(item.url);
+    const cleanUrl = normalizeMediaUrl(item.url);
+    navigator.clipboard.writeText(cleanUrl);
     setCopiedId(item.id);
     toast.success('Image URL copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
@@ -218,13 +224,13 @@ export function MediaPickerModal({
         toast.error('Please enter a valid image URL');
         return;
       }
-      onSelect(customUrl.trim(), customAlt.trim() || 'Article Image');
+      onSelect(normalizeMediaUrl(customUrl.trim()), customAlt.trim() || 'Article Image');
       onClose();
       return;
     }
 
     if (selectedItem) {
-      const finalUrl = selectedVariantUrl || selectedItem.url;
+      const finalUrl = normalizeMediaUrl(selectedVariantUrl || selectedItem.url);
       onSelect(finalUrl, selectedItem.altText || selectedItem.originalName);
       onClose();
     }

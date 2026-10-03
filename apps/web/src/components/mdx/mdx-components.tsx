@@ -12,6 +12,8 @@ import { MermaidDiagram } from './mermaid-diagram';
 import { InteractiveDiagram } from './interactive-diagram';
 import { KaTeX } from './katex-math';
 
+import { normalizeMediaUrl } from '@nexus/config';
+
 export const mdxComponents = {
   // Custom Technical Components
   CodeBlock,
@@ -121,10 +123,12 @@ export const mdxComponents = {
       />
     );
   },
-  img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+  img: ({ src, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
     <div className="my-6 overflow-hidden rounded-lg border border-border/60">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        src={normalizeMediaUrl(src)}
+        crossOrigin="anonymous"
         className="w-full h-auto object-cover"
         alt={props.alt || 'Technical diagram'}
         {...props}

@@ -17,6 +17,7 @@ import { InteractiveDiagram } from './interactive-diagram';
 import { CodeTabs, CodeTab } from './code-tabs';
 import { ApiRequest, ApiResponse } from './api-spec';
 import { KaTeX } from './katex-math';
+import { normalizeMediaUrl } from '@nexus/config';
 
 interface ClientMdxRendererProps {
   content?: string;
@@ -234,6 +235,18 @@ export function ClientMdxRenderer({ content, source, className = '' }: ClientMdx
         </a>
       );
     },
+    img: ({ src, alt, node, ...props }: any) => (
+      <div className="my-6 overflow-hidden rounded-lg border border-border/60">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={normalizeMediaUrl(src)}
+          alt={alt || 'Technical diagram'}
+          crossOrigin="anonymous"
+          className="w-full h-auto object-cover"
+          {...props}
+        />
+      </div>
+    ),
   };
 
   return (

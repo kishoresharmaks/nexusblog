@@ -17,6 +17,7 @@ import {
   Info,
 } from 'lucide-react';
 import { mediaApi } from '@/lib/api-client';
+import { normalizeMediaUrl } from '@nexus/config';
 import { toast } from 'sonner';
 
 interface MediaVariant {
@@ -65,11 +66,14 @@ export default function AdminMediaLibraryPage() {
         items.map((m: any) => {
           let parsedVariants: MediaVariant[] = [];
           if (Array.isArray(m.variants)) {
-            parsedVariants = m.variants;
+            parsedVariants = m.variants.map((v: any) => ({
+              ...v,
+              url: normalizeMediaUrl(v.url),
+            }));
           } else if (typeof m.variants === 'object' && m.variants !== null) {
             parsedVariants = Object.entries(m.variants).map(([k, v]: [string, any]) => ({
               name: k,
-              url: typeof v === 'string' ? v : v.url || '',
+              url: normalizeMediaUrl(typeof v === 'string' ? v : v.url || ''),
               width: v.width,
               height: v.height,
               size: v.size,
@@ -77,7 +81,8 @@ export default function AdminMediaLibraryPage() {
             }));
           }
 
-          const mainUrl = m.url || parsedVariants.find((v) => v.name === 'original')?.url || '';
+          const rawMainUrl = m.url || parsedVariants.find((v) => v.name === 'original')?.url || '';
+          const mainUrl = normalizeMediaUrl(rawMainUrl);
 
           return {
             id: m.id,
@@ -111,7 +116,8 @@ export default function AdminMediaLibraryPage() {
   }, [fetchMedia]);
 
   const handleCopyText = (key: string, text: string, label: string = 'URL') => {
-    navigator.clipboard.writeText(text);
+    const cleanText = normalizeMediaUrl(text);
+    navigator.clipboard.writeText(cleanText);
     setCopiedKey(key);
     toast.success(`${label} copied to clipboard`);
     setTimeout(() => setCopiedKey(null), 2000);

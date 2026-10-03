@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Article } from '@nexus/types';
+import { normalizeMediaUrl } from '@nexus/config';
 import { Clock, Eye, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { IconRenderer } from '@/components/common/icon-renderer';
@@ -43,7 +44,8 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
     ? format(new Date(article.publishedAt), 'MMM dd, yyyy')
     : 'Recent';
 
-  const imageSrc = !imageError && (article.coverImage || article.thumbnail) ? (article.coverImage || article.thumbnail) : null;
+  const rawImage = !imageError && (article.coverImage || article.thumbnail) ? (article.coverImage || article.thumbnail) : null;
+  const imageSrc = rawImage ? normalizeMediaUrl(rawImage) : null;
 
   const isGuest = Boolean(article.isGuestPost || article.guestAuthorName);
   const authorDisplayName = article.guestAuthorName || article.author?.name || 'Architect';
@@ -174,7 +176,7 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
               {article.author?.avatar && !isGuest ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={article.author.avatar}
+                  src={normalizeMediaUrl(article.author.avatar)}
                   alt={authorDisplayName}
                   className="h-5 w-5 rounded-full object-cover shrink-0"
                 />

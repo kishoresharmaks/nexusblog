@@ -59,6 +59,7 @@ import {
 } from 'lucide-react';
 import { MediaPickerModal } from '@/components/media/media-picker-modal';
 import { RichMdxEditor } from '@/components/editor/rich-mdx-editor';
+import { normalizeMediaUrl } from '@nexus/config';
 import { toast } from 'sonner';
 import { guestPostsApi, categoriesApi, articleTypesApi } from '@/lib/api-client';
 
@@ -955,7 +956,7 @@ function GuestPostSubmitContent() {
                           <div className="h-28 flex items-center justify-center p-2 bg-muted/40">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={coverImage}
+                              src={normalizeMediaUrl(coverImage)}
                               alt="Cover preview"
                               crossOrigin="anonymous"
                               className="h-full w-full object-contain"
@@ -1056,7 +1057,7 @@ function GuestPostSubmitContent() {
                   <div className="rounded-xl overflow-hidden border border-border my-4 aspect-video bg-muted relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={coverImage}
+                      src={normalizeMediaUrl(coverImage)}
                       alt={title}
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -1191,7 +1192,7 @@ function GuestPostSubmitContent() {
         title="Select Article Cover Image"
         actionLabel="Set as Cover Image"
         onSelect={(url) => {
-          setCoverImage(url);
+          setCoverImage(normalizeMediaUrl(url));
           toast.success('Cover image selected!');
         }}
       />
