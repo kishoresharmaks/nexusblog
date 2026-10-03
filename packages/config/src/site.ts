@@ -26,7 +26,7 @@ export function normalizeMediaUrl(rawUrl?: any): string {
   return trimmed;
 }
 
-function normalizeApiUrl(rawUrl?: string, fallback = 'http://127.0.0.1:4020/api'): string {
+function normalizeApiUrl(rawUrl?: string, fallback = 'http://127.0.0.1:4000/api'): string {
   const url = (rawUrl || fallback).trim().replace(/\/+$/, '');
   if (!url) return fallback;
   if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -55,7 +55,7 @@ function getSiteUrl(): string {
 
 function getApiUrl(): string {
   if (typeof window === 'undefined') {
-    const defaultApiPort = process.env.PORT || process.env.API_PORT || 4020;
+    const defaultApiPort = process.env.API_PORT || process.env.PORT || 4000;
     return normalizeApiUrl(
       process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL,
       `http://127.0.0.1:${defaultApiPort}/api`,

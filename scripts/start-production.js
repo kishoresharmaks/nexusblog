@@ -8,7 +8,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 const rootDir = path.resolve(__dirname, '..');
-const apiPort = process.env.API_PORT || '4020';
+const apiPort = process.env.API_PORT || process.env.INTERNAL_API_PORT || '4000';
 const webPort = process.env.WEB_PORT || process.env.PORT || '3000';
 
 console.log('----------------------------------------------------');

@@ -2,6 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { siteConfig } from '@nexus/config';
 import { ArticleCard } from '@/components/public/article-card';
+import { CategoryArticlesSection } from '@/components/public/category-articles-section';
+import { DailyArchitectureDigest } from '@/components/public/daily-architecture-digest';
 import { articlesApi, categoriesApi, technologiesApi } from '@/lib/api-client';
 import {
   Layers,
@@ -10,6 +12,11 @@ import {
   ArrowRight,
   ChevronRight,
   Sparkles,
+  Terminal,
+  Activity,
+  ShieldCheck,
+  CheckCircle2,
+  Code2,
 } from 'lucide-react';
 
 import { IconRenderer } from '@/components/common/icon-renderer';
@@ -17,15 +24,28 @@ import { IconRenderer } from '@/components/common/icon-renderer';
 export const revalidate = 60; // ISR cache for 60 seconds
 
 export default async function HomePage() {
-  // 1. Fetch featured & published articles from API
-  let articles: any[] = [];
+  // 1. Fetch featured articles for the top featured section & latest articles for category explorer
+  let featuredArticles: any[] = [];
+  let allArticles: any[] = [];
+
   try {
-    const res = await articlesApi.getPublicFeed({ limit: 4 });
-    if (res?.items?.length > 0) {
-      articles = res.items;
+    const [featRes, allRes] = await Promise.all([
+      articlesApi.getPublicFeed({ limit: 4, filter: 'featured' }).catch(() => null),
+      articlesApi.getPublicFeed({ limit: 50 }).catch(() => null),
+    ]);
+
+    if (allRes && Array.isArray(allRes.items) && allRes.items.length > 0) {
+      allArticles = allRes.items;
+    }
+
+    if (featRes && Array.isArray(featRes.items) && featRes.items.length > 0) {
+      featuredArticles = featRes.items;
+    } else {
+      featuredArticles = allArticles.slice(0, 4);
     }
   } catch {
-    articles = [];
+    featuredArticles = [];
+    allArticles = [];
   }
 
   // 2. Fetch Categories from API with fallback
@@ -70,35 +90,74 @@ export default async function HomePage() {
     }));
   }
 
+  // Combine featured and latest for the Daily Digest Card
+  const digestArticles = featuredArticles.length > 0 ? featuredArticles : allArticles;
+
   return (
-    <div className="space-y-8 sm:space-y-12 pb-12 sm:pb-16">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-6 pb-8 sm:pt-10 sm:pb-12 md:pt-14 md:pb-16 border-b border-border/30 bg-muted/5">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="max-w-3xl space-y-3.5 sm:space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs font-mono text-muted-foreground">
-              <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Architecture Blueprints &amp; Engineering Deep Dives
+    <div className="space-y-10 sm:space-y-14 pb-12 sm:pb-16">
+      {/* High-Tech Hero Section */}
+      <section className="relative overflow-hidden pt-8 pb-10 sm:pt-14 sm:pb-16 md:pt-18 md:pb-20 border-b border-border/40 bg-gradient-to-b from-card/30 via-background to-background">
+        {/* Ambient Lighting & Glow */}
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[680px] h-[360px] bg-gradient-to-tr from-primary/15 via-emerald-500/10 to-sky-500/15 blur-3xl opacity-60 pointer-events-none rounded-full" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] text-foreground/[0.03] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,#000_70%,transparent_100%)] bg-[size:36px_36px] pointer-events-none" />
+
+        <div className="container relative mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Left Content Column */}
+            <div className="lg:col-span-6 space-y-4 sm:space-y-5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/80 backdrop-blur-md px-3.5 py-1.5 text-xs font-mono text-foreground shadow-2xs">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse ring-4 ring-emerald-500/20" />
+                <span className="font-semibold text-foreground">NexusBlog</span>
+                <span className="text-muted-foreground/60">•</span>
+                <span className="text-muted-foreground font-normal">System Design &amp; Technology Portal</span>
+              </div>
+
+              <h1 className="text-3xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.12]">
+                Master Real-World{' '}
+                <span className="bg-gradient-to-r from-foreground via-foreground/90 to-primary/70 bg-clip-text text-transparent">
+                  System Design &amp; Tech Stacks.
+                </span>
+              </h1>
+
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
+                Practical, code-backed engineering deep dives, distributed database internals, low-latency benchmarks, and battle-tested architectures. Zero fluff — built by developers for developers.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <Link
+                  href="/articles"
+                  className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-3 rounded-xl font-medium text-xs sm:text-sm hover:bg-foreground/90 transition-all duration-200 shadow-xs hover:shadow-md group"
+                >
+                  <span>Explore Blueprints</span>
+                  <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </Link>
+                <Link
+                  href="/technologies"
+                  className="inline-flex items-center gap-2 border border-border/80 bg-card/80 backdrop-blur-md text-foreground px-5 py-3 rounded-xl font-medium text-xs sm:text-sm hover:bg-muted hover:border-border transition-all duration-200"
+                >
+                  <Cpu className="h-4 w-4 text-primary" />
+                  <span>Technology Hubs</span>
+                </Link>
+              </div>
+
+              {/* Engineering Guarantees / Quality Highlights */}
+              <div className="pt-3 border-t border-border/40 flex flex-wrap items-center gap-4 text-xs font-mono text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> 100% Code-Backed
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5 text-sky-500" /> Latency Benchmarked
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Peer-Reviewed
+                </span>
+              </div>
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.15]">
-              Production-grade systems engineering.
-            </h1>
-            <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed">
-              In-depth technical guides, distributed systems blueprints, benchmark studies, and real-world architectures written with code and interactive diagrams.
-            </p>
-            <div className="flex flex-wrap items-center gap-3 pt-1.5 sm:pt-2">
-              <Link
-                href="/articles"
-                className="inline-flex items-center gap-2 bg-foreground text-background px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm hover:bg-foreground/90 transition-colors shadow-xs"
-              >
-                Explore Articles <ChevronRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/guest-post/submit"
-                className="inline-flex items-center gap-2 border border-border bg-card/60 text-foreground px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm hover:bg-muted transition-colors"
-              >
-                Submit Guest Post <ArrowRight className="h-4 w-4" />
-              </Link>
+
+            {/* Right Dynamic Admin-Fed Daily Blueprint Spotlight */}
+            <div className="lg:col-span-6">
+              <DailyArchitectureDigest articles={digestArticles} />
             </div>
           </div>
         </div>
@@ -125,7 +184,7 @@ export default async function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {articles.map((article, idx) => (
+          {featuredArticles.map((article, idx) => (
             <ArticleCard
               key={article.id}
               article={{
@@ -138,6 +197,12 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Blogs by Categories Section (Sorted by Latest) */}
+      <CategoryArticlesSection
+        categories={categories}
+        articles={allArticles}
+      />
 
       {/* Architecture Topics Grid */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6">

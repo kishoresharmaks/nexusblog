@@ -19,17 +19,18 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
+    const defaultApiPort = process.env.API_PORT || process.env.INTERNAL_API_PORT || 4000;
     let apiTarget = (
       process.env.INTERNAL_API_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
-      `http://127.0.0.1:${process.env.PORT || process.env.API_PORT || 4020}/api`
+      `http://127.0.0.1:${defaultApiPort}/api`
     ).trim().replace(/\/+$/, '');
     if (!apiTarget.endsWith('/api') && (apiTarget.startsWith('http://') || apiTarget.startsWith('https://'))) {
       apiTarget = `${apiTarget}/api`;
     }
     const uploadsTarget = (
       process.env.INTERNAL_UPLOADS_URL ||
-      `http://127.0.0.1:${process.env.PORT || process.env.API_PORT || 4020}/uploads`
+      `http://127.0.0.1:${defaultApiPort}/uploads`
     ).trim().replace(/\/+$/, '');
     return [
       {

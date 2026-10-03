@@ -1,3 +1,23 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load .env files from apps/api and root directory before reading process.env
+const envFiles = ['.env.local', '.env'];
+const searchDirs = [
+  process.cwd(),
+  path.resolve(process.cwd(), 'apps/api'),
+  path.resolve(__dirname, '..'),
+  path.resolve(__dirname, '../../..'),
+];
+
+for (const dir of searchDirs) {
+  for (const file of envFiles) {
+    const full = path.join(dir, file);
+    dotenv.config({ path: full });
+  }
+}
+dotenv.config();
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -13,7 +33,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const clientUrl = process.env.CLIENT_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://nexusnation.in';
-  const port = process.env.PORT || process.env.API_PORT || 4020;
+  const port = Number(process.env.PORT || process.env.API_PORT || 4000);
 
   // Security Headers
   app.use(

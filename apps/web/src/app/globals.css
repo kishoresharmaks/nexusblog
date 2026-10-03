@@ -79,6 +79,18 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
+/* Hide scrollbars completely across all browsers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
 @keyframes drawerSlideInRight {
   0% {
     transform: translate3d(100%, 0, 0);
@@ -110,6 +122,17 @@ body {
   }
 }
 
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.98) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 .animate-drawer-in {
   animation: drawerSlideInRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
@@ -123,4 +146,8 @@ body {
 .animate-backdrop-in {
   animation: backdropFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: opacity;
+}
+
+.animate-fade-in-scale {
+  animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
