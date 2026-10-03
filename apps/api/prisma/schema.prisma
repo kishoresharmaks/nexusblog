@@ -450,3 +450,56 @@ model Page {
 
   @@map("pages")
 }
+
+enum AnalyticsEventType {
+  PAGEVIEW
+  SCROLL_DEPTH
+  CODE_COPY
+  BOOKMARK
+  SHARE
+  OUTBOUND_CLICK
+}
+
+model AnalyticsEvent {
+  id           String             @id @default(auto()) @map("_id") @db.ObjectId
+  eventType    AnalyticsEventType @default(PAGEVIEW)
+  path         String
+  articleId    String?            @db.ObjectId
+  articleSlug  String?
+  categorySlug String?
+  visitorId    String?
+  sessionId    String?
+  referrer     String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  os           String?
+  browser      String?
+  device       String?
+  country      String?
+  countryName  String?
+  scrollDepth  Int?
+  metadata     Json?
+  timestamp    DateTime           @default(now())
+
+  @@index([eventType, timestamp])
+  @@index([path, timestamp])
+  @@index([articleSlug, timestamp])
+  @@index([visitorId, timestamp])
+  @@index([timestamp])
+  @@map("analytics_events")
+}
+
+model SearchQueryLog {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  query        String
+  resultsCount Int      @default(0)
+  visitorId    String?
+  timestamp    DateTime @default(now())
+
+  @@index([query])
+  @@index([resultsCount, timestamp])
+  @@index([timestamp])
+  @@map("search_query_logs")
+}
+

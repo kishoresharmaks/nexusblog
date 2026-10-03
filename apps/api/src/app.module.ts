@@ -24,6 +24,7 @@ import { MailModule } from './mail/mail.module';
 import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { PagesModule } from './pages/pages.module';
 import { OgModule } from './og/og.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 
 @Module({
@@ -77,6 +78,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     NewsletterModule,
     PagesModule,
     OgModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

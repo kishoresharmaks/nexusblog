@@ -11,6 +11,7 @@ import { BrandLogo } from '@/components/common/brand-logo';
 import { SearchCommand } from '@/components/public/search-command';
 import {
   LayoutDashboard,
+  BarChart3,
   FileText,
   Inbox,
   FolderTree,
@@ -57,6 +58,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
     label: 'Overview & Insights',
     items: [
       { name: 'Dashboard Overview', href: '/admin', icon: LayoutDashboard },
+      { name: 'Analytics & Telemetry', href: '/admin/analytics', icon: BarChart3 },
       { name: 'Security Audit Logs', href: '/admin/audit-logs', icon: ShieldAlert },
     ],
   },

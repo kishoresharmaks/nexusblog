@@ -39,6 +39,7 @@ import {
   Activity,
   Flame,
   Tag,
+  BarChart3,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -487,7 +488,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
 
                   {/* Staff Portal Link */}
                   {isStaff && (
-                    <div className="border-t border-border/50 pt-1 mt-1">
+                    <div className="border-t border-border/50 pt-1 mt-1 space-y-1">
                       <Link
                         href="/admin"
                         className="flex items-center justify-between rounded-xl px-3 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 transition-colors font-semibold"
@@ -495,6 +496,16 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
                         <div className="flex items-center gap-2">
                           <Shield className="h-3.5 w-3.5" />
                           <span>Editorial Workspace</span>
+                        </div>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                      <Link
+                        href="/admin/analytics"
+                        className="flex items-center justify-between rounded-xl px-3 py-2 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border border-sky-500/30 transition-colors font-semibold"
+                      >
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="h-3.5 w-3.5" />
+                          <span>Platform Analytics</span>
                         </div>
                         <ArrowRight className="h-3 w-3" />
                       </Link>

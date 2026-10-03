@@ -762,5 +762,69 @@ export const pagesApi = {
   },
 };
 
+// Analytics & Telemetry API
+export const analyticsApi = {
+  async collect(payload: any) {
+    return request<any>('/analytics/collect', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  async logSearchQuery(query: string, resultsCount: number = 0) {
+    return request<any>('/analytics/search-query', {
+      method: 'POST',
+      body: JSON.stringify({ query, resultsCount }),
+    });
+  },
+  async getOverview(timeWindow: string = '7d') {
+    return request<{
+      summary: {
+        totalPageviews: number;
+        pageviewsDelta: number;
+        uniqueVisitors: number;
+        visitorsDelta: number;
+        avgReadTimeMinutes: number;
+        avgScrollDepthPercent: number;
+        codeCopies: number;
+        bookmarksCount: number;
+        bookmarkConversionRate: number;
+      };
+      timeSeries: Array<{
+        date: string;
+        fullDate: string;
+        pageviews: number;
+        visitors: number;
+      }>;
+    }>(`/analytics/overview?timeWindow=${timeWindow}`, {}, false);
+  },
+  async getTopBlueprints(timeWindow: string = '7d', limit: number = 10) {
+    return request<any[]>(`/analytics/blueprints?timeWindow=${timeWindow}&limit=${limit}`, {}, false);
+  },
+  async getTechAndGeo(timeWindow: string = '7d') {
+    return request<{
+      categories: Array<{ name: string; slug: string; count: number }>;
+      technologies: Array<{ name: string; slug: string; count: number }>;
+      operatingSystems: Array<{ name: string; percentage: number; color?: string }>;
+      browsers: Array<{ name: string; percentage: number }>;
+      devices: Array<{ name: string; percentage: number }>;
+      countries: Array<{ code: string; name: string; percentage: number; readers: number }>;
+    }>(`/analytics/tech-and-geo?timeWindow=${timeWindow}`, {}, false);
+  },
+  async getSearchIntelligence(timeWindow: string = '7d') {
+    return request<{
+      totalSearches: number;
+      topQueries: Array<{ query: string; searchesCount: number }>;
+      contentGaps: Array<{ query: string; missedSearchesCount: number }>;
+    }>(`/analytics/search-intelligence?timeWindow=${timeWindow}`, {}, false);
+  },
+  async getRealtimePulse() {
+    return request<{
+      activeReaders: number;
+      lastUpdated: string;
+      activePages: Array<{ title: string; path: string; category: string; readers: number }>;
+    }>('/analytics/realtime', {}, false);
+  },
+};
+
 
 
