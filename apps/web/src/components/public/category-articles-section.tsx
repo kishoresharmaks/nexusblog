@@ -109,30 +109,30 @@ export function CategoryArticlesSection({
         </Link>
       </div>
 
-      {/* Modern Category Tabs Bar (Zero Scrollbar) */}
-      <div className="mb-6">
+      {/* Modern Category Tabs Bar (Horizontal swipe on mobile, wrap on tablet/desktop) */}
+      <div className="mb-6 relative">
         <div
-          className="flex flex-wrap items-center gap-2 sm:gap-2.5 no-scrollbar py-1"
+          className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar py-1.5 pb-2 sm:flex-wrap -mx-4 px-4 sm:mx-0 sm:px-0"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {/* "All Topics" Tab */}
           <button
             type="button"
             onClick={() => handleCategoryChange('all')}
-            className={`group inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono transition-all duration-200 cursor-pointer ${
+            className={`group inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono transition-all duration-200 cursor-pointer shrink-0 whitespace-nowrap ${
               selectedCategory === 'all'
                 ? 'bg-foreground text-background shadow-md font-semibold ring-1 ring-foreground/20 scale-[1.01]'
                 : 'border border-border/70 bg-card/70 hover:bg-muted hover:border-border text-muted-foreground hover:text-foreground backdrop-blur-xs'
             }`}
           >
             <FolderOpen
-              className={`h-3.5 w-3.5 transition-transform duration-200 ${
+              className={`h-3.5 w-3.5 transition-transform duration-200 shrink-0 ${
                 selectedCategory === 'all' ? 'text-background scale-110' : 'text-primary'
               }`}
             />
             <span>All Topics</span>
             <span
-              className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+              className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold shrink-0 ${
                 selectedCategory === 'all'
                   ? 'bg-background/25 text-background'
                   : 'bg-muted text-muted-foreground'
@@ -152,7 +152,7 @@ export function CategoryArticlesSection({
                 key={cat.slug}
                 type="button"
                 onClick={() => handleCategoryChange(cat.slug)}
-                className={`group inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono transition-all duration-200 cursor-pointer ${
+                className={`group inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono transition-all duration-200 cursor-pointer shrink-0 whitespace-nowrap ${
                   isSelected
                     ? 'bg-foreground text-background shadow-md font-semibold ring-1 ring-foreground/20 scale-[1.01]'
                     : 'border border-border/70 bg-card/70 hover:bg-muted hover:border-border text-muted-foreground hover:text-foreground backdrop-blur-xs'
@@ -170,7 +170,7 @@ export function CategoryArticlesSection({
                 <span>{cat.name}</span>
                 {count > 0 && (
                   <span
-                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold shrink-0 ${
                       isSelected
                         ? 'bg-background/25 text-background'
                         : 'bg-muted text-muted-foreground'
