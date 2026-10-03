@@ -112,7 +112,19 @@ export default function AdminAdsPage() {
     e.preventDefault();
     setSavingConfig(true);
     try {
-      const updated = await adsApi.updateAdminConfig(globalConfig);
+      const payload = {
+        ads_global_enabled: Boolean(globalConfig.ads_global_enabled),
+        ads_google_adsense_enabled: Boolean(globalConfig.ads_google_adsense_enabled),
+        ads_google_adsense_client_id: String(globalConfig.ads_google_adsense_client_id || ''),
+        ads_google_adsense_auto_ads: Boolean(globalConfig.ads_google_adsense_auto_ads),
+        ads_carbon_enabled: Boolean(globalConfig.ads_carbon_enabled),
+        ads_carbon_serve_id: String(globalConfig.ads_carbon_serve_id || ''),
+        ads_carbon_placement: String(globalConfig.ads_carbon_placement || ''),
+        ads_ethical_ads_enabled: Boolean(globalConfig.ads_ethical_ads_enabled),
+        ads_ethical_ads_publisher_id: String(globalConfig.ads_ethical_ads_publisher_id || ''),
+        ads_hide_for_logged_in: Boolean(globalConfig.ads_hide_for_logged_in),
+      };
+      const updated = await adsApi.updateAdminConfig(payload);
       if (updated) setGlobalConfig(updated);
       toast.success('Ad network settings saved successfully');
     } catch (err: any) {

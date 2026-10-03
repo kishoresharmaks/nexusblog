@@ -51,6 +51,11 @@ export class UpdateGlobalAdsConfigDto {
   @IsOptional()
   @IsBoolean()
   ads_hide_for_logged_in?: boolean;
+
+  @ApiPropertyOptional({ example: 'google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0' })
+  @IsOptional()
+  @IsString()
+  ads_txt_content?: string;
 }
 
 export class UpdateAdsTxtDto {
