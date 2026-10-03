@@ -102,55 +102,56 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,currentColor_1px,transparent_1px),linear-gradient(to_bottom,currentColor_1px,transparent_1px)] text-foreground/[0.03] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,#000_70%,transparent_100%)] bg-[size:36px_36px] pointer-events-none" />
 
         <div className="container relative mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-center">
             {/* Left Content Column */}
-            <div className="lg:col-span-6 space-y-4 sm:space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/80 backdrop-blur-md px-3.5 py-1.5 text-xs font-mono text-foreground shadow-2xs">
-                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse ring-4 ring-emerald-500/20" />
-                <span className="font-semibold text-foreground">NexusBlog</span>
-                <span className="text-muted-foreground/60">•</span>
-                <span className="text-muted-foreground font-normal">System Design &amp; Technology Portal</span>
+            <div className="lg:col-span-6 space-y-3.5 sm:space-y-5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/80 backdrop-blur-md px-3 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-mono text-foreground shadow-2xs max-w-full">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse ring-4 ring-emerald-500/20 shrink-0" />
+                <span className="font-semibold text-foreground shrink-0">NexusBlog</span>
+                <span className="text-muted-foreground/60 shrink-0">•</span>
+                <span className="text-muted-foreground font-normal truncate hidden sm:inline">System Design &amp; Technology Portal</span>
+                <span className="text-muted-foreground font-normal truncate sm:hidden">Systems &amp; Architecture</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.12]">
+              <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.18] sm:leading-[1.12]">
                 Master Real-World{' '}
                 <span className="bg-gradient-to-r from-foreground via-foreground/90 to-primary/70 bg-clip-text text-transparent">
                   System Design &amp; Tech Stacks.
                 </span>
               </h1>
 
-              <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
+              <p className="text-xs sm:text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
                 Practical, code-backed engineering deep dives, distributed database internals, low-latency benchmarks, and battle-tested architectures. Zero fluff — built by developers for developers.
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="flex flex-row items-center gap-2.5 sm:gap-3 pt-1 sm:pt-2">
                 <Link
                   href="/articles"
-                  className="inline-flex items-center gap-2 bg-foreground text-background px-5 py-3 rounded-xl font-medium text-xs sm:text-sm hover:bg-foreground/90 transition-all duration-200 shadow-xs hover:shadow-md group"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-foreground text-background px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-medium text-xs sm:text-sm hover:bg-foreground/90 transition-all duration-200 shadow-xs hover:shadow-md group text-center whitespace-nowrap"
                 >
                   <span>Explore Blueprints</span>
-                  <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                  <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 shrink-0" />
                 </Link>
                 <Link
                   href="/technologies"
-                  className="inline-flex items-center gap-2 border border-border/80 bg-card/80 backdrop-blur-md text-foreground px-5 py-3 rounded-xl font-medium text-xs sm:text-sm hover:bg-muted hover:border-border transition-all duration-200"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 sm:gap-2 border border-border/80 bg-card/80 backdrop-blur-md text-foreground px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-medium text-xs sm:text-sm hover:bg-muted hover:border-border transition-all duration-200 text-center whitespace-nowrap"
                 >
-                  <Cpu className="h-4 w-4 text-primary" />
+                  <Cpu className="h-4 w-4 text-primary shrink-0" />
                   <span>Technology Hubs</span>
                 </Link>
               </div>
 
               {/* Engineering Guarantees / Quality Highlights */}
-              <div className="pt-3 border-t border-border/40 flex flex-wrap items-center gap-4 text-xs font-mono text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> 100% Code-Backed
+              <div className="pt-2 sm:pt-3 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] sm:text-xs font-mono text-muted-foreground">
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> 100% Code-Backed
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <Activity className="h-3.5 w-3.5 text-sky-500" /> Latency Benchmarked
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  <Activity className="h-3.5 w-3.5 text-sky-500 shrink-0" /> Latency Benchmarked
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Peer-Reviewed
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" /> Peer-Reviewed
                 </span>
               </div>
             </div>

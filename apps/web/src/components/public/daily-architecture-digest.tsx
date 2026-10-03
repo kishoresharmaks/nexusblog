@@ -145,13 +145,13 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
 
         {/* 1. Header Bar: Today's Edition & Multi-Article Pager */}
         <div className="flex items-center justify-between gap-2 pb-3 border-b border-border/60">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-[11px] font-mono font-semibold text-primary">
-              <Sparkles className="h-3 w-3 text-amber-500" />
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-semibold text-primary whitespace-nowrap">
+              <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
               <span>Today&apos;s Edition • {todayFormatted}</span>
             </span>
             {article.featured && (
-              <span className="hidden sm:inline-block rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-mono text-amber-400 font-bold">
+              <span className="hidden xs:inline-block sm:inline-block rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-mono text-amber-400 font-bold whitespace-nowrap">
                 EDITOR&apos;S PICK
               </span>
             )}
@@ -159,7 +159,7 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
 
           {/* Navigation between today's releases */}
           {articles.length > 1 && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <span className="text-[10px] font-mono text-muted-foreground mr-1">
                 {safeIndex + 1}/{articles.length}
               </span>
@@ -184,7 +184,7 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
         </div>
 
         {/* 2. Visual Cover Image & Category Badges */}
-        <div className="relative rounded-xl overflow-hidden border border-border/70 bg-muted/40 aspect-[16/8] sm:aspect-[16/7] group/img">
+        <div className="relative rounded-xl overflow-hidden border border-border/70 bg-muted/40 aspect-[16/9] sm:aspect-[16/7] group/img">
           {imageSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -264,7 +264,7 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
               </div>
             )}
             <div className="leading-none truncate">
-              <span className="font-semibold text-xs text-foreground block truncate max-w-[130px]">
+              <span className="font-semibold text-xs text-foreground block truncate max-w-[130px] sm:max-w-[150px]">
                 {authorName}
               </span>
               <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -274,24 +274,24 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
           </div>
 
           {/* Interactive Actions */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 w-full sm:w-auto shrink-0">
             {/* Quick Preview Button */}
             <button
               type="button"
               onClick={() => setIsPreviewOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-background hover:bg-muted text-foreground text-xs font-mono font-medium transition-colors cursor-pointer shadow-2xs"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-background hover:bg-muted text-foreground text-[11px] sm:text-xs font-mono font-medium transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
             >
-              <FileText className="h-3.5 w-3.5 text-primary" />
+              <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
               <span>Quick Preview</span>
             </button>
 
             {/* Read Blueprint Primary CTA */}
             <Link
               href={`/articles/${article.slug}`}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-foreground text-background hover:bg-foreground/90 text-xs font-mono font-bold transition-all shadow-xs group/read"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-foreground text-background hover:bg-foreground/90 text-[11px] sm:text-xs font-mono font-bold transition-all shadow-xs group/read whitespace-nowrap"
             >
               <span>Read Blueprint</span>
-              <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover/read:translate-x-0.5" />
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-hover/read:translate-x-0.5" />
             </Link>
           </div>
         </div>
@@ -299,7 +299,7 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
 
       {/* 6. Quick-Preview Interactive Drawer / Slide-Over Modal */}
       {isPreviewOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-10">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-background/80 backdrop-blur-md animate-backdrop-in transition-opacity"
@@ -307,7 +307,7 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
           />
 
           {/* Drawer Dialog Container */}
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-3xl border border-border bg-card shadow-2xl p-6 sm:p-8 space-y-6 z-10 animate-fade-in-scale">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto no-scrollbar rounded-2xl sm:rounded-3xl border border-border bg-card shadow-2xl p-4 sm:p-8 space-y-5 sm:space-y-6 z-10 animate-fade-in-scale">
             {/* Top Bar */}
             <div className="flex items-center justify-between pb-3 border-b border-border/60">
               <div className="flex items-center gap-2">

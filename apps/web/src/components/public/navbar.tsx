@@ -380,18 +380,18 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
         </div>
 
         {/* Right: Search, Theme Toggle, Contributor Action & Auth */}
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-1.5 sm:space-x-2.5">
           {/* Global Search Bar (Keyboard trigger) */}
           <button
             type="button"
             onClick={onOpenSearch}
-            className="group flex items-center justify-between gap-2 sm:gap-3 rounded-xl border border-border/80 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all cursor-pointer shadow-2xs"
+            className="group flex items-center justify-between gap-1.5 sm:gap-3 rounded-xl border border-border/80 bg-muted/30 p-2 sm:px-3 sm:py-1.5 text-xs text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all cursor-pointer shadow-2xs"
             title="Open Command Search"
           >
-            <div className="flex items-center gap-2">
-              <Search className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Search className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
               <span className="hidden md:inline font-sans text-xs">Search blueprints &amp; stacks...</span>
-              <span className="inline md:hidden text-xs">Search...</span>
+              <span className="hidden sm:inline md:hidden text-xs">Search...</span>
             </div>
             <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border group-hover:border-primary/40 shadow-2xs">
               <span>{isMac ? '⌘' : 'Ctrl'}</span>
