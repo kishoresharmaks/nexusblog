@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Copy, Check, Terminal as TerminalIcon } from 'lucide-react';
+import { trackCodeCopy } from '@/lib/telemetry';
 
 interface TerminalProps {
   title?: string;
@@ -23,9 +24,17 @@ export function Terminal({
 
   const handleCopy = async () => {
     if (!rawText) return;
-    await navigator.clipboard.writeText(rawText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(rawText);
+      setCopied(true);
+      trackCodeCopy({
+        language: title || 'shell',
+        snippet: rawText,
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+    }
   };
 
   return (

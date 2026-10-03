@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Check, Copy, Terminal } from 'lucide-react';
+import { trackCodeCopy } from '@/lib/telemetry';
 
 interface CodeBlockProps {
   children?: React.ReactNode;
@@ -43,9 +44,18 @@ export function CodeBlock({
 
   const handleCopy = async () => {
     if (!codeString) return;
-    await navigator.clipboard.writeText(codeString);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(codeString);
+      setCopied(true);
+      trackCodeCopy({
+        language: extractedLang,
+        filename,
+        snippet: codeString,
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+    }
   };
 
   return (

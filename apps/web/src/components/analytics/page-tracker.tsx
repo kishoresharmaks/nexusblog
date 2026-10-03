@@ -2,52 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { siteConfig } from '@nexus/config';
-import { detectClientLocation } from '@/lib/geo-utils';
-
-function getOrCreateVisitorId(): string {
-  if (typeof window === 'undefined') return '';
-  try {
-    let vid = localStorage.getItem('nexus_vid');
-    if (!vid) {
-      vid = 'v_' + Math.random().toString(36).substring(2, 12) + Date.now().toString(36);
-      localStorage.setItem('nexus_vid', vid);
-    }
-    return vid;
-  } catch {
-    return 'v_' + Math.random().toString(36).substring(2, 10);
-  }
-}
-
-function sendTelemetry(payload: Record<string, any>) {
-  if (typeof window === 'undefined') return;
-  try {
-    const geo = detectClientLocation();
-    const data = JSON.stringify({
-      visitorId: getOrCreateVisitorId(),
-      referrer: document.referrer || undefined,
-      screen: `${window.innerWidth}x${window.innerHeight}`,
-      country: geo.country,
-      countryName: geo.countryName,
-      ...payload,
-    });
-
-    const apiUrl = `${siteConfig.apiUrl}/analytics/collect`;
-    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const blob = new Blob([data], { type: 'application/json' });
-      navigator.sendBeacon(apiUrl, blob);
-    } else {
-      fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: data,
-        keepalive: true,
-      }).catch(() => {});
-    }
-  } catch {
-    // Non-blocking silent catch
-  }
-}
+import { trackEvent } from '@/lib/telemetry';
 
 export function PageTracker() {
   const pathname = usePathname();
@@ -61,8 +16,7 @@ export function PageTracker() {
     const fullPath = queryString ? `${pathname}?${queryString}` : pathname;
     sentScrollMilestones.current.clear();
 
-    sendTelemetry({
-      eventType: 'PAGEVIEW',
+    trackEvent('PAGEVIEW', {
       path: fullPath,
     });
   }, [pathname, searchParams]);
@@ -84,8 +38,7 @@ export function PageTracker() {
         [25, 50, 75, 100].forEach((milestone) => {
           if (scrollPercent >= milestone && !sentScrollMilestones.current.has(milestone)) {
             sentScrollMilestones.current.add(milestone);
-            sendTelemetry({
-              eventType: 'SCROLL_DEPTH',
+            trackEvent('SCROLL_DEPTH', {
               path: pathname,
               scrollDepth: milestone,
             });
@@ -101,13 +54,12 @@ export function PageTracker() {
     };
   }, [pathname]);
 
-  // 3. Code Copy Interaction Listener
+  // 3. Code Copy Interaction Listener (Keyboard / Selection copy)
   useEffect(() => {
     const handleCopy = (e: ClipboardEvent) => {
       const target = e.target as HTMLElement;
       if (target && (target.closest('pre') || target.closest('code') || target.closest('[data-code-block]'))) {
-        sendTelemetry({
-          eventType: 'CODE_COPY',
+        trackEvent('CODE_COPY', {
           path: pathname || '/',
         });
       }
