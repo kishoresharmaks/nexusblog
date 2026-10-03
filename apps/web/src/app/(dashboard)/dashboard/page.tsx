@@ -36,12 +36,16 @@ export default function DashboardOverviewPage() {
           guestPostsApi.getUserSubmissions(),
         ]);
 
-        if (bmRes.status === 'fulfilled' && Array.isArray(bmRes.value)) {
-          setBookmarks(bmRes.value);
+        if (bmRes.status === 'fulfilled') {
+          const val: any = bmRes.value;
+          const items = Array.isArray(val) ? val : Array.isArray(val?.items) ? val.items : Array.isArray(val?.data) ? val.data : [];
+          setBookmarks(items);
         }
         let histItems: any[] = [];
-        if (histRes.status === 'fulfilled' && Array.isArray(histRes.value)) {
-          histItems = histRes.value;
+        if (histRes.status === 'fulfilled') {
+          const val: any = histRes.value;
+          const items = Array.isArray(val) ? val : Array.isArray(val?.items) ? val.items : Array.isArray(val?.data) ? val.data : [];
+          histItems = items;
         }
 
         // Merge local storage history if available
@@ -76,11 +80,15 @@ export default function DashboardOverviewPage() {
         } catch {}
 
         setHistory(histItems);
-        if (commRes.status === 'fulfilled' && Array.isArray(commRes.value)) {
-          setComments(commRes.value);
+        if (commRes.status === 'fulfilled') {
+          const val: any = commRes.value;
+          const items = Array.isArray(val) ? val : Array.isArray(val?.items) ? val.items : Array.isArray(val?.data) ? val.data : [];
+          setComments(items);
         }
-        if (gpRes.status === 'fulfilled' && Array.isArray(gpRes.value)) {
-          setGuestPosts(gpRes.value);
+        if (gpRes.status === 'fulfilled') {
+          const val: any = gpRes.value;
+          const items = Array.isArray(val) ? val : Array.isArray(val?.items) ? val.items : Array.isArray(val?.data) ? val.data : [];
+          setGuestPosts(items);
         }
       } catch {
         // Handled silently
@@ -91,40 +99,45 @@ export default function DashboardOverviewPage() {
     loadDashboardData();
   }, []);
 
+  const safeBookmarks = Array.isArray(bookmarks) ? bookmarks : [];
+  const safeHistory = Array.isArray(history) ? history : [];
+  const safeComments = Array.isArray(comments) ? comments : [];
+  const safeGuestPosts = Array.isArray(guestPosts) ? guestPosts : [];
+
   const stats = [
     {
       title: 'Saved Bookmarks',
-      value: bookmarks.length,
+      value: safeBookmarks.length,
       href: '/dashboard/bookmarks',
       icon: Bookmark,
       color: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
     },
     {
       title: 'Articles in Progress',
-      value: history.filter((h) => (h.completionPercentage || 0) < 100).length,
+      value: safeHistory.filter((h) => (h?.completionPercentage || 0) < 100).length,
       href: '/dashboard/history',
       icon: History,
       color: 'text-sky-500 bg-sky-500/10 border-sky-500/20',
     },
     {
       title: 'Discussions & Comments',
-      value: comments.length,
+      value: safeComments.length,
       href: '/dashboard/comments',
       icon: MessageSquare,
       color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
     },
     {
       title: 'Guest Submissions',
-      value: guestPosts.length,
+      value: safeGuestPosts.length,
       href: '/dashboard/guest-posts',
       icon: FileText,
       color: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
     },
   ];
 
-  const inProgressArticle = history.find((h) => (h.completionPercentage || 0) < 100) || history[0];
-  const recentBookmarks = bookmarks.slice(0, 3);
-  const latestGuestPost = guestPosts[0];
+  const inProgressArticle = safeHistory.find((h) => (h?.completionPercentage || 0) < 100) || safeHistory[0];
+  const recentBookmarks = safeBookmarks.slice(0, 3);
+  const latestGuestPost = safeGuestPosts[0];
 
   return (
     <div className="space-y-8 font-sans">

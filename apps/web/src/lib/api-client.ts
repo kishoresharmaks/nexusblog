@@ -653,7 +653,10 @@ export const readingHistoryApi = {
 // Audit Logs API
 export const auditLogsApi = {
   async getAll(limit = 50, skip = 0) {
-    return request<any[]>(`/audit-logs?limit=${limit}&skip=${skip}`, {}, true);
+    const res = await request<any>(`/audit-logs?limit=${limit}&skip=${skip}`, {}, true);
+    const items = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : Array.isArray(res?.data) ? res.data : [];
+    const total = typeof res?.total === 'number' ? res.total : (res?.meta?.total ?? items.length);
+    return { items, total };
   },
 };
 

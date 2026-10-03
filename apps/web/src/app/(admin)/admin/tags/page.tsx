@@ -42,10 +42,18 @@ export default function AdminTagsPage() {
   const loadTags = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await tagsApi.getAll();
-      setTags(Array.isArray(data) ? data : []);
+      const data: any = await tagsApi.getAll();
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setTags(items);
     } catch (err) {
       console.error('Failed to load tags:', err);
+      setTags([]);
       toast.error('Failed to load tags taxonomy');
     } finally {
       setIsLoading(false);
@@ -65,10 +73,11 @@ export default function AdminTagsPage() {
       .replace(/^-+|-+$/g, '');
   };
 
-  const filtered = tags.filter(
+  const safeTags = Array.isArray(tags) ? tags : [];
+  const filtered = safeTags.filter(
     (t) =>
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.slug.toLowerCase().includes(search.toLowerCase()) ||
+      t.name?.toLowerCase().includes(search.toLowerCase()) ||
+      t.slug?.toLowerCase().includes(search.toLowerCase()) ||
       (t.description || '').toLowerCase().includes(search.toLowerCase()),
   );
 

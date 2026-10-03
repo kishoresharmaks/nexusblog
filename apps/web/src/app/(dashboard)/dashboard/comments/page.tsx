@@ -26,21 +26,26 @@ export default function CommentsPage() {
   const fetchComments = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await commentsApi.getUserComments();
-      if (Array.isArray(data)) {
-        setComments(
-          data.map((c: any) => ({
-            id: c.id,
-            articleId: c.articleId,
-            articleTitle: c.article?.title || 'Technical Article',
-            articleSlug: c.article?.slug || '#',
-            category: c.article?.category?.name || 'Architecture',
-            content: c.content,
-            status: c.status || 'APPROVED',
-            createdAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recently',
-          }))
-        );
-      }
+      const data: any = await commentsApi.getUserComments();
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setComments(
+        items.map((c: any) => ({
+          id: c.id,
+          articleId: c.articleId,
+          articleTitle: c.article?.title || 'Technical Article',
+          articleSlug: c.article?.slug || '#',
+          category: c.article?.category?.name || 'Architecture',
+          content: c.content,
+          status: c.status || 'APPROVED',
+          createdAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recently',
+        }))
+      );
     } catch {
       setComments([]);
     } finally {
@@ -61,7 +66,7 @@ export default function CommentsPage() {
     try {
       await commentsApi.update(id, editText);
       setComments((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, content: editText } : c)),
+        (Array.isArray(prev) ? prev : []).map((c) => (c.id === id ? { ...c, content: editText } : c)),
       );
       setEditingId(null);
       toast.success('Comment updated successfully');
@@ -73,7 +78,7 @@ export default function CommentsPage() {
   const handleDelete = async (id: string) => {
     try {
       await commentsApi.delete(id);
-      setComments((prev) => prev.filter((c) => c.id !== id));
+      setComments((prev) => (Array.isArray(prev) ? prev : []).filter((c) => c.id !== id));
       toast.success('Comment deleted');
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete comment');

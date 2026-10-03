@@ -51,25 +51,30 @@ export default function GuestPostsTrackerPage() {
   const fetchSubmissions = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await guestPostsApi.getUserSubmissions({
+      const data: any = await guestPostsApi.getUserSubmissions({
         status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
       });
-      if (Array.isArray(data)) {
-        setSubmissions(
-          data.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            slug: item.slug,
-            category: (typeof item.category === 'object' && item.category !== null ? item.category.name : typeof item.category === 'string' ? item.category : 'System Design') || 'System Design',
-            difficulty: item.difficulty || 'INTERMEDIATE',
-            status: item.status,
-            updatedAt: item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'Recently',
-            submittedAt: item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : undefined,
-            editorialFeedback: item.editorialFeedback,
-            reviewerName: item.reviewer?.name || 'Staff Editor',
-          }))
-        );
-      }
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setSubmissions(
+        items.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          slug: item.slug,
+          category: (typeof item.category === 'object' && item.category !== null ? item.category.name : typeof item.category === 'string' ? item.category : 'System Design') || 'System Design',
+          difficulty: item.difficulty || 'INTERMEDIATE',
+          status: item.status,
+          updatedAt: item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'Recently',
+          submittedAt: item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : undefined,
+          editorialFeedback: item.editorialFeedback,
+          reviewerName: item.reviewer?.name || 'Staff Editor',
+        }))
+      );
     } catch {
       setSubmissions([]);
     } finally {

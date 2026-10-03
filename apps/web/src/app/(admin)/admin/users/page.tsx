@@ -68,14 +68,22 @@ export default function AdminUsersPage() {
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await usersApi.getAdminUsers({
+      const res: any = await usersApi.getAdminUsers({
         search: search.trim() || undefined,
         role: roleFilter !== 'ALL' ? roleFilter : undefined,
         limit: 100,
       });
-      setUsers(Array.isArray(res?.items) ? res.items : []);
+      const items = Array.isArray(res?.items)
+        ? res.items
+        : Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res)
+            ? res
+            : [];
+      setUsers(items);
     } catch (err) {
       console.error('Failed to load admin users:', err);
+      setUsers([]);
       toast.error('Failed to load user directory');
     } finally {
       setIsLoading(false);
@@ -89,6 +97,8 @@ export default function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [loadUsers]);
 
+  const safeUsers = Array.isArray(users) ? users : [];
+
   const handleOpenEdit = (u: UserDirectoryItem) => {
     setEditingUser(u);
     setSelectedRole(u.role);
@@ -97,13 +107,13 @@ export default function AdminUsersPage() {
 
   const handleOpenDelete = (u: UserDirectoryItem) => {
     setDeleteConfirmUser(u);
-    const candidate = users.find((x) => x.id !== u.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(x.role));
+    const candidate = safeUsers.find((x) => x.id !== u.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(x.role));
     setReassignTargetUserId(candidate ? candidate.id : '');
   };
 
   const handleOpenReassign = (u: UserDirectoryItem) => {
     setReassignModalUser(u);
-    const candidate = users.find((x) => x.id !== u.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(x.role));
+    const candidate = safeUsers.find((x) => x.id !== u.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(x.role));
     setReassignTargetUserId(candidate ? candidate.id : '');
   };
 
@@ -489,7 +499,7 @@ export default function AdminUsersPage() {
                   className="w-full rounded-lg border border-border bg-background py-2 px-3 text-xs text-foreground focus:border-primary focus:outline-none"
                 >
                   <option value="">-- Choose Destination Author --</option>
-                  {users
+                  {safeUsers
                     .filter((u) => u.id !== reassignModalUser.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(u.role))
                     .map((u) => (
                       <option key={u.id} value={u.id}>
@@ -563,7 +573,7 @@ export default function AdminUsersPage() {
                     className="w-full rounded-lg border border-border bg-background py-2 px-3 text-xs text-foreground focus:border-primary focus:outline-none"
                   >
                     <option value="">-- Choose Replacement Author --</option>
-                    {users
+                    {safeUsers
                       .filter((u) => u.id !== deleteConfirmUser.id && ['SUPER_ADMIN', 'ADMIN', 'EDITOR', 'AUTHOR'].includes(u.role))
                       .map((u) => (
                         <option key={u.id} value={u.id}>

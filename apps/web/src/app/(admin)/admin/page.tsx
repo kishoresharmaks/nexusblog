@@ -41,12 +41,18 @@ export default function AdminOverviewPage() {
         newsletterApi.getStats().catch(() => ({ total: 0, active: 0 })),
       ]);
 
-      setArticles(feedData?.items || []);
-      setTotalArticles(feedData?.total || feedData?.items?.length || 0);
-      setPendingSubmissions(Array.isArray(queueData) ? queueData : []);
+      const feedDataAny = feedData as any;
+      const artItems = Array.isArray(feedData) ? feedData : Array.isArray(feedDataAny?.items) ? feedDataAny.items : [];
+      setArticles(artItems);
+      setTotalArticles(feedDataAny?.total || artItems.length);
+      const queueDataAny = queueData as any;
+      const queueItems = Array.isArray(queueData) ? queueData : Array.isArray(queueDataAny?.items) ? queueDataAny.items : [];
+      setPendingSubmissions(queueItems);
       setSubscribersCount(subsStats?.active || subsStats?.total || 0);
     } catch (err) {
       console.error('Failed to load admin overview metrics:', err);
+      setArticles([]);
+      setPendingSubmissions([]);
     } finally {
       setIsLoading(false);
     }
@@ -56,12 +62,14 @@ export default function AdminOverviewPage() {
     refreshData();
   }, [refreshData]);
 
-  const totalViews = articles.reduce((acc, a) => acc + (a.viewsCount || a.views || 0), 0);
+  const safeArticles = Array.isArray(articles) ? articles : [];
+  const safePending = Array.isArray(pendingSubmissions) ? pendingSubmissions : [];
+  const totalViews = safeArticles.reduce((acc, a) => acc + (a?.viewsCount || a?.views || 0), 0);
 
   const metrics = [
     {
       title: 'Published Articles',
-      value: String(totalArticles || articles.length),
+      value: String(totalArticles || safeArticles.length),
       change: 'Active technical publications',
       href: '/admin/articles',
       icon: FileText,
@@ -77,8 +85,8 @@ export default function AdminOverviewPage() {
     },
     {
       title: 'Pending Submissions',
-      value: String(pendingSubmissions.length),
-      change: `${pendingSubmissions.filter((p) => p.status === 'CHANGES_REQUESTED').length} revisions pending`,
+      value: String(safePending.length),
+      change: `${safePending.filter((p) => p?.status === 'CHANGES_REQUESTED').length} revisions pending`,
       href: '/admin/guest-posts',
       icon: Inbox,
       color: 'text-amber-500 bg-amber-500/10 border-amber-500/20',

@@ -26,26 +26,32 @@ export default function AdminCommentsModerationPage() {
   const fetchComments = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await commentsApi.getAdminComments({
+      const data: any = await commentsApi.getAdminComments({
         status: statusFilter,
         search: search.trim() || undefined,
       });
-      if (Array.isArray(data)) {
-        setComments(
-          data.map((c: any) => ({
-            id: c.id,
-            authorName: c.user?.name || 'Anonymous Reader',
-            authorUsername: c.user?.username || 'user',
-            articleTitle: c.article?.title || 'Unknown Article',
-            articleSlug: c.article?.slug || '#',
-            content: c.content,
-            status: c.status || 'APPROVED',
-            createdAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recently',
-          }))
-        );
-      }
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setComments(
+        items.map((c: any) => ({
+          id: c.id,
+          authorName: c.user?.name || 'Anonymous Reader',
+          authorUsername: c.user?.username || 'user',
+          articleTitle: c.article?.title || 'Unknown Article',
+          articleSlug: c.article?.slug || '#',
+          content: c.content,
+          status: c.status || 'APPROVED',
+          createdAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recently',
+        }))
+      );
     } catch (err: any) {
       toast.error(err.message || 'Failed to fetch comments');
+      setComments([]);
     } finally {
       setLoading(false);
     }

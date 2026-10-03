@@ -26,10 +26,17 @@ export default function SecuritySettingsPage() {
   const fetchSessions = useCallback(async () => {
     try {
       setLoadingSessions(true);
-      const data = await usersApi.getActiveSessions();
-      if (Array.isArray(data)) {
+      const data: any = await usersApi.getActiveSessions();
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      if (list.length > 0) {
         setSessions(
-          data.map((s: any) => ({
+          list.map((s: any) => ({
             id: s.id,
             device: s.userAgent || s.device || 'Web Browser',
             ip: s.ipAddress || s.ip || '127.0.0.1',
@@ -37,6 +44,16 @@ export default function SecuritySettingsPage() {
             isCurrent: s.isCurrent || false,
           }))
         );
+      } else {
+        setSessions([
+          {
+            id: 'current',
+            device: 'Current Browser Session',
+            ip: 'Active',
+            lastActive: 'Active now (Current)',
+            isCurrent: true,
+          },
+        ]);
       }
     } catch {
       setSessions([
@@ -86,7 +103,7 @@ export default function SecuritySettingsPage() {
   const handleRevokeSession = async (id: string) => {
     try {
       await usersApi.revokeSession(id);
-      setSessions((prev) => prev.filter((s) => s.id !== id));
+      setSessions((prev) => (Array.isArray(prev) ? prev : []).filter((s) => s.id !== id));
       toast.success('Session revoked');
     } catch (err: any) {
       toast.error(err.message || 'Failed to revoke session');
@@ -96,7 +113,7 @@ export default function SecuritySettingsPage() {
   const handleRevokeOtherSessions = async () => {
     try {
       await usersApi.revokeAllOtherSessions();
-      setSessions((prev) => prev.filter((s) => s.isCurrent));
+      setSessions((prev) => (Array.isArray(prev) ? prev : []).filter((s) => s.isCurrent));
       toast.success('All other active sessions have been revoked');
     } catch (err: any) {
       toast.error(err.message || 'Failed to revoke other sessions');
@@ -182,7 +199,7 @@ export default function SecuritySettingsPage() {
             </p>
           </div>
 
-          {sessions.filter((s) => !s.isCurrent).length > 0 && (
+          {(Array.isArray(sessions) ? sessions : []).filter((s) => !s.isCurrent).length > 0 && (
             <button
               onClick={handleRevokeOtherSessions}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border/70 hover:bg-muted text-xs font-mono text-muted-foreground hover:text-foreground transition-colors self-start sm:self-auto"
@@ -194,7 +211,7 @@ export default function SecuritySettingsPage() {
         </div>
 
         <div className="space-y-3">
-          {sessions.map((item) => (
+          {(Array.isArray(sessions) ? sessions : []).map((item) => (
             <div
               key={item.id}
               className="flex items-center justify-between p-4 rounded-xl border border-border/60 bg-muted/20"

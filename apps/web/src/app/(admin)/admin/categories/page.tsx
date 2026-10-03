@@ -44,10 +44,18 @@ export default function AdminCategoriesPage() {
   const loadCategories = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await categoriesApi.getAll();
-      setCategories(data || []);
+      const data: any = await categoriesApi.getAll();
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setCategories(items);
     } catch (err) {
       console.error('Failed to load categories:', err);
+      setCategories([]);
     } finally {
       setIsLoading(false);
     }
@@ -57,10 +65,11 @@ export default function AdminCategoriesPage() {
     loadCategories();
   }, [loadCategories]);
 
-  const filtered = categories.filter(
+  const safeCategories = Array.isArray(categories) ? categories : [];
+  const filtered = safeCategories.filter(
     (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.slug.toLowerCase().includes(search.toLowerCase()),
+      c.name?.toLowerCase().includes(search.toLowerCase()) ||
+      c.slug?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleOpenNew = () => {

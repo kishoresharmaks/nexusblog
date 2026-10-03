@@ -58,10 +58,18 @@ export default function AdminArticleTypesPage() {
   const loadTypes = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await articleTypesApi.getAll();
-      setTypes(Array.isArray(data) ? data : []);
+      const data: any = await articleTypesApi.getAll();
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setTypes(items);
     } catch (err) {
       console.error('Failed to load article types:', err);
+      setTypes([]);
     } finally {
       setIsLoading(false);
     }
@@ -79,10 +87,11 @@ export default function AdminArticleTypesPage() {
       .replace(/[\s-]+/g, '_');
   };
 
-  const filtered = types.filter(
+  const safeTypes = Array.isArray(types) ? types : [];
+  const filtered = safeTypes.filter(
     (t) =>
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.slug.toLowerCase().includes(search.toLowerCase()) ||
+      t.name?.toLowerCase().includes(search.toLowerCase()) ||
+      t.slug?.toLowerCase().includes(search.toLowerCase()) ||
       (t.description && t.description.toLowerCase().includes(search.toLowerCase())),
   );
 

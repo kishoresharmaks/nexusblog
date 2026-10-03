@@ -50,10 +50,18 @@ export default function AdminTechnologiesPage() {
   const loadTechnologies = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await technologiesApi.getAll();
-      setTechnologies(Array.isArray(data) ? data : []);
+      const data: any = await technologiesApi.getAll();
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setTechnologies(items);
     } catch (err) {
       console.error('Failed to load technologies:', err);
+      setTechnologies([]);
     } finally {
       setIsLoading(false);
     }
@@ -72,10 +80,11 @@ export default function AdminTechnologiesPage() {
       .replace(/^-+|-+$/g, '');
   };
 
-  const filtered = technologies.filter(
+  const safeTechnologies = Array.isArray(technologies) ? technologies : [];
+  const filtered = safeTechnologies.filter(
     (t) =>
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.slug.toLowerCase().includes(search.toLowerCase()) ||
+      t.name?.toLowerCase().includes(search.toLowerCase()) ||
+      t.slug?.toLowerCase().includes(search.toLowerCase()) ||
       (t.description && t.description.toLowerCase().includes(search.toLowerCase())),
   );
 

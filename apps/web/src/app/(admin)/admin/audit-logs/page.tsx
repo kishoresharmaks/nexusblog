@@ -30,10 +30,18 @@ export default function AdminAuditLogsPage() {
   const loadLogs = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await auditLogsApi.getAll(100, 0);
-      setLogs(data || []);
+      const res: any = await auditLogsApi.getAll(100, 0);
+      const items = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.items)
+          ? res.items
+          : Array.isArray(res?.data)
+            ? res.data
+            : [];
+      setLogs(items);
     } catch (err) {
       console.error('Failed to load audit logs:', err);
+      setLogs([]);
     } finally {
       setIsLoading(false);
     }
@@ -43,11 +51,12 @@ export default function AdminAuditLogsPage() {
     loadLogs();
   }, [loadLogs]);
 
-  const filtered = logs.filter(
+  const safeLogs = Array.isArray(logs) ? logs : [];
+  const filtered = safeLogs.filter(
     (l) => {
-      const email = l.user?.email || l.userEmail || '';
-      const action = l.action || '';
-      const res = l.resource || '';
+      const email = l?.user?.email || l?.userEmail || '';
+      const action = l?.action || '';
+      const res = l?.resource || '';
       return (
         action.toLowerCase().includes(search.toLowerCase()) ||
         email.toLowerCase().includes(search.toLowerCase()) ||

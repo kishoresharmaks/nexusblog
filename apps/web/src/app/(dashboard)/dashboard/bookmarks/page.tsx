@@ -26,22 +26,27 @@ export default function BookmarksPage() {
   const fetchBookmarks = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await bookmarksApi.getUserBookmarks();
-      if (Array.isArray(data)) {
-        setBookmarks(
-          data.map((b: any) => ({
-            id: b.id,
-            articleId: b.articleId || b.article?.id || '',
-            title: b.article?.title || 'Saved Technical Article',
-            slug: b.article?.slug || '#',
-            excerpt: b.article?.excerpt || 'Architectural deep dive and system design reference.',
-            category: b.article?.category?.name || 'Architecture',
-            difficulty: b.article?.difficulty || 'INTERMEDIATE',
-            readingTime: b.article?.readingTimeMinutes || 10,
-            savedAt: b.createdAt ? new Date(b.createdAt).toLocaleDateString() : 'Recently',
-          }))
-        );
-      }
+      const data: any = await bookmarksApi.getUserBookmarks();
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setBookmarks(
+        items.map((b: any) => ({
+          id: b.id || b.articleId,
+          articleId: b.articleId || b.article?.id || '',
+          title: b.article?.title || 'Saved Technical Article',
+          slug: b.article?.slug || '#',
+          excerpt: b.article?.excerpt || 'Architectural deep dive and system design reference.',
+          category: b.article?.category?.name || 'Architecture',
+          difficulty: b.article?.difficulty || 'INTERMEDIATE',
+          readingTime: b.article?.readingTimeMinutes || 10,
+          savedAt: b.createdAt ? new Date(b.createdAt).toLocaleDateString() : 'Recently',
+        }))
+      );
     } catch {
       setBookmarks([]);
     } finally {
@@ -53,10 +58,11 @@ export default function BookmarksPage() {
     fetchBookmarks();
   }, [fetchBookmarks]);
 
-  const filtered = bookmarks.filter(
+  const safeBookmarks = Array.isArray(bookmarks) ? bookmarks : [];
+  const filtered = safeBookmarks.filter(
     (b) =>
-      b.title.toLowerCase().includes(search.toLowerCase()) ||
-      b.category.toLowerCase().includes(search.toLowerCase()),
+      b.title?.toLowerCase().includes(search.toLowerCase()) ||
+      b.category?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleRemove = async (id: string, articleId: string, title: string) => {

@@ -51,10 +51,18 @@ export default function AdminSeriesPage() {
   const loadSeries = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await seriesApi.getAll(true);
-      setSeriesList(Array.isArray(data) ? data : []);
+      const data: any = await seriesApi.getAll(true);
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setSeriesList(items);
     } catch (err) {
       console.error('Failed to load series:', err);
+      setSeriesList([]);
       toast.error('Failed to load learning series');
     } finally {
       setIsLoading(false);
@@ -74,10 +82,11 @@ export default function AdminSeriesPage() {
       .replace(/^-+|-+$/g, '');
   };
 
-  const filtered = seriesList.filter(
+  const safeSeriesList = Array.isArray(seriesList) ? seriesList : [];
+  const filtered = safeSeriesList.filter(
     (s) =>
-      s.title.toLowerCase().includes(search.toLowerCase()) ||
-      s.slug.toLowerCase().includes(search.toLowerCase()) ||
+      s.title?.toLowerCase().includes(search.toLowerCase()) ||
+      s.slug?.toLowerCase().includes(search.toLowerCase()) ||
       (s.description || '').toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -177,8 +186,8 @@ export default function AdminSeriesPage() {
     }
   };
 
-  const totalPublished = seriesList.filter((s) => s.published).length;
-  const totalArticlesLinked = seriesList.reduce((acc, s) => acc + (s.articleCount || 0), 0);
+  const totalPublished = safeSeriesList.filter((s) => s.published).length;
+  const totalArticlesLinked = safeSeriesList.reduce((acc, s) => acc + (s.articleCount || 0), 0);
 
   return (
     <div className="space-y-8 font-sans">

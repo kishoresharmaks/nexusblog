@@ -43,6 +43,7 @@ export default function AdminArticlesPage() {
       setArticles(items);
     } catch (err) {
       console.error('Failed to load articles for admin table:', err);
+      setArticles([]);
     } finally {
       setIsLoading(false);
     }
@@ -54,14 +55,15 @@ export default function AdminArticlesPage() {
     return () => window.removeEventListener('nexus_articles_updated', refreshArticles);
   }, [refreshArticles]);
 
-  const filtered = articles.filter((art) => {
-    const categoryName = art.category?.name || art.category?.slug || art.category || '';
+  const safeArticles = Array.isArray(articles) ? articles : [];
+  const filtered = safeArticles.filter((art) => {
+    const categoryName = art?.category?.name || art?.category?.slug || art?.category || '';
     const matchSearch =
-      (art.title || '').toLowerCase().includes(search.toLowerCase()) ||
-      (art.slug || '').toLowerCase().includes(search.toLowerCase()) ||
+      (art?.title || '').toLowerCase().includes(search.toLowerCase()) ||
+      (art?.slug || '').toLowerCase().includes(search.toLowerCase()) ||
       categoryName.toLowerCase().includes(search.toLowerCase());
 
-    const matchStatus = statusFilter === 'ALL' || art.status === statusFilter;
+    const matchStatus = statusFilter === 'ALL' || art?.status === statusFilter;
 
     return matchSearch && matchStatus;
   });

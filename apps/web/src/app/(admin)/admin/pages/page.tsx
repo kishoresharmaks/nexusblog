@@ -51,10 +51,18 @@ export default function AdminPagesManager() {
   const loadPages = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await pagesApi.getAll(true);
-      setPages(data || []);
+      const data: any = await pagesApi.getAll(true);
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setPages(items);
     } catch (err: any) {
       console.error('Failed to load pages:', err);
+      setPages([]);
       toast.error('Failed to load pages from server');
     } finally {
       setIsLoading(false);
@@ -65,10 +73,11 @@ export default function AdminPagesManager() {
     loadPages();
   }, [loadPages]);
 
-  const filteredPages = pages.filter(
+  const safePages = Array.isArray(pages) ? pages : [];
+  const filteredPages = safePages.filter(
     (p) =>
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.slug.toLowerCase().includes(search.toLowerCase()) ||
+      p.title?.toLowerCase().includes(search.toLowerCase()) ||
+      p.slug?.toLowerCase().includes(search.toLowerCase()) ||
       (p.excerpt && p.excerpt.toLowerCase().includes(search.toLowerCase())),
   );
 
@@ -149,8 +158,8 @@ export default function AdminPagesManager() {
     return knownTopLevelSlugs.includes(slug) ? `/${slug}` : `/pages/${slug}`;
   };
 
-  const publishedCount = pages.filter((p) => p.published).length;
-  const draftCount = pages.length - publishedCount;
+  const publishedCount = safePages.filter((p) => p.published).length;
+  const draftCount = safePages.length - publishedCount;
 
   return (
     <div className="space-y-8 font-sans">

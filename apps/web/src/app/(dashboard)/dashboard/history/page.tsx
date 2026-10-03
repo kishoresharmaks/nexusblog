@@ -48,9 +48,16 @@ export default function ReadingHistoryPage() {
       // Fetch from API if logged in
       if (authClient.isAuthenticated()) {
         try {
-          const data = await readingHistoryApi.getUserHistory();
-          if (Array.isArray(data)) {
-            items = data.map((h: any) => ({
+          const data: any = await readingHistoryApi.getUserHistory();
+          const list = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.items)
+              ? data.items
+              : Array.isArray(data?.data)
+                ? data.data
+                : [];
+          if (list.length > 0) {
+            items = list.map((h: any) => ({
               id: h.id || h.historyId || h.articleId || Math.random().toString(),
               articleId: h.articleId || h.article?.id || '',
               title: h.article?.title || h.title || 'Technical Blueprint',
@@ -127,19 +134,20 @@ export default function ReadingHistoryPage() {
     fetchHistory();
   }, [fetchHistory]);
 
-  const filtered = history
+  const safeHistory = Array.isArray(history) ? history : [];
+  const filtered = safeHistory
     .filter((item) => {
-      if (filter === 'IN_PROGRESS') return item.completionPercentage < 100;
-      if (filter === 'COMPLETED') return item.completionPercentage >= 100;
+      if (filter === 'IN_PROGRESS') return (item?.completionPercentage || 0) < 100;
+      if (filter === 'COMPLETED') return (item?.completionPercentage || 0) >= 100;
       return true;
     })
     .filter((item) => {
       if (!searchQuery.trim()) return true;
       const query = searchQuery.toLowerCase();
       return (
-        item.title.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query) ||
-        (item.excerpt && item.excerpt.toLowerCase().includes(query))
+        (item?.title || '').toLowerCase().includes(query) ||
+        (item?.category || '').toLowerCase().includes(query) ||
+        (item?.excerpt && item.excerpt.toLowerCase().includes(query))
       );
     });
 
@@ -206,7 +214,7 @@ export default function ReadingHistoryPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {history.length > 0 && (
+          {safeHistory.length > 0 && (
             <button
               onClick={() => setShowClearConfirm(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/70 hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-500 text-xs font-mono text-muted-foreground transition-colors cursor-pointer"
@@ -223,14 +231,14 @@ export default function ReadingHistoryPage() {
         {/* Filter Tabs */}
         <div className="flex items-center gap-2 text-xs font-mono">
           {[
-            { key: 'ALL', label: `All (${history.length})` },
+            { key: 'ALL', label: `All (${safeHistory.length})` },
             {
               key: 'IN_PROGRESS',
-              label: `In Progress (${history.filter((h) => h.completionPercentage < 100).length})`,
+              label: `In Progress (${safeHistory.filter((h) => (h?.completionPercentage || 0) < 100).length})`,
             },
             {
               key: 'COMPLETED',
-              label: `Completed (${history.filter((h) => h.completionPercentage >= 100).length})`,
+              label: `Completed (${safeHistory.filter((h) => (h?.completionPercentage || 0) >= 100).length})`,
             },
           ].map((tab) => (
             <button

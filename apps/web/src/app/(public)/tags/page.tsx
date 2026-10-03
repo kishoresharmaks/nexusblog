@@ -39,9 +39,16 @@ export default function TagsIndexPage() {
   useEffect(() => {
     tagsApi
       .getAll()
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setTags(data);
+      .then((data: any) => {
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+            ? data.items
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+        if (list.length > 0) {
+          setTags(list);
         } else {
           setTags(defaultCuratedTags);
         }
@@ -61,12 +68,13 @@ export default function TagsIndexPage() {
     'Backend & Protocols',
   ];
 
-  const filteredTags = tags.filter((tag) => {
+  const safeTags = Array.isArray(tags) ? tags : defaultCuratedTags;
+  const filteredTags = safeTags.filter((tag) => {
     const matchesSearch =
-      tag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tag.slug.toLowerCase().includes(searchQuery.toLowerCase());
+      (tag?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (tag?.slug || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesDomain =
-      selectedDomain === 'all' || tag.domain === selectedDomain;
+      selectedDomain === 'all' || tag?.domain === selectedDomain;
     return matchesSearch && matchesDomain;
   });
 

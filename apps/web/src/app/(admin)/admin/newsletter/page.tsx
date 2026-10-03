@@ -106,11 +106,18 @@ export default function AdminNewsletterPage() {
         })),
       ]);
 
-      const items = Array.isArray(subsRes) ? subsRes : subsRes?.items || [];
+      const items = Array.isArray(subsRes)
+        ? subsRes
+        : Array.isArray(subsRes?.items)
+          ? subsRes.items
+          : Array.isArray(subsRes?.data)
+            ? subsRes.data
+            : [];
       setSubscribers(items);
       setStats(statsRes);
     } catch (err) {
       console.error('Failed to load newsletter data:', err);
+      setSubscribers([]);
     } finally {
       setIsLoading(false);
     }
@@ -120,8 +127,9 @@ export default function AdminNewsletterPage() {
     loadData();
   }, [loadData]);
 
-  const filtered = subscribers.filter((s) =>
-    s.email.toLowerCase().includes(search.toLowerCase()),
+  const safeSubscribers = Array.isArray(subscribers) ? subscribers : [];
+  const filtered = safeSubscribers.filter((s) =>
+    (s.email || '').toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleExport = () => {

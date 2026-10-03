@@ -80,8 +80,15 @@ export default function AdminGuestPostsQueuePage() {
   const loadQueue = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await guestPostsApi.getModerationQueue({ status: selectedStatus });
-      setQueue(Array.isArray(data) ? data : []);
+      const data: any = await guestPostsApi.getModerationQueue({ status: selectedStatus });
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+          ? data.items
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+      setQueue(items);
     } catch (err) {
       console.error('Failed to load guest posts queue:', err);
       setQueue([]);
@@ -94,9 +101,10 @@ export default function AdminGuestPostsQueuePage() {
     loadQueue();
   }, [loadQueue]);
 
-  const filtered = queue.filter((item) => {
+  const safeQueue = Array.isArray(queue) ? queue : [];
+  const filtered = safeQueue.filter((item) => {
     if (selectedStatus === 'ALL') return true;
-    return item.status === selectedStatus;
+    return item?.status === selectedStatus;
   });
 
   const handleModerate = async (id: string, action: 'APPROVE' | 'REQUEST_CHANGES' | 'REJECT') => {
