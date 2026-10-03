@@ -22,13 +22,22 @@ export class AdsService implements OnModuleInit {
       // 1. Seed standard placement slots
       const defaultSlots = [
         {
+          name: 'Home Top Leaderboard Banner',
+          slug: 'home-top-banner',
+          network: 'GOOGLE_ADSENSE',
+          status: 'ACTIVE',
+          format: 'RESPONSIVE',
+          slotId: '1092837466',
+          order: 1,
+        },
+        {
           name: 'Article Top Leaderboard',
           slug: 'article-header',
           network: 'GOOGLE_ADSENSE',
           status: 'ACTIVE',
           format: 'RESPONSIVE',
           slotId: '1092837465',
-          order: 1,
+          order: 2,
         },
         {
           name: 'Article Sticky Sidebar',
@@ -36,7 +45,7 @@ export class AdsService implements OnModuleInit {
           network: 'CARBON_ADS',
           status: 'ACTIVE',
           format: 'RECTANGLE_300x250',
-          order: 2,
+          order: 3,
         },
         {
           name: 'In-Article Native Break',
@@ -45,7 +54,18 @@ export class AdsService implements OnModuleInit {
           status: 'ACTIVE',
           format: 'IN_ARTICLE',
           slotId: '5647382910',
-          order: 3,
+          order: 4,
+        },
+        {
+          name: 'Home Mid-Feed Sponsor Banner',
+          slug: 'home-mid-feed',
+          network: 'CUSTOM_IMAGE',
+          status: 'ACTIVE',
+          format: 'BANNER_728x90',
+          customImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=728&h=90&fit=crop&q=80',
+          customUrl: 'https://nexusnation.in',
+          customAlt: 'Explore Next-Gen Distributed Architecture',
+          order: 5,
         },
         {
           name: 'Global Footer Sponsor Banner',
@@ -56,7 +76,7 @@ export class AdsService implements OnModuleInit {
           customImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=728&h=90&fit=crop&q=80',
           customUrl: 'https://nexusnation.in',
           customAlt: 'Build High-Scale Distributed Systems with NexusBlog',
-          order: 4,
+          order: 6,
         },
       ];
 

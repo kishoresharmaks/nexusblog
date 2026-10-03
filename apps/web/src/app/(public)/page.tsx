@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 import { IconRenderer } from '@/components/common/icon-renderer';
+import { HomeTopAd, HomeFeedAd } from '@/components/ads/in-article-ad';
 
 export const revalidate = 60; // ISR cache for 60 seconds
 
@@ -164,6 +165,9 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Top Home Leaderboard / Sponsor Ad Placement */}
+      <HomeTopAd />
+
       {/* Featured Articles Section */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6">
         <div className="flex items-center justify-between mb-5 sm:mb-6">
@@ -204,6 +208,9 @@ export default async function HomePage() {
         categories={categories}
         articles={allArticles}
       />
+
+      {/* Mid-Feed In-Between Banner Ad Placement */}
+      <HomeFeedAd />
 
       {/* Architecture Topics Grid */}
       <section className="container mx-auto max-w-7xl px-4 sm:px-6">

@@ -54,3 +54,29 @@ export function FooterAd() {
     </div>
   );
 }
+
+export function HomeTopAd() {
+  return (
+    <div className="container mx-auto max-w-7xl px-4 sm:px-6 my-6">
+      <AdSlot
+        placementSlug="home-top-banner"
+        label="Featured Partner"
+        minHeight={90}
+        className="shadow-2xs"
+      />
+    </div>
+  );
+}
+
+export function HomeFeedAd() {
+  return (
+    <div className="container mx-auto max-w-7xl px-4 sm:px-6 my-8">
+      <AdSlot
+        placementSlug="home-mid-feed"
+        label="Sponsored Break"
+        minHeight={90}
+        className="shadow-2xs"
+      />
+    </div>
+  );
+}
