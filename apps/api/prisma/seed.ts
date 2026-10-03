@@ -121,7 +121,11 @@ async function main() {
   const userMap: Record<string, string> = {};
 
   for (const u of usersData) {
-    const existing = await prisma.user.findUnique({ where: { email: u.email } });
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: u.email }, { username: u.username }],
+      },
+    });
     if (!existing) {
       const created = await prisma.user.create({
         data: {
@@ -133,8 +137,21 @@ async function main() {
       userMap[u.username] = created.id;
       console.log(`✅ Seeded User: ${u.name} (@${u.username}, ${u.role})`);
     } else {
-      userMap[u.username] = existing.id;
-      console.log(`ℹ️ User exists: ${existing.email}`);
+      const updated = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name: u.name,
+          username: u.username,
+          email: u.email,
+          role: u.role,
+          bio: u.bio,
+          avatar: u.avatar,
+          website: u.website,
+          github: u.github,
+        },
+      });
+      userMap[u.username] = updated.id;
+      console.log(`ℹ️ User updated: ${updated.email} (@${updated.username})`);
     }
   }
 
@@ -372,13 +389,13 @@ async function main() {
     seriesId = existingSeries.id;
   }
 
-  // 6. Seed Technical Articles with Full MDX Content
+  // 6. Seed 10 Production-Grade Technical Articles (1 per Category)
   const articlesData = [
     {
-      title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
+      title: 'Designing a Distributed Rate Limiter with Redis and Sliding Window Counter',
       slug: 'designing-distributed-rate-limiter',
       excerpt:
-        'A deep dive into sub-millisecond sliding window counter algorithms, token buckets, and coordinating distributed rate limiting across multi-region API gateways.',
+        'A comprehensive architectural guide to building sub-millisecond distributed rate limiters using Redis sorted sets and atomic Lua scripts across multi-region API gateways.',
       categorySlug: 'system-design',
       authorUsername: 'alexdev',
       techSlugs: ['redis', 'nestjs'],
@@ -393,18 +410,18 @@ async function main() {
       bookmarksCount: 340,
       publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
       coverImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
-      seoTitle: 'Designing a Distributed Rate Limiter with Redis and Lua | NexusBlog',
-      seoDescription: 'Learn how to build sub-millisecond sliding window rate limiters with Redis and Lua scripts.',
+      seoTitle: 'Designing a Distributed Rate Limiter with Redis and Lua | NexusNation',
+      seoDescription: 'Learn how to build sub-millisecond sliding window rate limiters with Redis and Lua scripts across distributed API gateways.',
       seriesOrder: 1,
       content: `## Introduction
 
 Rate limiting is critical for protecting upstream services, preventing cascading failures, and enforcing API tier quotas. When scaling API gateways handling hundreds of thousands of concurrent requests, in-memory rate limiting on individual instances falls short because traffic is load-balanced across multiple nodes.
 
 <Callout type="tip" title="Core Objective">
-Coordinating rate limit counters across horizontally scaled NestJS instances with sub-millisecond overhead using Redis and atomic Lua scripts.
+Coordinating rate limit counters across horizontally scaled NestJS instances with sub-millisecond overhead using Redis sorted sets and atomic Lua scripts.
 </Callout>
 
-## Architecture
+## Architecture Overview
 
 \`\`\`mermaid
 sequenceDiagram
@@ -453,99 +470,123 @@ export async function acquireRateLimit(key: string, limit: number, windowMs: num
 `,
     },
     {
-      title: 'Zero-Downtime PostgreSQL Schema Migrations at Scale',
-      slug: 'zero-downtime-postgresql-migrations',
+      title: 'Clean Architecture in NestJS: Domain-Driven Design and Dependency Inversion',
+      slug: 'clean-architecture-nestjs-domain-driven-design',
       excerpt:
-        'Understanding lock queues, ACCESS EXCLUSIVE table locks, expand-contract patterns, and executing safe DDL operations on production databases under heavy concurrency.',
-      categorySlug: 'databases',
-      authorUsername: 'erostova',
-      techSlugs: ['postgresql', 'docker'],
-      tagSlugs: ['indexing', 'sharding'],
-      difficulty: DifficultyLevel.ADVANCED,
+        'Structuring enterprise TypeScript applications with hexagonal architecture, domain aggregates, repository interfaces, and decoupled business logic independent of databases and HTTP frameworks.',
+      categorySlug: 'backend-engineering',
+      authorUsername: 'nexusadmin',
+      techSlugs: ['nestjs', 'docker'],
+      tagSlugs: ['microservices', 'caching'],
+      difficulty: DifficultyLevel.INTERMEDIATE,
       type: ArticleType.DEEP_DIVE,
       status: ArticleStatus.PUBLISHED,
       featured: true,
-      readingTime: 9,
-      viewsCount: 22400,
-      likesCount: 430,
-      bookmarksCount: 512,
-      publishedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
-      coverImage: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=1200&auto=format&fit=crop&q=80',
-      seoTitle: 'Zero-Downtime PostgreSQL Schema Migrations | NexusBlog',
-      seoDescription: 'Master safe lock-free DDL migrations in PostgreSQL for high-traffic applications.',
+      readingTime: 10,
+      viewsCount: 18900,
+      likesCount: 312,
+      bookmarksCount: 420,
+      publishedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+      coverImage: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&auto=format&fit=crop&q=80',
+      seoTitle: 'Clean Architecture in NestJS with Domain-Driven Design | NexusNation',
+      seoDescription: 'Master hexagonal clean architecture, domain aggregates, and repository patterns in enterprise NestJS projects.',
       seriesOrder: 2,
       content: `## Introduction
 
-Performing schema migrations on a PostgreSQL database with hundreds of millions of records and thousands of write transactions per second requires strict avoidance of blocking table locks.
+As enterprise applications grow, mixing HTTP controllers, ORM entities, and business logic leads to tightly coupled spaghetti code. Clean Architecture isolates core business logic from frameworks, databases, and third-party APIs.
 
-<Callout type="danger" title="The Dangerous Lock Queue">
-Even a simple \`ALTER TABLE ADD COLUMN ... DEFAULT ...\` or \`CREATE INDEX\` can acquire an \`ACCESS EXCLUSIVE\` lock. If a long-running read query is currently active, the migration query gets blocked in the lock queue—subsequently blocking all succeeding SELECT, INSERT, and UPDATE queries!
+<Callout type="tip" title="The Dependency Rule">
+Source code dependencies must point inward. Core Domain entities know nothing about NestJS, Prisma, or Express.
 </Callout>
 
-## The Expand and Contract Pattern
-
-To avoid locking tables and breaking running application instances during rolling deployments, we utilize the phased **Expand-Contract (Parallel Run)** strategy:
+## Layered Hexagonal Topology
 
 \`\`\`mermaid
-stateDiagram-v2
-    [*] --> Phase1_Expand: Add nullable column or index CONCURRENTLY
-    Phase1_Expand --> Phase2_DualWrite: Deploy App v2 (Writes to both old and new columns)
-    Phase2_DualWrite --> Phase3_Backfill: Asynchronous batch backfill historical rows
-    Phase3_Backfill --> Phase4_Contract: Deploy App v3 (Reads only new column)
-    Phase4_Contract --> Phase5_Cleanup: Drop deprecated old column asynchronously
-    Phase5_Cleanup --> [*]
+flowchart TD
+    subgraph Infrastructure Layer
+      HTTP[NestJS Controllers]
+      DB[Prisma / PostgreSQL Adapter]
+      RedisCache[Redis Cache Adapter]
+    end
+
+    subgraph Application Layer
+      UseCases[CreateOrderUseCase / Commands]
+      Ports[IOrderRepository Interface]
+    end
+
+    subgraph Domain Core
+      Aggregate[Order Aggregate Entity]
+      ValueObjects[Money / OrderStatus]
+      DomainEvents[OrderCreatedEvent]
+    end
+
+    HTTP --> UseCases
+    UseCases --> Ports
+    DB -.->|Implements| Ports
+    UseCases --> Aggregate
+    Aggregate --> ValueObjects
 \`\`\`
 
-## Safe vs Dangerous PostgreSQL DDL Commands
+## Domain Entity Aggregate Implementation
+
+\`\`\`typescript
+export class Order {
+  private constructor(
+    private readonly id: string,
+    private readonly customerId: string,
+    private status: 'PENDING' | 'CONFIRMED' | 'CANCELLED',
+    private items: OrderItem[],
+    private totalAmount: number,
+  ) {}
+
+  public static create(customerId: string, items: OrderItem[]): Order {
+    if (items.length === 0) {
+      throw new Error('An order must contain at least one item.');
+    }
+    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return new Order(crypto.randomUUID(), customerId, 'PENDING', items, total);
+  }
+
+  public confirm(): void {
+    if (this.status !== 'PENDING') {
+      throw new Error('Only pending orders can be confirmed.');
+    }
+    this.status = 'CONFIRMED';
+  }
+}
+\`\`\`
 
 <Benchmark
-  title="Lock Duration & Impact on 50M Row Table"
-  description="Comparison of traditional vs non-blocking migration patterns."
+  title="Refactoring & Testing Efficiency"
+  description="Measured across 45 microservices migrated to Clean Architecture."
   metrics={[
-    { label: "Standard CREATE INDEX", value: "48s table lock", change: "100% blocked queries", trend: "down" },
-    { label: "CREATE INDEX CONCURRENTLY", value: "0ms table lock", change: "Zero read/write blocking", trend: "up" },
-    { label: "Lock Timeout Guard", value: "2000ms max", change: "Instant abort on lock wait", trend: "up" }
+    { label: "Unit Test Execution", value: "320ms", change: "Pure in-memory domain tests", trend: "up" },
+    { label: "Database Decoupling", value: "100%", change: "Zero ORM in domain models", trend: "up" },
+    { label: "Maintainability Index", value: "94/100", change: "Strict bounded contexts", trend: "up" }
   ]}
 />
-
-## Safe DDL Script Template
-
-Always set a strict lock timeout and statement timeout before running DDL:
-
-\`\`\`sql
--- Set aggressive lock timeout to fail fast if table is busy
-SET lock_timeout = '2s';
-SET statement_timeout = '30s';
-
--- Step 1: Add new column without default
-ALTER TABLE users ADD COLUMN phone_normalized VARCHAR(32);
-
--- Step 2: Create index concurrently outside transaction block
--- Note: CONCURRENTLY cannot run inside a multi-statement transaction
-CREATE INDEX CONCURRENTLY idx_users_phone_normalized ON users(phone_normalized);
-\`\`\`
 `,
     },
     {
-      title: 'Kafka Partitioning Strategies for Zero-Data-Loss Architectures',
+      title: 'Kafka Partitioning Strategies for Zero-Data-Loss Event Streaming',
       slug: 'kafka-partitioning-zero-data-loss',
       excerpt:
-        'Guaranteed message ordering, consumer group rebalancing internals, and handling backpressure in distributed event stream pipelines.',
+        'Guaranteed message ordering, consumer group rebalancing internals, idempotent producers, and handling backpressure in high-throughput event pipelines.',
       categorySlug: 'distributed-systems',
       authorUsername: 'alexdev',
       techSlugs: ['kafka', 'docker'],
-      tagSlugs: ['event-driven', 'consensus'],
+      tagSlugs: ['event-driven', 'consensus', 'message-queue'],
       difficulty: DifficultyLevel.ADVANCED,
       type: ArticleType.SYSTEM_DESIGN,
       status: ArticleStatus.PUBLISHED,
       featured: false,
-      readingTime: 15,
+      readingTime: 14,
       viewsCount: 9800,
       likesCount: 160,
       bookmarksCount: 180,
       publishedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
       coverImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80',
-      seoTitle: 'Kafka Partitioning Strategies for Zero Data Loss | NexusBlog',
+      seoTitle: 'Kafka Partitioning Strategies for Zero Data Loss | NexusNation',
       seoDescription: 'Design resilient Kafka producer, partitioner, and consumer architectures with strict ordering.',
       seriesOrder: 3,
       content: `## Overview
@@ -610,49 +651,357 @@ export async function publishOrderEvent(orderId: string, payload: Record<string,
 `,
     },
     {
-      title: 'Benchmarking Reactive WebFlux vs Virtual Threads in Spring Boot 3.3',
-      slug: 'benchmarking-webflux-vs-virtual-threads',
+      title: 'Zero-Downtime PostgreSQL Schema Migrations at Scale',
+      slug: 'zero-downtime-postgresql-migrations',
       excerpt:
-        'Benchmarking throughput, context-switching overhead, and memory consumption of reactive WebFlux vs blocking I/O with carrier thread pin avoidance.',
-      categorySlug: 'performance',
-      authorUsername: 'marcusv',
-      techSlugs: ['spring-boot'],
-      tagSlugs: ['caching', 'microservices'],
+        'Mastering lock queues, ACCESS EXCLUSIVE prevention, expand-contract migration patterns, and safe concurrent indexing on multi-terabyte production tables.',
+      categorySlug: 'databases',
+      authorUsername: 'erostova',
+      techSlugs: ['postgresql', 'docker'],
+      tagSlugs: ['indexing', 'sharding'],
       difficulty: DifficultyLevel.ADVANCED,
       type: ArticleType.DEEP_DIVE,
-      status: ArticleStatus.DRAFT,
-      featured: false,
+      status: ArticleStatus.PUBLISHED,
+      featured: true,
       readingTime: 11,
-      viewsCount: 7600,
-      likesCount: 92,
-      bookmarksCount: 110,
-      publishedAt: null,
-      coverImage: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&auto=format&fit=crop&q=80',
-      seoTitle: 'Spring Boot Virtual Threads vs WebFlux Benchmark | NexusBlog',
-      seoDescription: 'Detailed performance analysis comparing Java 21 Project Loom virtual threads against reactive Spring WebFlux.',
-      seriesOrder: null,
+      viewsCount: 22400,
+      likesCount: 430,
+      bookmarksCount: 512,
+      publishedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000),
+      coverImage: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=1200&auto=format&fit=crop&q=80',
+      seoTitle: 'Zero-Downtime PostgreSQL Schema Migrations | NexusNation',
+      seoDescription: 'Master safe lock-free DDL migrations in PostgreSQL for high-traffic applications.',
+      seriesOrder: 4,
       content: `## Introduction
 
-With the release of Java 21 and Spring Boot 3.2+, **Virtual Threads (Project Loom)** provide lightweight concurrency without the cognitive complexity of reactive programming models like Project Reactor and RxJava.
+Performing schema migrations on a PostgreSQL database with hundreds of millions of records and thousands of write transactions per second requires strict avoidance of blocking table locks.
 
-<Callout type="info" title="The Core Question">
-Can imperative, blocking code running on virtual threads match the throughput and memory efficiency of reactive WebFlux under 50,000 concurrent websocket and HTTP connections?
+<Callout type="danger" title="The Dangerous Lock Queue">
+Even a simple \`ALTER TABLE ADD COLUMN ... DEFAULT ...\` or \`CREATE INDEX\` can acquire an \`ACCESS EXCLUSIVE\` lock. If a long-running read query is currently active, the migration query gets blocked in the lock queue—subsequently blocking all succeeding SELECT, INSERT, and UPDATE queries!
 </Callout>
 
-## Benchmark Results (50K Concurrent Requests)
+## The Expand and Contract Pattern
+
+To avoid locking tables and breaking running application instances during rolling deployments, we utilize the phased **Expand-Contract (Parallel Run)** strategy:
+
+\`\`\`mermaid
+stateDiagram-v2
+    [*] --> Phase1_Expand: Add nullable column or index CONCURRENTLY
+    Phase1_Expand --> Phase2_DualWrite: Deploy App v2 (Writes to both old and new columns)
+    Phase2_DualWrite --> Phase3_Backfill: Asynchronous batch backfill historical rows
+    Phase3_Backfill --> Phase4_Contract: Deploy App v3 (Reads only new column)
+    Phase4_Contract --> Phase5_Cleanup: Drop deprecated old column asynchronously
+    Phase5_Cleanup --> [*]
+\`\`\`
+
+## Safe vs Dangerous PostgreSQL DDL Commands
 
 <Benchmark
-  title="Virtual Threads vs Reactive WebFlux"
-  description="Measured on AWS c6i.4xlarge with 16 vCPUs and 32GB RAM under 25ms database latency."
+  title="Lock Duration & Impact on 50M Row Table"
+  description="Comparison of traditional vs non-blocking migration patterns."
   metrics={[
-    { label: "WebFlux Throughput", value: "42,800 req/s", change: "Reactive Non-Blocking", trend: "up" },
-    { label: "Virtual Threads Throughput", value: "41,950 req/s", change: "98% of WebFlux", trend: "up" },
-    { label: "p99 Latency (Virtual Threads)", value: "28.4ms", change: "Minimal jitter", trend: "neutral" },
-    { label: "Developer Cognitive Load", value: "-75% complexity", change: "Clean stack traces", trend: "up" }
+    { label: "Standard CREATE INDEX", value: "48s table lock", change: "100% blocked queries", trend: "down" },
+    { label: "CREATE INDEX CONCURRENTLY", value: "0ms table lock", change: "Zero read/write blocking", trend: "up" },
+    { label: "Lock Timeout Guard", value: "2000ms max", change: "Instant abort on lock wait", trend: "up" }
   ]}
 />
 
-## Enabling Virtual Threads in Spring Boot
+## Safe DDL Script Template
+
+Always set a strict lock timeout and statement timeout before running DDL:
+
+\`\`\`sql
+-- Set aggressive lock timeout to fail fast if table is busy
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+
+-- Step 1: Add new column without default
+ALTER TABLE users ADD COLUMN phone_normalized VARCHAR(32);
+
+-- Step 2: Create index concurrently outside transaction block
+-- Note: CONCURRENTLY cannot run inside a multi-statement transaction
+CREATE INDEX CONCURRENTLY idx_users_phone_normalized ON users(phone_normalized);
+\`\`\`
+`,
+    },
+    {
+      title: 'Building Resilient API Gateways with gRPC, REST Transcoding, and Circuit Breakers',
+      slug: 'resilient-api-gateways-grpc-rest-circuit-breakers',
+      excerpt:
+        'Bridging high-performance internal gRPC microservices with public HTTP/REST clients using protocol buffers, HTTP/2 multiplexing, and automated resilience policies.',
+      categorySlug: 'apis',
+      authorUsername: 'nexusadmin',
+      techSlugs: ['nestjs', 'redis'],
+      tagSlugs: ['microservices', 'rate-limiting'],
+      difficulty: DifficultyLevel.INTERMEDIATE,
+      type: ArticleType.TUTORIAL,
+      status: ArticleStatus.PUBLISHED,
+      featured: false,
+      readingTime: 11,
+      viewsCount: 11300,
+      likesCount: 245,
+      bookmarksCount: 290,
+      publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      coverImage: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1200&auto=format&fit=crop&q=80',
+      seoTitle: 'Resilient API Gateways with gRPC & Circuit Breakers | NexusNation',
+      seoDescription: 'Bridge internal gRPC microservices to public REST APIs with HTTP/2 multiplexing and circuit breaker patterns.',
+      seriesOrder: 5,
+      content: `## Architecture Overview
+
+Modern distributed architectures use lightweight, typed protocol buffer contracts between internal microservices over HTTP/2, while offering standard RESTful JSON interfaces to mobile and web clients.
+
+<Callout type="tip" title="Core Advantage">
+gRPC binary serialization via Protocol Buffers reduces CPU parsing overhead by up to 70% and enables multiplexed bidirectional streaming over a single TCP connection.
+</Callout>
+
+## API Gateway Routing Diagram
+
+\`\`\`mermaid
+sequenceDiagram
+    autonumber
+    Client->>Gateway: POST /api/v1/checkout (JSON over HTTP/1.1)
+    Note over Gateway: Validate JWT & Rate Limit
+    Gateway->>OrderService: CreateOrder(OrderRequest) via gRPC/HTTP2
+    OrderService-->>Gateway: OrderResponse (Protobuf Binary)
+    Gateway->>BillingService: ProcessPayment(PaymentRequest) via gRPC
+    BillingService-->>Gateway: PaymentResponse
+    Gateway-->>Client: 201 Created (JSON)
+\`\`\`
+
+## Circuit Breaker State Transition
+
+<Benchmark
+  title="gRPC vs JSON REST Ingress Throughput"
+  description="Benchmarked with 20,000 requests/sec across 4 internal services."
+  metrics={[
+    { label: "Protobuf Serialization", value: "0.18ms", change: "4.2x faster than JSON", trend: "up" },
+    { label: "Gateway p99 Latency", value: "4.1ms", change: "-55% latency", trend: "up" },
+    { label: "Circuit Breaker Tripping", value: "3 failures in 5s", change: "Automated fail-safe", trend: "neutral" }
+  ]}
+/>
+
+## NestJS gRPC Client Implementation
+
+\`\`\`typescript
+@Injectable()
+export class OrderGatewayService implements OnModuleInit {
+  private orderService!: OrderServiceClient;
+
+  constructor(@Inject('ORDER_PACKAGE') private readonly client: ClientGrpc) {}
+
+  onModuleInit() {
+    this.orderService = this.client.getService<OrderServiceClient>('OrderService');
+  }
+
+  async createOrder(data: CreateOrderDto) {
+    return firstValueFrom(
+      this.orderService.createOrder(data).pipe(
+        timeout(3000),
+        catchError((err) => {
+          throw new ServiceUnavailableException('Order service temporarily unreachable');
+        }),
+      ),
+    );
+  }
+}
+\`\`\`
+`,
+    },
+    {
+      title: 'Production Kubernetes GitOps with ArgoCD, Helm, and Automated Canary Deployments',
+      slug: 'kubernetes-gitops-argocd-helm-canary',
+      excerpt:
+        'A complete walkthrough of building declarative continuous delivery pipelines with ArgoCD, sealed secrets, progressive canary rollouts, and automatic rollbacks on error budget breach.',
+      categorySlug: 'devops',
+      authorUsername: 'alexdev',
+      techSlugs: ['kubernetes', 'docker'],
+      tagSlugs: ['cicd', 'microservices'],
+      difficulty: DifficultyLevel.ADVANCED,
+      type: ArticleType.SYSTEM_DESIGN,
+      status: ArticleStatus.PUBLISHED,
+      featured: true,
+      readingTime: 13,
+      viewsCount: 16700,
+      likesCount: 380,
+      bookmarksCount: 460,
+      publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      coverImage: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=1200&auto=format&fit=crop&q=80',
+      seoTitle: 'Production Kubernetes GitOps with ArgoCD & Canary | NexusNation',
+      seoDescription: 'Build declarative GitOps delivery pipelines with ArgoCD, Helm, and automated canary analysis on Kubernetes.',
+      seriesOrder: 6,
+      content: `## The GitOps Philosophy
+
+GitOps treats your Git repository as the single source of truth for your entire production infrastructure. Developers push code, CI builds immutable container images, and ArgoCD continuously reconciles cluster state against declarative manifests.
+
+<Callout type="tip" title="Key Benefit">
+No human operator has direct \`kubectl write\` access to production clusters. Every infrastructure change is peer-reviewed in Git with a cryptographically verifiable commit history.
+</Callout>
+
+## Progressive Delivery Pipeline
+
+\`\`\`mermaid
+flowchart LR
+    Dev[Developer Commit] -->|Pull Request| Git[Git Repository]
+    Git -->|CI Trigger| GHA[GitHub Actions / Docker Build]
+    GHA -->|Push Image| Registry[Container Registry]
+    GHA -->|Update Helm Values| GitOpsRepo[GitOps Config Repo]
+    GitOpsRepo -->|Continuous Sync| Argo[ArgoCD Controller]
+    Argo -->|10% Traffic Canary| K8s[Kubernetes Cluster]
+    K8s -->|Prometheus Metrics| Analysis[Canary Analysis]
+    Analysis -->|Success: 100%| Prod[Production Promotion]
+\`\`\`
+
+## Argo Rollout Canary Manifest
+
+\`\`\`yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: api-gateway-rollout
+spec:
+  replicas: 10
+  strategy:
+    canary:
+      steps:
+        - setWeight: 10
+        - pause: { duration: 5m }
+        - setWeight: 50
+        - pause: { duration: 10m }
+      analysis:
+        templates:
+          - templateName: success-rate-check
+        args:
+          - name: service-name
+            value: api-gateway
+\`\`\`
+
+<Benchmark
+  title="Deployment Speed & Stability"
+  description="Comparison before and after migrating 120 services to GitOps."
+  metrics={[
+    { label: "Deployment Lead Time", value: "4.2 mins", change: "-85% lead time", trend: "up" },
+    { label: "Mean Time to Recovery", value: "45 seconds", change: "-92% MTTR (Instant revert)", trend: "up" },
+    { label: "Change Failure Rate", value: "0.2%", change: "Automated canary rollback", trend: "up" }
+  ]}
+/>
+`,
+    },
+    {
+      title: 'Multi-Region Cloud Networking: Transit Gateways, VPC Peering, and Global Anycast',
+      slug: 'multi-region-cloud-networking-transit-gateways',
+      excerpt:
+        'Architecting low-latency global cloud backbones with AWS Transit Gateway, cross-region VPC peering, Cloudflare Anycast routing, and egress cost optimization.',
+      categorySlug: 'cloud',
+      authorUsername: 'erostova',
+      techSlugs: ['kubernetes', 'docker'],
+      tagSlugs: ['microservices', 'caching'],
+      difficulty: DifficultyLevel.ADVANCED,
+      type: ArticleType.SYSTEM_DESIGN,
+      status: ArticleStatus.PUBLISHED,
+      featured: false,
+      readingTime: 12,
+      viewsCount: 8900,
+      likesCount: 195,
+      bookmarksCount: 230,
+      publishedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+      coverImage: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
+      seoTitle: 'Multi-Region Cloud Networking with Transit Gateways | NexusNation',
+      seoDescription: 'Design scalable multi-region cloud networks with AWS Transit Gateway, VPC peering, and global Anycast routing.',
+      seriesOrder: 7,
+      content: `## The Multi-Region Challenge
+
+When microservices expand across multiple geographic cloud regions (e.g., \`us-east-1\`, \`eu-west-1\`, and \`ap-southeast-1\`), establishing secure, high-bandwidth, and cost-effective inter-service communication requires moving beyond point-to-point VPC peering.
+
+<Callout type="warning" title="Egress Cost Traps">
+Cross-region data transfer incurs significant ingress/egress charges. Always compress high-volume payloads (e.g. zstandard / protobuf) and keep latency-sensitive read replicas close to local edge nodes.
+</Callout>
+
+## Hub-and-Spoke Transit Architecture
+
+\`\`\`mermaid
+flowchart TD
+    subgraph Global Edge
+      User[Global User Traffic] --> Anycast[BGP Anycast Routing]
+    end
+
+    subgraph US Region (us-east-1)
+      TGW_US[Transit Gateway US]
+      VPC_App_US[Application VPC]
+      VPC_DB_US[Database VPC]
+      TGW_US --- VPC_App_US
+      TGW_US --- VPC_DB_US
+    end
+
+    subgraph EU Region (eu-west-1)
+      TGW_EU[Transit Gateway EU]
+      VPC_App_EU[Application VPC]
+      VPC_DB_EU[Database VPC]
+      TGW_EU --- VPC_App_EU
+      TGW_EU --- VPC_DB_EU
+    end
+
+    Anycast --> VPC_App_US
+    Anycast --> VPC_App_EU
+    TGW_US <-->|Encrypted Inter-Region Peering| TGW_EU
+\`\`\`
+
+## Key Network Benchmarks
+
+<Benchmark
+  title="Inter-Region Latency & Throughput"
+  description="Measured across AWS Direct Connect & Transit Gateway backbone."
+  metrics={[
+    { label: "US-East to EU-West p50", value: "68ms", change: "Dedicated fiber backbone", trend: "up" },
+    { label: "Throughput Capacity", value: "50 Gbps", change: "Scalable VPC attachments", trend: "up" },
+    { label: "Routing Table Convergence", value: "<1.5s", change: "Automated BGP failover", trend: "neutral" }
+  ]}
+/>
+`,
+    },
+    {
+      title: 'Benchmarking Java 21 Virtual Threads vs Reactive WebFlux under High Concurrency',
+      slug: 'benchmarking-virtual-threads-vs-webflux',
+      excerpt:
+        'In-depth performance benchmarking analyzing throughput, p99 latency, OS carrier thread pinning, and memory consumption under 100,000 concurrent HTTP requests.',
+      categorySlug: 'performance',
+      authorUsername: 'marcusv',
+      techSlugs: ['spring-boot', 'redis'],
+      tagSlugs: ['caching', 'microservices'],
+      difficulty: DifficultyLevel.EXPERT,
+      type: ArticleType.BENCHMARK,
+      status: ArticleStatus.PUBLISHED,
+      featured: false,
+      readingTime: 10,
+      viewsCount: 13400,
+      likesCount: 275,
+      bookmarksCount: 310,
+      publishedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000),
+      coverImage: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&auto=format&fit=crop&q=80',
+      seoTitle: 'Java 21 Virtual Threads vs Reactive WebFlux Benchmark | NexusNation',
+      seoDescription: 'Comprehensive performance benchmark comparing Spring Boot virtual threads against reactive Spring WebFlux.',
+      seriesOrder: 8,
+      content: `## Introduction
+
+With Java 21 and Spring Boot 3.2+, **Virtual Threads (Project Loom)** provide lightweight concurrency without the cognitive complexity of reactive programming models like Project Reactor and RxJava.
+
+<Callout type="info" title="The Core Question">
+Can straightforward imperative blocking code running on virtual threads match the throughput and memory efficiency of reactive WebFlux under 100,000 concurrent connections?
+</Callout>
+
+## Benchmark Results (100K Concurrent Requests)
+
+<Benchmark
+  title="Virtual Threads vs Reactive WebFlux"
+  description="Measured on AWS c6i.4xlarge (16 vCPUs, 32GB RAM) with 25ms simulated I/O delay."
+  metrics={[
+    { label: "WebFlux Throughput", value: "48,200 req/s", change: "Reactive Non-Blocking", trend: "up" },
+    { label: "Virtual Threads Throughput", value: "47,850 req/s", change: "99.2% of WebFlux", trend: "up" },
+    { label: "p99 Latency (Virtual Threads)", value: "27.1ms", change: "Minimal jitter", trend: "neutral" },
+    { label: "Developer Cognitive Load", value: "-75% complexity", change: "Standard stack traces", trend: "up" }
+  ]}
+/>
+
+## Enabling Virtual Threads in Spring Boot 3.3
 
 \`\`\`yaml
 # application.yml
@@ -663,14 +1012,172 @@ spring:
 server:
   tomcat:
     threads:
-      max: 200 # Serves as upper bound on carrier platform threads
+      max: 200 # Upper bound on carrier OS platform threads
 \`\`\`
 
 ## Avoiding Carrier Thread Pinning
 
 <Callout type="warning" title="Avoid Synchronized Blocks">
-Avoid \`synchronized\` methods or blocks around blocking I/O operations as this pins the virtual thread to its underlying OS carrier thread. Migrate to \`java.util.concurrent.locks.ReentrantLock\` instead.
+Avoid \`synchronized\` methods or blocks around blocking I/O operations because this pins the virtual thread to its underlying OS carrier thread. Migrate to \`java.util.concurrent.locks.ReentrantLock\` instead.
 </Callout>
+`,
+    },
+    {
+      title: 'End-to-End Distributed Tracing with OpenTelemetry, Jaeger, and Prometheus',
+      slug: 'opentelemetry-distributed-tracing-jaeger-prometheus',
+      excerpt:
+        'Instrumenting microservices with OpenTelemetry auto-instrumentation, W3C tracecontext propagation, structured JSON logging, and RED metric dashboards.',
+      categorySlug: 'observability',
+      authorUsername: 'nexusadmin',
+      techSlugs: ['nestjs', 'docker'],
+      tagSlugs: ['microservices', 'event-driven'],
+      difficulty: DifficultyLevel.INTERMEDIATE,
+      type: ArticleType.DEEP_DIVE,
+      status: ArticleStatus.PUBLISHED,
+      featured: false,
+      readingTime: 11,
+      viewsCount: 10200,
+      likesCount: 220,
+      bookmarksCount: 280,
+      publishedAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000),
+      coverImage: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=1200&auto=format&fit=crop&q=80',
+      seoTitle: 'Distributed Tracing with OpenTelemetry & Jaeger | NexusNation',
+      seoDescription: 'Instrument microservices with OpenTelemetry, W3C trace context, Jaeger tracing, and Prometheus metrics.',
+      seriesOrder: 9,
+      content: `## The Three Pillars of Observability
+
+Modern microservices require unified telemetry: **Metrics** for detection, **Logs** for context, and **Distributed Traces** for root-cause latency analysis across asynchronous boundaries.
+
+<Callout type="tip" title="OpenTelemetry Standard">
+OpenTelemetry (OTel) provides a vendor-neutral standard for collecting and exporting traces, metrics, and logs with zero lock-in.
+</Callout>
+
+## W3C Trace Context Propagation
+
+\`\`\`mermaid
+sequenceDiagram
+    autonumber
+    Client->>Gateway: GET /api/v1/users/42
+    Note over Gateway: Injects traceparent: 00-4bf92f3577b34da6-00f067aa0ba902b7-01
+    Gateway->>UserService: HTTP GET /internal/users/42
+    UserService->>Kafka: Publish UserAccessedEvent
+    Kafka->>AnalyticsWorker: Consume Event (Preserves Traceparent)
+    AnalyticsWorker->>Database: UPDATE analytics SET count = count + 1
+\`\`\`
+
+## OpenTelemetry Node.js SDK Setup
+
+\`\`\`typescript
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+
+const sdk = new NodeSDK({
+  traceExporter: new OTLPTraceExporter({
+    url: 'http://otel-collector:4318/v1/traces',
+  }),
+  instrumentations: [getNodeAutoInstrumentations()],
+});
+
+sdk.start();
+\`\`\`
+
+<Benchmark
+  title="Telemetry Performance Overhead"
+  description="Measured across 50,000 HTTP requests per second."
+  metrics={[
+    { label: "CPU Overhead", value: "<1.2%", change: "Negligible impact", trend: "up" },
+    { label: "Memory Consumption", value: "34MB", change: "Efficient buffering", trend: "neutral" },
+    { label: "Mean Time to Detect (MTTD)", value: "2.1 mins", change: "-70% incident time", trend: "up" }
+  ]}
+/>
+`,
+    },
+    {
+      title: 'Building Production-Grade RAG Pipelines with Vector Embeddings and Hybrid Search',
+      slug: 'production-grade-rag-vector-embeddings-hybrid-search',
+      excerpt:
+        'Architecting high-accuracy Retrieval-Augmented Generation systems using chunking strategies, dense vector embeddings, BM25 sparse keyword ranking, and reciprocal rank fusion.',
+      categorySlug: 'ai-engineering',
+      authorUsername: 'alexdev',
+      techSlugs: ['redis', 'postgresql', 'nestjs'],
+      tagSlugs: ['caching', 'indexing'],
+      difficulty: DifficultyLevel.ADVANCED,
+      type: ArticleType.SYSTEM_DESIGN,
+      status: ArticleStatus.PUBLISHED,
+      featured: true,
+      readingTime: 15,
+      viewsCount: 27800,
+      likesCount: 620,
+      bookmarksCount: 780,
+      publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      coverImage: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=1200&auto=format&fit=crop&q=80',
+      seoTitle: 'Production-Grade RAG Pipelines with Hybrid Search | NexusNation',
+      seoDescription: 'Build high-accuracy RAG AI architectures with dense vector embeddings, BM25 sparse keyword ranking, and reciprocal rank fusion.',
+      seriesOrder: 10,
+      content: `## Why Pure Vector Search Fails in Production
+
+Pure semantic vector search struggles with exact keyword queries (like part numbers, error codes, and technical identifiers). **Hybrid Search** combines semantic embedding similarity with BM25 sparse keyword ranking to achieve superior retrieval accuracy.
+
+<Callout type="tip" title="Hybrid Retrieval Formula">
+Combining dense vectors (HNSW index) with sparse text indices (BM25) via **Reciprocal Rank Fusion (RRF)** prevents both semantic drift and exact-match misses.
+</Callout>
+
+## Hybrid RAG Architecture
+
+\`\`\`mermaid
+flowchart TD
+    UserQuery[User Natural Language Query] --> Embedder[Embedding Model / text-embedding-3-small]
+    UserQuery --> KeywordTokenizer[BM25 Query Tokenizer]
+    
+    Embedder -->|Dense 1536d Vector| VectorDB[Vector Search / Cosine Similarity]
+    KeywordTokenizer -->|Sparse Keywords| TextDB[PostgreSQL Full-Text Search / BM25]
+    
+    VectorDB --> TopK_Dense[Top 20 Dense Results]
+    TextDB --> TopK_Sparse[Top 20 Sparse Results]
+    
+    TopK_Dense --> RRF[Reciprocal Rank Fusion RRF]
+    TopK_Sparse --> RRF
+    
+    RRF --> ReRanker[Cross-Encoder Re-ranker]
+    ReRanker --> Context[Top 5 Grounded Documents]
+    Context --> LLM[LLM Generation Engine]
+    LLM --> Answer[Grounded, Factual Response]
+\`\`\`
+
+## Reciprocal Rank Fusion (RRF) Implementation
+
+\`\`\`typescript
+export function reciprocalRankFusion(
+  denseResults: { id: string; score: number }[],
+  sparseResults: { id: string; score: number }[],
+  k = 60,
+): { id: string; rrfScore: number }[] {
+  const scoreMap = new Map<string, number>();
+
+  denseResults.forEach((doc, rank) => {
+    scoreMap.set(doc.id, (scoreMap.get(doc.id) || 0) + 1 / (k + rank + 1));
+  });
+
+  sparseResults.forEach((doc, rank) => {
+    scoreMap.set(doc.id, (scoreMap.get(doc.id) || 0) + 1 / (k + rank + 1));
+  });
+
+  return Array.from(scoreMap.entries())
+    .map(([id, rrfScore]) => ({ id, rrfScore }))
+    .sort((a, b) => b.rrfScore - a.rrfScore);
+}
+\`\`\`
+
+<Benchmark
+  title="Hybrid Search vs Pure Vector Recall"
+  description="Evaluated on 100,000 technical documentation chunks with ground truth QA pairs."
+  metrics={[
+    { label: "Hybrid Search Recall@5", value: "89.4%", change: "+25.2% recall", trend: "up" },
+    { label: "Pure Vector Recall@5", value: "64.2%", change: "Misses technical IDs", trend: "down" },
+    { label: "Hallucination Rate", value: "1.4%", change: "-82% hallucination", trend: "up" }
+  ]}
+/>
 `,
     },
   ];
@@ -717,10 +1224,34 @@ Avoid \`synchronized\` methods or blocks around blocking I/O operations as this 
         },
       });
       createdArticles.push(created);
-      console.log(`✅ Seeded Article: ${created.title} (${created.status})`);
+      console.log(`✅ Seeded Article: ${created.title} (${created.status}) [${art.categorySlug}]`);
     } else {
-      createdArticles.push(existing);
-      console.log(`ℹ️ Article exists: ${existing.title}`);
+      const updated = await prisma.article.update({
+        where: { id: existing.id },
+        data: {
+          title: art.title,
+          excerpt: art.excerpt,
+          content: art.content,
+          coverImage: art.coverImage,
+          difficulty: art.difficulty,
+          type: art.type,
+          status: art.status,
+          featured: art.featured,
+          readingTime: art.readingTime,
+          publishedAt: existing.publishedAt || art.publishedAt,
+          seoTitle: art.seoTitle,
+          seoDescription: art.seoDescription,
+          category: { connect: { id: categoryId } },
+          technologies: {
+            set: techIds.map((id) => ({ id })),
+          },
+          tags: {
+            set: tagIds.map((id) => ({ id })),
+          },
+        },
+      });
+      createdArticles.push(updated);
+      console.log(`🔄 Updated Article: ${updated.title} (${updated.status}) [${art.categorySlug}]`);
     }
   }
 
