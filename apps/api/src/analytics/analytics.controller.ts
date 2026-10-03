@@ -16,8 +16,10 @@ export class AnalyticsController {
     @Body() dto: CollectEventDto,
     @Ip() ip: string,
     @Headers('user-agent') userAgent: string,
+    @Headers('cf-ipcountry') cfCountry?: string,
+    @Headers('x-vercel-ip-country') vercelCountry?: string,
   ) {
-    return this.analyticsService.collectEvent(dto, ip, userAgent);
+    return this.analyticsService.collectEvent(dto, ip, userAgent, cfCountry || vercelCountry);
   }
 
   @Post('search-query')

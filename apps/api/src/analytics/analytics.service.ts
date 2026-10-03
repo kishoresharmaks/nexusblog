@@ -23,11 +23,23 @@ export class AnalyticsService {
   /**
    * 1. Collect non-blocking telemetry events from client beacon
    */
-  async collectEvent(dto: CollectEventDto, ip?: string, userAgent?: string) {
+  async collectEvent(dto: CollectEventDto, ip?: string, userAgent?: string, cfCountry?: string) {
     try {
       const parsedOs = dto.os || this.detectOs(userAgent);
       const parsedBrowser = dto.browser || this.detectBrowser(userAgent);
       const parsedDevice = dto.device || this.detectDevice(userAgent);
+      const resolvedCountry = dto.country || cfCountry || null;
+      let resolvedCountryName = dto.countryName || null;
+      if (resolvedCountry && !resolvedCountryName) {
+        if (resolvedCountry === 'IN') resolvedCountryName = 'India';
+        else if (resolvedCountry === 'US') resolvedCountryName = 'United States';
+        else if (resolvedCountry === 'GB') resolvedCountryName = 'United Kingdom';
+        else if (resolvedCountry === 'DE') resolvedCountryName = 'Germany';
+        else if (resolvedCountry === 'CA') resolvedCountryName = 'Canada';
+        else if (resolvedCountry === 'AU') resolvedCountryName = 'Australia';
+        else if (resolvedCountry === 'SG') resolvedCountryName = 'Singapore';
+        else resolvedCountryName = resolvedCountry;
+      }
 
       // Extract article slug if path is /articles/[slug]
       let detectedSlug = dto.articleSlug;
@@ -76,8 +88,8 @@ export class AnalyticsService {
           os: parsedOs,
           browser: parsedBrowser,
           device: parsedDevice,
-          country: dto.country || null,
-          countryName: dto.countryName || null,
+          country: resolvedCountry,
+          countryName: resolvedCountryName,
           scrollDepth: dto.scrollDepth || null,
           metadata: dto.metadata || undefined,
         },

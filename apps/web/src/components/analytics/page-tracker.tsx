@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { siteConfig } from '@nexus/config';
+import { detectClientLocation } from '@/lib/geo-utils';
 
 function getOrCreateVisitorId(): string {
   if (typeof window === 'undefined') return '';
@@ -21,10 +22,13 @@ function getOrCreateVisitorId(): string {
 function sendTelemetry(payload: Record<string, any>) {
   if (typeof window === 'undefined') return;
   try {
+    const geo = detectClientLocation();
     const data = JSON.stringify({
       visitorId: getOrCreateVisitorId(),
       referrer: document.referrer || undefined,
       screen: `${window.innerWidth}x${window.innerHeight}`,
+      country: geo.country,
+      countryName: geo.countryName,
       ...payload,
     });
 
