@@ -11,6 +11,8 @@ import { ApiRequest, ApiResponse } from './api-spec';
 import { MermaidDiagram } from './mermaid-diagram';
 import { InteractiveDiagram } from './interactive-diagram';
 import { KaTeX } from './katex-math';
+import { AdSlot } from '../ads/ad-slot';
+import { InArticleAd } from '../ads/in-article-ad';
 
 import { normalizeMediaUrl } from '@nexus/config';
 
@@ -29,6 +31,9 @@ export const mdxComponents = {
   ArchitectureDiagram: MermaidDiagram,
   InteractiveDiagram,
   KaTeX,
+  AdSlot,
+  InArticleAd,
+  SponsorBreak: InArticleAd,
 
   // HTML overrides for technical typography
   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (

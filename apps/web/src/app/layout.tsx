@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { QueryProvider } from '@/components/query-provider';
 import { AuthProvider } from '@/context/auth-context';
 import { PageTracker } from '@/components/analytics/page-tracker';
+import { GoogleAdSenseScript } from '@/components/ads/google-adsense-script';
 import { Toaster } from 'sonner';
 import { siteConfig } from '@nexus/config';
 
@@ -73,6 +74,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthProvider>
+              <GoogleAdSenseScript />
               <Suspense fallback={null}>
                 <PageTracker />
               </Suspense>

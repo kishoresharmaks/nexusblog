@@ -25,6 +25,7 @@ import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { PagesModule } from './pages/pages.module';
 import { OgModule } from './og/og.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AdsModule } from './ads/ads.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 
 @Module({
@@ -79,6 +80,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     PagesModule,
     OgModule,
     AnalyticsModule,
+    AdsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

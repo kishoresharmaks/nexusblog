@@ -503,3 +503,79 @@ model SearchQueryLog {
   @@map("search_query_logs")
 }
 
+enum AdNetwork {
+  GOOGLE_ADSENSE
+  CARBON_ADS
+  ETHICAL_ADS
+  CUSTOM_HTML
+  CUSTOM_IMAGE
+}
+
+enum AdFormat {
+  RESPONSIVE
+  BANNER_728x90
+  RECTANGLE_300x250
+  SKYSCRAPER_160x600
+  IN_ARTICLE
+  IN_FEED
+  AUTO
+}
+
+enum AdStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+model AdPlacement {
+  id                  String     @id @default(auto()) @map("_id") @db.ObjectId
+  name                String
+  slug                String     @unique
+  network             AdNetwork  @default(GOOGLE_ADSENSE)
+  status              AdStatus   @default(ACTIVE)
+  format              AdFormat   @default(RESPONSIVE)
+  slotId              String?
+  clientOrPublisherId String?
+  customHtml          String?
+  customImage         String?
+  customUrl           String?
+  customAlt           String?
+  excludePaths        String[]   @default([])
+  impressionsCount    Int        @default(0)
+  clicksCount         Int        @default(0)
+  order               Int        @default(0)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  impressions         AdImpressionLog[]
+  clicks              AdClickLog[]
+
+  @@map("ad_placements")
+}
+
+model AdImpressionLog {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  placementId  String      @db.ObjectId
+  placement    AdPlacement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+  visitorId    String?
+  path         String?
+  timestamp    DateTime    @default(now())
+
+  @@index([placementId, timestamp])
+  @@index([timestamp])
+  @@map("ad_impression_logs")
+}
+
+model AdClickLog {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  placementId  String      @db.ObjectId
+  placement    AdPlacement @relation(fields: [placementId], references: [id], onDelete: Cascade)
+  visitorId    String?
+  path         String?
+  timestamp    DateTime    @default(now())
+
+  @@index([placementId, timestamp])
+  @@index([timestamp])
+  @@map("ad_click_logs")
+}
+

@@ -826,5 +826,82 @@ export const analyticsApi = {
   },
 };
 
+// Ad Monetization & Network Management API
+export const adsApi = {
+  // Public
+  async getPublicConfig() {
+    return request<{
+      globalEnabled: boolean;
+      hideForLoggedIn: boolean;
+      googleAdsense: {
+        enabled: boolean;
+        clientId: string;
+        autoAds: boolean;
+      };
+      carbon: {
+        enabled: boolean;
+        serveId: string;
+        placement: string;
+      };
+      ethicalAds: {
+        enabled: boolean;
+        publisherId: string;
+      };
+    }>('/ads/public/config', {}, false);
+  },
+  async getPublicPlacements() {
+    return request<any[]>('/ads/public/placements', {}, false);
+  },
+  async trackImpression(placementSlug: string, visitorId?: string, path?: string) {
+    return request<any>('/ads/public/track-impression', {
+      method: 'POST',
+      body: JSON.stringify({ placementSlug, visitorId, path }),
+    }, false);
+  },
+  async trackClick(placementSlug: string, visitorId?: string, path?: string) {
+    return request<any>('/ads/public/track-click', {
+      method: 'POST',
+      body: JSON.stringify({ placementSlug, visitorId, path }),
+    }, false);
+  },
+
+  // Admin
+  async getAdminPlacements() {
+    return request<any[]>('/ads/admin/placements', {}, true);
+  },
+  async createPlacement(payload: any) {
+    return request<any>('/ads/admin/placements', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async updatePlacement(id: string, payload: any) {
+    return request<any>(`/ads/admin/placements/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async deletePlacement(id: string) {
+    return request<any>(`/ads/admin/placements/${id}`, {
+      method: 'DELETE',
+    }, true);
+  },
+  async getAdminConfig() {
+    return request<Record<string, any>>('/ads/admin/config', {}, true);
+  },
+  async updateAdminConfig(payload: Record<string, any>) {
+    return request<any>('/ads/admin/config', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async updateAdsTxt(ads_txt_content: string) {
+    return request<any>('/ads/admin/ads-txt', {
+      method: 'PUT',
+      body: JSON.stringify({ ads_txt_content }),
+    }, true);
+  },
+};
+
 
 

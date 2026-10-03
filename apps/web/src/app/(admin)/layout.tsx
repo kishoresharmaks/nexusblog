@@ -41,6 +41,7 @@ import {
   Home,
   PanelLeftClose,
   PanelLeftOpen,
+  DollarSign,
 } from 'lucide-react';
 
 interface NavGroup {
@@ -84,6 +85,7 @@ const ADMIN_NAV_GROUPS: NavGroup[] = [
   {
     label: 'Platform & Operations',
     items: [
+      { name: 'Ad Monetization', href: '/admin/ads', icon: DollarSign },
       { name: 'Staff & User Directory', href: '/admin/users', icon: Users },
       { name: 'Media Library', href: '/admin/media', icon: ImageIcon },
       { name: 'Newsletter & Dispatch', href: '/admin/newsletter', icon: Mail },

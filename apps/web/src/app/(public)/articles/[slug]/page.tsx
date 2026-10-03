@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ArticleJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld';
+import { HeaderAd, SidebarAd, FooterAd } from '@/components/ads/in-article-ad';
 
 export const revalidate = 60;
 
@@ -384,9 +385,11 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         </div>
       </div>
 
+      {/* Top Header Ad Placement */}
+      <HeaderAd />
 
       {/* 3-Column Reading Layout */}
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 pt-10">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Left Column: Sticky Table of Contents (Desktop) */}
           <aside className="hidden lg:block lg:col-span-3">
@@ -764,6 +767,9 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 </div>
               </div>
 
+              {/* Sticky Sidebar Ad Placement */}
+              <SidebarAd />
+
               {/* Newsletter CTA Box */}
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2.5 font-sans">
                 <span className="text-xs font-bold text-foreground flex items-center gap-1.5 font-mono">
@@ -784,6 +790,9 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
           </aside>
         </div>
       </div>
+
+      {/* Footer Ad Placement */}
+      <FooterAd />
     </div>
   );
 }
