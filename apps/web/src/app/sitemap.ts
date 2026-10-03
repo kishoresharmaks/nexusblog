@@ -90,6 +90,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/case-studies`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/tags`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
@@ -100,6 +106,49 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,
+    },
+    // Legal & Policy Information Pages
+    {
+      url: `${baseUrl}/privacy-policy`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/terms-of-service`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/disclaimer`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/content-policy`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/cookie-policy`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/author-guidelines`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
     },
   ];
 
@@ -156,5 +205,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
   }
 
-  return [...staticRoutes, ...categoryRoutes, ...techRoutes, ...articleRoutes];
+  // Dynamic CMS Pages (Legal, custom policy pages, etc.)
+  let cmsPageRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const pagesRes = await fetch(`${siteConfig.apiUrl}/pages`, {
+      next: { revalidate: 300 },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (pagesRes.ok) {
+      const pData = await pagesRes.json();
+      const pageList = Array.isArray(pData?.data) ? pData.data : Array.isArray(pData) ? pData : [];
+      if (Array.isArray(pageList) && pageList.length > 0) {
+        cmsPageRoutes = pageList
+          .filter((pg: any) => pg.published !== false && pg.slug)
+          .map((pg: any) => {
+            const cleanSlug = pg.slug.replace(/^\//, '');
+            return {
+              url: `${baseUrl}/${cleanSlug}`,
+              lastModified: pg.updatedAt ? new Date(pg.updatedAt) : new Date(),
+              changeFrequency: 'monthly' as const,
+              priority: 0.7,
+            };
+          });
+      }
+    }
+  } catch {
+    // Fallback
+  }
+
+  // Combine and deduplicate all routes by URL
+  const allRoutes = [
+    ...staticRoutes,
+    ...categoryRoutes,
+    ...techRoutes,
+    ...articleRoutes,
+    ...cmsPageRoutes,
+  ];
+
+  const seenUrls = new Set<string>();
+  const deduplicatedRoutes: MetadataRoute.Sitemap = [];
+
+  for (const route of allRoutes) {
+    if (!seenUrls.has(route.url)) {
+      seenUrls.add(route.url);
+      deduplicatedRoutes.push(route);
+    }
+  }
+
+  return deduplicatedRoutes;
 }

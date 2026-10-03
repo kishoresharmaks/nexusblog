@@ -81,8 +81,17 @@ Allow: /articles
 Allow: /categories
 Allow: /technologies
 Allow: /series
+Allow: /case-studies
 Allow: /tags
 Allow: /write-for-us
+Allow: /privacy-policy
+Allow: /terms-of-service
+Allow: /disclaimer
+Allow: /content-policy
+Allow: /cookie-policy
+Allow: /author-guidelines
+Allow: /contact
+Allow: /pages/*
 Allow: /api/og
 Disallow: /admin
 Disallow: /admin/*
