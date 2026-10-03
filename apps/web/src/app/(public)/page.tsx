@@ -30,7 +30,7 @@ export default async function HomePage() {
 
   try {
     const [featRes, allRes] = await Promise.all([
-      articlesApi.getPublicFeed({ limit: 4, filter: 'featured' }).catch(() => null),
+      articlesApi.getPublicFeed({ limit: 6, filter: 'featured' }).catch(() => null),
       articlesApi.getPublicFeed({ limit: 50 }).catch(() => null),
     ]);
 
@@ -41,7 +41,7 @@ export default async function HomePage() {
     if (featRes && Array.isArray(featRes.items) && featRes.items.length > 0) {
       featuredArticles = featRes.items;
     } else {
-      featuredArticles = allArticles.slice(0, 4);
+      featuredArticles = allArticles.slice(0, 6);
     }
   } catch {
     featuredArticles = [];
@@ -184,7 +184,7 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {featuredArticles.map((article, idx) => (
             <ArticleCard
               key={article.id}

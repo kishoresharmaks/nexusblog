@@ -223,7 +223,7 @@ export function CategoryArticlesSection({
       <div key={selectedCategory} className="animate-fade-in-scale">
         {displayedArticles.length > 0 ? (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
               {displayedArticles.map((article) => (
                 <ArticleCard
                   key={article.id}
