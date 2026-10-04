@@ -21,7 +21,8 @@ import {
   ThumbsUp,
 } from 'lucide-react';
 import { ArticleCard, ArticleCardItem } from './article-card';
-import { articlesApi, analyticsApi } from '@/lib/api-client';
+import { articlesApi } from '@/lib/api-client';
+import { logSearchTelemetry } from '@/lib/search-telemetry';
 
 interface CategoryItem {
   id?: string;
@@ -143,9 +144,9 @@ export function ArticlesFeed({
       setArticles(items);
       setTotalCount(res.total || items.length);
 
-      // Log telemetry for search queries
+      // Intelligent telemetry: debounces by 2.0s idle, rejects short fragments (<3 chars)
       if (debouncedSearch) {
-        analyticsApi.logSearchQuery(debouncedSearch, items.length).catch(() => {});
+        logSearchTelemetry(debouncedSearch, items.length, false);
       }
     } catch (err) {
       console.error('Failed to load articles:', err);

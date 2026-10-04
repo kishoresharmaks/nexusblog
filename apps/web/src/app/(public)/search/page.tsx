@@ -21,7 +21,8 @@ import {
   Calendar,
 } from 'lucide-react';
 import { ArticleCard } from '@/components/public/article-card';
-import { articlesApi, categoriesApi, technologiesApi, analyticsApi } from '@/lib/api-client';
+import { articlesApi, categoriesApi, technologiesApi } from '@/lib/api-client';
+import { logSearchTelemetry } from '@/lib/search-telemetry';
 
 const SUGGESTED_QUERIES = [
   'Redis',
@@ -112,7 +113,7 @@ function SearchPageContent() {
       setTotalCount(res.total || items.length);
 
       if (debouncedQuery) {
-        analyticsApi.logSearchQuery(debouncedQuery, items.length).catch(() => {});
+        logSearchTelemetry(debouncedQuery, items.length, false);
       }
     } catch (err) {
       console.error('Failed to fetch search results:', err);

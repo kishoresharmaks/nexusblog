@@ -104,19 +104,65 @@ export class AnalyticsService {
 
   /**
    * 2. Log search queries for search intelligence & zero-result gap analysis
+   * Cost-optimized: Rejects short keystroke fragments (< 3 chars) and merges
+   * progressive typing sessions from the same visitor within 30 seconds.
    */
   async logSearchQuery(dto: SearchQueryDto) {
     try {
-      if (!dto.query || dto.query.trim().length === 0) return { success: true };
+      if (!dto.query) return { success: true };
+      const query = dto.query.replace(/^#+/, '').trim().toLowerCase();
+
+      // Discard short fragments (e.g., "b", "bu") and pure noise/symbols
+      if (query.length < 3 || /^[^a-z0-9]+$/i.test(query)) {
+        return { success: true };
+      }
+
+      const resultsCount = Math.max(0, Number(dto.resultsCount) || 0);
+      const visitorId = dto.visitorId ? String(dto.visitorId).trim() : null;
+
+      // Deduplicate progressive typing from same visitor within a 30-second window
+      if (visitorId) {
+        const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
+        const recentLog = await this.prisma.searchQueryLog.findFirst({
+          where: {
+            visitorId,
+            timestamp: { gte: thirtySecondsAgo },
+          },
+          orderBy: { timestamp: 'desc' },
+        });
+
+        if (recentLog) {
+          // If the new query is a refinement or prefix/substring extension of the previous query
+          const isExtension =
+            query.startsWith(recentLog.query) ||
+            recentLog.query.startsWith(query) ||
+            query === recentLog.query;
+
+          if (isExtension) {
+            await this.prisma.searchQueryLog.update({
+              where: { id: recentLog.id },
+              data: {
+                query,
+                resultsCount,
+                timestamp: new Date(),
+              },
+            });
+            return { success: true };
+          }
+        }
+      }
+
+      // Record clean, settled search query
       await this.prisma.searchQueryLog.create({
         data: {
-          query: dto.query.trim().toLowerCase(),
-          resultsCount: dto.resultsCount || 0,
-          visitorId: dto.visitorId || null,
+          query,
+          resultsCount,
+          visitorId,
         },
       });
       return { success: true };
-    } catch {
+    } catch (err: any) {
+      this.logger.debug(`Failed to log search query: ${err.message}`);
       return { success: true };
     }
   }
@@ -494,15 +540,21 @@ export class AnalyticsService {
         }),
       ]);
 
-      const topQueries = topSearches.map((s) => ({
-        query: s.query,
-        searchesCount: s._count.query,
-      }));
+      const topQueries = topSearches
+        .filter((s) => s.query && s.query.trim().length >= 3)
+        .map((s) => ({
+          query: s.query,
+          searchesCount: s._count.query,
+        }))
+        .slice(0, 8);
 
-      const contentGaps = zeroResults.map((s) => ({
-        query: s.query,
-        missedSearchesCount: s._count.query,
-      }));
+      const contentGaps = zeroResults
+        .filter((s) => s.query && s.query.trim().length >= 3)
+        .map((s) => ({
+          query: s.query,
+          missedSearchesCount: s._count.query,
+        }))
+        .slice(0, 6);
 
       const totalSearches =
         topQueries.reduce((acc, q) => acc + q.searchesCount, 0) +

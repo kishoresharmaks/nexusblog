@@ -19,7 +19,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { siteConfig } from '@nexus/config';
-import { articlesApi, analyticsApi } from '@/lib/api-client';
+import { articlesApi } from '@/lib/api-client';
+import { logSearchTelemetry } from '@/lib/search-telemetry';
 
 interface SearchCommandProps {
   open: boolean;
@@ -93,8 +94,8 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
           const items = res.items || [];
           setResults(items);
           setTotalCount(res.total || items.length);
-          // Non-blocking telemetry log
-          analyticsApi.logSearchQuery(debouncedQuery, items.length).catch(() => {});
+          // Intelligent telemetry: logs only when user settles on a valid search term (>= 3 chars)
+          logSearchTelemetry(debouncedQuery, items.length, false);
         }
       })
       .catch((err) => {
@@ -136,10 +137,16 @@ export function SearchCommand({ open, onOpenChange }: SearchCommandProps) {
   );
 
   const handleSelectArticle = (slug: string) => {
+    if (query) {
+      logSearchTelemetry(query, results.length, true);
+    }
     runCommand(() => router.push(`/articles/${slug}`));
   };
 
   const handleViewAllResults = () => {
+    if (query) {
+      logSearchTelemetry(query, totalCount, true);
+    }
     runCommand(() => router.push(`/search?q=${encodeURIComponent(query)}`));
   };
 
