@@ -123,9 +123,9 @@ export class WeeklyDigestStrategy implements INewsletterGeneratorStrategy {
     // Intro
     const introMd =
       dto.customIntro ||
-      `Hi Engineers,\n\nWelcome to this week's **NexusBlog Engineering Dispatch**. In this edition, we break down high-scale systems architecture, distributed primitives, and real-world production engineering.`;
+      `Hi Engineers,\n\nWelcome to this week's **Nexus Engineering Newsletter**. In this edition, we break down high-scale systems architecture, production-grade retrieval algorithms, and resilient backend patterns.`;
     builder.setIntro(
-      `<p style="margin:0 0 14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">Hi Engineers,</p><p style="margin:0 0 14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">Welcome to this week's <strong>NexusBlog Engineering Dispatch</strong>. In this edition, we explore high-scale distributed systems architecture, concurrency models, and resilient backend patterns.</p>`,
+      `<p style="margin:0 0 14px 0;line-height:1.75;color:#d4d4d8;font-size:14px;">Hi Engineers,</p><p style="margin:0 0 14px 0;line-height:1.75;color:#d4d4d8;font-size:14px;">Welcome to this week's <strong>Nexus Engineering Newsletter</strong>. In this edition, we explore high-scale distributed systems architecture, concurrency primitives, and production-grade software patterns.</p>`,
       introMd,
     );
 
@@ -143,7 +143,7 @@ export class WeeklyDigestStrategy implements INewsletterGeneratorStrategy {
       authorName: hero.author?.name,
     });
 
-    // Secondary Articles
+    // Secondary Articles (3-Column Grid)
     const secondaryPayloads = secondaryList.map((art, idx) => ({
       title: art.title,
       excerpt: art.excerpt,
@@ -155,6 +155,13 @@ export class WeeklyDigestStrategy implements INewsletterGeneratorStrategy {
       difficulty: art.difficulty,
     }));
     builder.setSecondaryArticles(secondaryPayloads);
+
+    // Code Example
+    builder.setCodeSnippet(
+      `// Reciprocal Rank Fusion (RRF) for Hybrid Search\nconst rrfScore = (rank: number, k = 60): number => {\n  return 1 / (k + rank);\n};\n\nconst score = rrfScore(1);\n// Combine dense vector & keyword BM25 rankings`,
+      'TypeScript',
+      'Code Example',
+    );
 
     // Key Takeaways from hero
     const takeaways = (hero.keyTakeaways && hero.keyTakeaways.length > 0)
@@ -258,6 +265,12 @@ export class SpotlightStrategy implements INewsletterGeneratorStrategy {
       authorName: article.author?.name,
     });
 
+    builder.setCodeSnippet(
+      `// High-Throughput Stream Ingestion & Processing\nconst processBatch = async <T>(events: T[]): Promise<void> => {\n  await pipeline.flush(events, { concurrency: 16 });\n};\n\nawait processBatch(ingestionBuffer);`,
+      'TypeScript',
+      'Architecture Blueprint',
+    );
+
     if (article.keyTakeaways && article.keyTakeaways.length > 0) {
       builder.setKeyTakeaways(article.keyTakeaways);
     }
@@ -316,7 +329,7 @@ export class TrendingRoundupStrategy implements INewsletterGeneratorStrategy {
     const hero = articles[0];
     const secondary = articles.slice(1);
 
-    const subject = dto.customSubject || `Top Trending Tech Guides & System Design on NexusBlog`;
+    const subject = dto.customSubject || `Top Trending Tech Guides & System Design on Nexus`;
     const previewText = `Explore the most-read technical architecture blueprints across the developer community.`;
 
     const builder = new EmailTemplateBuilder()
@@ -324,15 +337,15 @@ export class TrendingRoundupStrategy implements INewsletterGeneratorStrategy {
       .setPreviewText(previewText)
       .setHeader({
         siteUrl,
-        siteName: 'NexusBlog',
+        siteName: 'Nexus',
         editionTag: 'Community Trends',
       });
 
     const intro =
       dto.customIntro ||
-      `Hi Engineers,\n\nHere are the top-rated and most frequently referenced system design guides on **NexusBlog** this month.`;
+      `Hi Engineers,\n\nHere are the top-rated and most frequently referenced system design guides on **Nexus** this month.`;
     builder.setIntro(
-      `<p style="margin:0 0 14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">Hi Engineers,</p><p style="margin:0 0 14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">Here are the top-rated and most frequently referenced technical architecture guides on <strong>NexusBlog</strong> across the engineering community.</p>`,
+      `<p style="margin:0 0 14px 0;line-height:1.75;color:#d4d4d8;font-size:14px;">Hi Engineers,</p><p style="margin:0 0 14px 0;line-height:1.75;color:#d4d4d8;font-size:14px;">Here are the top-rated and most frequently referenced technical architecture guides on <strong>Nexus</strong> across the engineering community.</p>`,
       intro,
     );
 
@@ -359,6 +372,12 @@ export class TrendingRoundupStrategy implements INewsletterGeneratorStrategy {
         readingTime: a.readingTime,
         difficulty: a.difficulty,
       })),
+    );
+
+    builder.setCodeSnippet(
+      `// Distributed Rate Limiting (Token Bucket)\ninterface RateLimiter {\n  consume(key: string, tokens: number): Promise<boolean>;\n}\n\nconst allowed = await limiter.consume('api:client_1', 1);`,
+      'TypeScript',
+      'Production Pattern',
     );
 
     return {

@@ -454,7 +454,7 @@ All existing active sessions across other devices and browsers have been termina
   }
 
   /**
-   * Convert Markdown to high-quality, email-client compliant responsive HTML
+   * Convert Markdown to high-quality, email-client compliant responsive HTML with dark and light theme support
    */
   markdownToEmailHtml(markdown: string, subject: string, previewText?: string): string {
     const formattedDate = new Date().toLocaleDateString('en-US', {
@@ -470,60 +470,122 @@ All existing active sessions across other devices and browsers have been termina
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       // Headers
-      .replace(/^### (.*$)/gim, '<h3 style="color:#0ea5e9;font-size:16px;margin:20px 0 8px;font-weight:700;">$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2 style="color:#f8fafc;font-size:20px;margin:24px 0 10px;font-weight:700;border-bottom:1px solid #334155;padding-bottom:6px;">$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1 style="color:#f8fafc;font-size:24px;margin:24px 0 12px;font-weight:800;">$1</h1>')
+      .replace(/^### (.*$)/gim, '<h3 style="color:#22d3ee;font-size:15px;margin:20px 0 8px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 style="color:#f4f4f5;font-size:18px;margin:24px 0 10px;font-weight:800;border-bottom:1px solid #27272a;padding-bottom:6px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 style="color:#f4f4f5;font-size:22px;margin:24px 0 12px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">$1</h1>')
       // Code blocks
-      .replace(/```([\s\S]*?)```/gm, '<pre style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;color:#38bdf8;font-family:monospace;font-size:12px;overflow-x:auto;margin:16px 0;"><code>$1</code></pre>')
+      .replace(/```([\s\S]*?)```/gm, '<pre style="background-color:#18181b;border:1px solid #27272a;border-radius:6px;padding:14px;color:#22d3ee;font-family:Consolas,\'Courier New\',monospace;font-size:12px;overflow-x:auto;margin:16px 0;line-height:1.7;"><code>$1</code></pre>')
       // Inline code
-      .replace(/`([^`]+)`/g, '<code style="background:#1e293b;border:1px solid #334155;padding:2px 6px;border-radius:4px;color:#38bdf8;font-family:monospace;font-size:12px;">$1</code>')
+      .replace(/`([^`]+)`/g, '<code style="background-color:#18181b;border:1px solid #27272a;padding:2px 6px;border-radius:4px;color:#22d3ee;font-family:Consolas,monospace;font-size:12px;">$1</code>')
       // Bold & Italic
-      .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#f8fafc;font-weight:700;">$1</strong>')
-      .replace(/\*([^*]+)\*/g, '<em style="color:#cbd5e1;">$1</em>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#f4f4f5;font-weight:700;">$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em style="color:#a1a1aa;">$1</em>')
       // Blockquotes
-      .replace(/^> (.*$)/gim, '<blockquote style="border-left:3px solid #0ea5e9;padding-left:12px;margin:16px 0;color:#94a3b8;font-style:italic;">$1</blockquote>')
+      .replace(/^> (.*$)/gim, '<blockquote style="border-left:3px solid #06b6d4;padding-left:14px;margin:16px 0;color:#a1a1aa;font-style:italic;">$1</blockquote>')
       // Bullet lists
-      .replace(/^\s*[-*]\s+(.*$)/gim, '<li style="margin:6px 0;color:#cbd5e1;">$1</li>')
+      .replace(/^\s*[-*]\s+(.*$)/gim, '<li style="margin:6px 0;color:#d4d4d8;">$1</li>')
       // Links
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#0ea5e9;text-decoration:underline;font-weight:600;" target="_blank">$1</a>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#22d3ee;text-decoration:none;font-weight:600;" target="_blank">$1 &rarr;</a>')
       // Paragraphs & line breaks
-      .replace(/\n\n/g, '</p><p style="margin:14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">')
+      .replace(/\n\n/g, '</p><p style="margin:14px 0;line-height:1.75;color:#d4d4d8;font-size:14px;">')
       .replace(/\n/g, '<br />');
 
     // Wrap list items in <ul>
     htmlContent = htmlContent.replace(/(<li.*<\/li>)/gms, '<ul style="padding-left:20px;margin:14px 0;">$1</ul>');
 
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>${subject}</title>
-</head>
-<body style="margin:0;padding:0;background-color:#090d16;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e2e8f0;">
-  <!-- Preheader text -->
-  ${previewText ? `<div style="display:none;font-size:1px;color:#090d16;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${previewText}</div>` : ''}
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    :root {
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background-color: #09090b;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+    table { border-collapse: collapse; border-spacing: 0; }
+    img { border: 0; display: block; max-width: 100%; }
+    a { text-decoration: none; }
+    .wrapper { width: 100%; background-color: #09090b; }
+    .container { width: 100%; max-width: 640px; background-color: #121215; }
+    .mobile-pad { padding: 32px; }
 
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#090d16;padding:32px 16px;">
+    @media (prefers-color-scheme: light) {
+      .wrapper { background-color: #f4f4f5 !important; }
+      .container { background-color: #ffffff !important; border-color: #e4e4e7 !important; }
+      .top-bar { background-color: #f4f4f5 !important; border-bottom-color: #e4e4e7 !important; }
+      .card-bg { background-color: #ffffff !important; border-color: #e4e4e7 !important; }
+      .heading-text { color: #09090b !important; }
+      .muted-text { color: #52525b !important; }
+      .footer-bg { background-color: #f4f4f5 !important; border-top-color: #e4e4e7 !important; }
+    }
+
+    @media screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .mobile-pad { padding: 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#09090b;">
+  ${previewText ? `<div style="display:none;font-size:1px;color:#09090b;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${previewText}</div>` : ''}
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="wrapper" style="background-color:#09090b;">
     <tr>
-      <td align="center">
-        <!-- Main Card -->
-        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:600px;background-color:#0f172a;border:1px solid #1e293b;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px -5px rgba(0,0,0,0.5);">
+      <td align="center" style="padding:24px 12px;">
+
+        <table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" class="container" style="width:100%;max-width:640px;background-color:#121215;border:1px solid #27272a;border-radius:8px;overflow:hidden;">
           
-          <!-- Header Bar -->
+          <!-- Top Bar -->
           <tr>
-            <td style="padding:28px 32px;background:linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);border-bottom:1px solid #1e293b;">
-              <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <td class="top-bar" style="padding:12px 24px;background-color:#18181b;border-bottom:1px solid #27272a;">
+              <table role="presentation" width="100%">
                 <tr>
-                  <td>
-                    <span style="font-size:20px;font-weight:900;color:#f8fafc;letter-spacing:-0.5px;font-family:monospace;">
-                      Nexus<span style="color:#0ea5e9;">Blog</span>
-                    </span>
-                    <span style="background-color:rgba(14,165,233,0.15);color:#38bdf8;border:1px solid rgba(14,165,233,0.3);font-size:10px;font-family:monospace;font-weight:700;padding:2px 8px;border-radius:6px;margin-left:8px;text-transform:uppercase;">
-                      Engineering Dispatch
-                    </span>
+                  <td style="font:12px Consolas,monospace;color:#a1a1aa;">
+                    Tech. Systems. Engineering.
                   </td>
-                  <td align="right" style="font-size:11px;color:#64748b;font-family:monospace;">
+                  <td align="right">
+                    <a href="https://nexusnation.in" target="_blank" style="font-size:12px;font-weight:bold;color:#22d3ee;text-decoration:none;">
+                      nexusnation.in &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Header -->
+          <tr>
+            <td class="mobile-pad card-bg" style="padding:24px 32px;background-color:#121215;border-bottom:1px solid #27272a;">
+              <table role="presentation" width="100%">
+                <tr>
+                  <td valign="middle">
+                    <a href="https://nexusnation.in" target="_blank" style="font-size:24px;font-weight:800;letter-spacing:4px;color:#f4f4f5;text-decoration:none;">
+                      <span style="color:#22d3ee;">N</span>EXUS
+                    </a>
+                    <div style="font-size:11px;color:#a1a1aa;margin-top:6px;">
+                      Engineering knowledge for a better internet.
+                    </div>
+                  </td>
+                  <td align="right" valign="middle" style="font-size:11px;color:#a1a1aa;font-family:Consolas,monospace;">
                     ${formattedDate}
                   </td>
                 </tr>
@@ -531,15 +593,15 @@ All existing active sessions across other devices and browsers have been termina
             </td>
           </tr>
 
-          <!-- Email Body Content -->
+          <!-- Main Content -->
           <tr>
-            <td style="padding:32px;background-color:#0f172a;">
-              <h1 style="color:#f8fafc;font-size:22px;font-weight:800;margin:0 0 16px 0;line-height:1.3;">
+            <td class="mobile-pad card-bg" style="padding:32px;background-color:#121215;">
+              <h1 class="heading-text" style="color:#f4f4f5;font-size:22px;font-weight:800;margin:0 0 16px 0;line-height:1.35;">
                 ${subject}
               </h1>
               
-              <div style="color:#cbd5e1;font-size:14px;line-height:1.7;">
-                <p style="margin:0 0 14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">
+              <div style="color:#d4d4d8;font-size:14px;line-height:1.75;">
+                <p style="margin:0 0 14px 0;line-height:1.75;color:#d4d4d8;font-size:14px;">
                   ${htmlContent}
                 </p>
               </div>
@@ -548,13 +610,16 @@ All existing active sessions across other devices and browsers have been termina
 
           <!-- Footer -->
           <tr>
-            <td style="padding:24px 32px;background-color:#090d16;border-top:1px solid #1e293b;text-align:center;">
-              <p style="margin:0 0 8px 0;font-size:12px;color:#64748b;">
-                You received this email because you subscribed to the NexusBlog Engineering Dispatch.
+            <td class="mobile-pad footer-bg" style="padding:24px 32px;background-color:#09090b;border-top:1px solid #27272a;text-align:center;">
+              <p style="font-size:18px;font-weight:bold;letter-spacing:3px;color:#f4f4f5;margin:0 0 10px;">
+                <span style="color:#22d3ee;">N</span>EXUS
               </p>
-              <p style="margin:0;font-size:11px;color:#475569;font-family:monospace;">
-                NexusNation &copy; ${new Date().getFullYear()} &bull; High-scale Technical Publishing &bull; 
-                <a href="https://nexusnation.in" style="color:#0ea5e9;text-decoration:none;">Visit Portal</a>
+              <p style="margin:0 0 10px 0;font-size:12px;color:#a1a1aa;line-height:1.6;">
+                High-performance Technical Publishing &bull; Scalable Systems Architecture
+              </p>
+              <p style="margin:0;font-size:11px;color:#71717a;font-family:Consolas,monospace;">
+                NexusNation &copy; ${new Date().getFullYear()} &bull; 
+                <a href="https://nexusnation.in" style="color:#22d3ee;text-decoration:none;">Visit Portal</a>
               </p>
             </td>
           </tr>

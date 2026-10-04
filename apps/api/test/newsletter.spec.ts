@@ -152,18 +152,19 @@ describe('Newsletter & Email Template System', () => {
       const markdown = builder.compileMarkdown();
 
       // Verify HTML fidelity
-      expect(html).toContain('NexusBlog');
+      expect(html).toContain('N</span>EXUS');
       expect(html).toContain('Weekly Dispatch');
       expect(html).toContain('Distributed Consensus with CockroachDB');
       expect(html).toContain('Zero-Copy Serialization');
-      expect(html).toContain('Architecture Takeaways');
+      expect(html).toContain('Architectural Takeaways');
       expect(html).toContain('Unsubscribe');
-      expect(html).toContain('#090d16'); // Dark theme background
-      expect(html).toContain('#0f172a'); // Card background
+      expect(html).toContain('#09090b'); // Dark theme background
+      expect(html).toContain('#121215'); // Card background
+      expect(html).toContain('#22d3ee'); // Cyan brand highlight
 
       // Verify Markdown fidelity
-      expect(markdown).toContain('## 🌟 Featured Blueprint: [Distributed Consensus with CockroachDB]');
-      expect(markdown).toContain('## 📚 Deep-Dives & Technical Guides');
+      expect(markdown).toContain('## 🌟 Featured Article: [Distributed Consensus with CockroachDB]');
+      expect(markdown).toContain('## 📚 More from Nexus');
       expect(markdown).toContain('## 💡 Key Architectural Takeaways');
     });
   });
