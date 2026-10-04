@@ -989,5 +989,42 @@ export const adsApi = {
   },
 };
 
+// URL Shortener & Link Sharing API
+export const shortenerApi = {
+  async generateShortUrl(payload: {
+    url: string;
+    articleId?: string;
+    title?: string;
+    platform?: 'twitter' | 'linkedin' | 'reddit' | 'whatsapp' | 'generic' | string;
+  }) {
+    return request<{
+      shortUrl: string;
+      isShortened: boolean;
+      provider: string;
+      originalUrl: string;
+    }>('/shortener/generate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, false);
+  },
+
+  async testConnection(payload: {
+    provider: string;
+    apiKey: string;
+    customDomain?: string;
+    workspaceId?: string;
+  }) {
+    return request<{
+      success: boolean;
+      message: string;
+      sampleShortUrl?: string;
+    }>('/shortener/test-connection', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+};
+
+
 
 

@@ -29,9 +29,11 @@ import {
   FileCode2,
   Code2,
   Terminal,
+  Share2,
+  Link2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { systemSettingsApi } from '@/lib/api-client';
+import { systemSettingsApi, shortenerApi } from '@/lib/api-client';
 
 interface Diagnostics {
   database: {
@@ -73,6 +75,19 @@ export default function AdminDevConfigPage() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [robotsIndexingMode, setRobotsIndexingMode] = useState<'allow' | 'disallow_all' | 'custom'>('allow');
   const [robotsCustomContent, setRobotsCustomContent] = useState('');
+
+  // URL Shortener Configuration State
+  const [shortenerProvider, setShortenerProvider] = useState<'none' | 'dub' | 'bitly' | 'tinyurl'>('none');
+  const [shortenerApiKey, setShortenerApiKey] = useState('');
+  const [shortenerCustomDomain, setShortenerCustomDomain] = useState('');
+  const [shortenerWorkspaceId, setShortenerWorkspaceId] = useState('');
+  const [showShortenerKey, setShowShortenerKey] = useState(false);
+  const [isTestingShortener, setIsTestingShortener] = useState(false);
+  const [shortenerTestResult, setShortenerTestResult] = useState<{
+    success: boolean;
+    message: string;
+    sampleShortUrl?: string;
+  } | null>(null);
 
   // Diagnostics State
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
@@ -125,6 +140,10 @@ export default function AdminDevConfigPage() {
         setMaintenanceMode(settingsData.maintenanceMode?.value === 'true');
         setRobotsIndexingMode((settingsData.robotsIndexingMode?.value as any) || 'allow');
         setRobotsCustomContent(settingsData.robotsCustomContent?.value || '');
+        setShortenerProvider((settingsData.shortenerProvider?.value as any) || 'none');
+        setShortenerApiKey(settingsData.shortenerApiKey?.value || '');
+        setShortenerCustomDomain(settingsData.shortenerCustomDomain?.value || '');
+        setShortenerWorkspaceId(settingsData.shortenerWorkspaceId?.value || '');
       }
 
       if (diagData) {
@@ -160,6 +179,10 @@ export default function AdminDevConfigPage() {
         maintenanceMode: String(maintenanceMode),
         robotsIndexingMode,
         robotsCustomContent: robotsCustomContent.trim(),
+        shortenerProvider,
+        shortenerApiKey: shortenerApiKey.trim(),
+        shortenerCustomDomain: shortenerCustomDomain.trim(),
+        shortenerWorkspaceId: shortenerWorkspaceId.trim(),
       };
 
       await systemSettingsApi.updateBatch(payload);
@@ -246,6 +269,42 @@ export default function AdminDevConfigPage() {
       toast.error(err.message || 'Failed to dispatch test email');
     } finally {
       setIsSendingTestEmail(false);
+    }
+  };
+
+  const handleTestShortener = async () => {
+    if (shortenerProvider === 'none') {
+      toast.info('Please select a shortener provider (Dub.co, Bitly, or TinyURL) to test.');
+      return;
+    }
+
+    const rawKey = shortenerApiKey.trim();
+    const apiKeyToTest = rawKey && !rawKey.includes('...') && rawKey !== '********' ? rawKey : undefined;
+
+    setIsTestingShortener(true);
+    setShortenerTestResult(null);
+    try {
+      const res = await shortenerApi.testConnection({
+        provider: shortenerProvider,
+        apiKey: apiKeyToTest || shortenerApiKey,
+        customDomain: shortenerCustomDomain.trim() || undefined,
+        workspaceId: shortenerWorkspaceId.trim() || undefined,
+      });
+
+      setShortenerTestResult(res);
+      if (res.success) {
+        toast.success(res.message);
+      } else {
+        toast.error(res.message);
+      }
+    } catch (err: any) {
+      setShortenerTestResult({
+        success: false,
+        message: err.message || 'Failed to connect to shortener provider',
+      });
+      toast.error(err.message || 'Shortener connection test error');
+    } finally {
+      setIsTestingShortener(false);
     }
   };
 
@@ -604,6 +663,189 @@ ROBOTS_INDEXING_MODE=${robotsIndexingMode}
                 <p className="text-[11px] pl-5.5 text-muted-foreground leading-relaxed">
                   {testEmailResult.message}
                 </p>
+              </div>
+            )}
+          </div>
+
+          {/* Card: URL Shortener & Branded Link Sharing */}
+          <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
+                  <Share2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider">
+                    URL Shortener &amp; Branded Link Sharing
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically shorten article share links using Dub.co, Bitly, or TinyURL with custom domain support.
+                  </p>
+                </div>
+              </div>
+
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-semibold border ${
+                shortenerProvider !== 'none'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  : 'bg-muted/40 text-muted-foreground border-border/60'
+              }`}>
+                <span className={`h-2 w-2 rounded-full ${shortenerProvider !== 'none' ? 'bg-emerald-400 animate-pulse' : 'bg-muted-foreground'}`} />
+                <span>{shortenerProvider !== 'none' ? `${shortenerProvider.toUpperCase()} Active` : 'Disabled (Canonical)'}</span>
+              </span>
+            </div>
+
+            {/* Provider Selector */}
+            <div className="space-y-2">
+              <label className="font-mono text-xs font-bold text-foreground">
+                Shortener Provider Engine
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { id: 'none', label: 'Disabled', desc: 'Canonical URL' },
+                  { id: 'dub', label: 'Dub.co', desc: 'Modern & Fast' },
+                  { id: 'bitly', label: 'Bitly API', desc: 'bit.ly links' },
+                  { id: 'tinyurl', label: 'TinyURL', desc: 'Simple API' },
+                ].map((prov) => (
+                  <button
+                    key={prov.id}
+                    type="button"
+                    onClick={() => setShortenerProvider(prov.id as any)}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      shortenerProvider === prov.id
+                        ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                        : 'border-border/60 bg-muted/20 hover:bg-muted/40 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <p className="text-xs font-mono font-bold text-foreground">{prov.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{prov.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {shortenerProvider !== 'none' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-border/40">
+                {/* API Key */}
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Key className="h-3.5 w-3.5 text-primary" />
+                      <span>{shortenerProvider.toUpperCase()} API Key / Bearer Token *</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowShortenerKey(!showShortenerKey)}
+                      className="text-[11px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                    >
+                      {showShortenerKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                      <span>{showShortenerKey ? 'Hide' : 'Reveal'}</span>
+                    </button>
+                  </div>
+                  <input
+                    type={showShortenerKey ? 'text' : 'password'}
+                    placeholder={`Enter your ${shortenerProvider.toUpperCase()} API Key`}
+                    value={shortenerApiKey}
+                    onChange={(e) => setShortenerApiKey(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                {/* Custom Short Domain */}
+                <div className="space-y-2">
+                  <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Globe className="h-3.5 w-3.5 text-primary" />
+                    <span>Custom Short Domain (Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. nx.link, nxs.to, or dub.sh"
+                    value={shortenerCustomDomain}
+                    onChange={(e) => setShortenerCustomDomain(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  />
+                  <p className="text-[10px] text-muted-foreground font-mono">
+                    Leave blank to use provider default domain.
+                  </p>
+                </div>
+
+                {/* Workspace / Group GUID */}
+                <div className="space-y-2">
+                  <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Sliders className="h-3.5 w-3.5 text-primary" />
+                    <span>Workspace / Group ID (Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ws_12345 (Dub.co) or Bk12345 (Bitly)"
+                    value={shortenerWorkspaceId}
+                    onChange={(e) => setShortenerWorkspaceId(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                  />
+                  <p className="text-[10px] text-muted-foreground font-mono">
+                    Target workspace or group GUID for team accounts.
+                  </p>
+                </div>
+
+                {/* Test Connection Button */}
+                <div className="md:col-span-2 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">
+                    Test your credentials by generating a sample short link before saving.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleTestShortener}
+                    disabled={isTestingShortener || !shortenerApiKey}
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono font-bold hover:bg-sky-500/20 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                  >
+                    {isTestingShortener ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Testing Shortener...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="h-3.5 w-3.5" />
+                        <span>Test Connection &amp; Generate Link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Test Result Display */}
+                {shortenerTestResult && (
+                  <div
+                    className={`md:col-span-2 p-4 rounded-xl border text-xs font-mono space-y-2 animate-in fade-in duration-200 ${
+                      shortenerTestResult.success
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                        : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2 font-bold">
+                      {shortenerTestResult.success ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                      )}
+                      <span className="leading-relaxed">{shortenerTestResult.message}</span>
+                    </div>
+
+                    {shortenerTestResult.sampleShortUrl && (
+                      <div className="pl-6 pt-1 border-t border-emerald-500/20 flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-muted-foreground">Sample Short Link:</span>
+                        <a
+                          href={shortenerTestResult.sampleShortUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-bold text-foreground hover:underline inline-flex items-center gap-1 text-primary"
+                        >
+                          <span>{shortenerTestResult.sampleShortUrl}</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

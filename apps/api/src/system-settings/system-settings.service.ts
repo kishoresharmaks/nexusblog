@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 
-const SENSITIVE_KEYS = ['brevoApiKey', 'smtpPassword', 'jwtSecret', 'adminSecret'];
+const SENSITIVE_KEYS = ['brevoApiKey', 'smtpPassword', 'jwtSecret', 'adminSecret', 'shortenerApiKey'];
 
 @Injectable()
 export class SystemSettingsService {
@@ -91,6 +91,26 @@ export class SystemSettingsService {
           '# Custom robots.txt directives\nUser-Agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /api/*',
         isSecret: false,
         description: 'Custom robots.txt directives when Indexing Mode is set to custom',
+      },
+      shortenerProvider: {
+        defaultValue: process.env.SHORTENER_PROVIDER || 'none',
+        isSecret: false,
+        description: 'URL Shortener Provider for article link sharing (dub, bitly, tinyurl, or none)',
+      },
+      shortenerApiKey: {
+        defaultValue: process.env.SHORTENER_API_KEY ? this.maskSecret(process.env.SHORTENER_API_KEY) : '',
+        isSecret: true,
+        description: 'API key / Access Token for URL shortener service (Dub.co, Bitly, TinyURL)',
+      },
+      shortenerCustomDomain: {
+        defaultValue: process.env.SHORTENER_CUSTOM_DOMAIN || '',
+        isSecret: false,
+        description: 'Branded short domain (e.g. nx.link, nxs.to, or leave blank for default)',
+      },
+      shortenerWorkspaceId: {
+        defaultValue: process.env.SHORTENER_WORKSPACE_ID || '',
+        isSecret: false,
+        description: 'Workspace / Group ID for Dub.co or Bitly (optional)',
       },
     };
 

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Share2, Link as LinkIcon, Check, Send } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Share2, Link as LinkIcon, Check, Send, Sparkles, Loader2 } from 'lucide-react';
 import { TwitterIcon, LinkedinIcon, RedditIcon, WhatsAppIcon } from './brand-icons';
+import { shortenerApi } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 interface ShareButtonsProps {
@@ -25,6 +26,8 @@ export function ShareButtons({
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
   const [shareUrl, setShareUrl] = useState<string>(url || '');
+  const [isShortening, setIsShortening] = useState(false);
+  const shortLinksCache = useRef<Record<string, string>>({});
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -50,8 +53,37 @@ export function ShareButtons({
     return shareUrl || url || '';
   };
 
+  /**
+   * Resolve short URL for specific platform with timeout and local fallback
+   */
+  const resolvePlatformUrl = async (platform: string): Promise<string> => {
+    const rawUrl = getResolvedUrl();
+    if (shortLinksCache.current[platform]) {
+      return shortLinksCache.current[platform];
+    }
+
+    try {
+      const res = await Promise.race([
+        shortenerApi.generateShortUrl({ url: rawUrl, title, platform }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+      ]);
+
+      if (res && res.shortUrl) {
+        shortLinksCache.current[platform] = res.shortUrl;
+        return res.shortUrl;
+      }
+    } catch {
+      // Fallback silently to canonical
+    }
+
+    return rawUrl;
+  };
+
   const handleCopy = async () => {
-    const finalUrl = getResolvedUrl();
+    setIsShortening(true);
+    const finalUrl = await resolvePlatformUrl('generic');
+    setIsShortening(false);
+
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(finalUrl);
@@ -64,7 +96,7 @@ export function ShareButtons({
         document.body.removeChild(textarea);
       }
       setCopied(true);
-      toast.success('Article link copied to clipboard!');
+      toast.success(finalUrl.length < getResolvedUrl().length ? 'Short link copied to clipboard!' : 'Article link copied to clipboard!');
       setTimeout(() => setCopied(false), 2500);
     } catch {
       toast.error('Failed to copy link.');
@@ -72,7 +104,10 @@ export function ShareButtons({
   };
 
   const handleNativeShare = async () => {
-    const finalUrl = getResolvedUrl();
+    setIsShortening(true);
+    const finalUrl = await resolvePlatformUrl('native');
+    setIsShortening(false);
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -90,27 +125,27 @@ export function ShareButtons({
     }
   };
 
-  const shareTwitter = () => {
-    const finalUrl = getResolvedUrl();
+  const shareTwitter = async () => {
+    const finalUrl = await resolvePlatformUrl('twitter');
     const shareText = author ? `${title} by ${author}` : title;
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(finalUrl)}`;
     window.open(tweetUrl, '_blank', 'noopener,noreferrer,width=600,height=450');
   };
 
-  const shareLinkedin = () => {
-    const finalUrl = getResolvedUrl();
+  const shareLinkedin = async () => {
+    const finalUrl = await resolvePlatformUrl('linkedin');
     const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(finalUrl)}`;
     window.open(linkedinUrl, '_blank', 'noopener,noreferrer,width=600,height=550');
   };
 
-  const shareReddit = () => {
-    const finalUrl = getResolvedUrl();
+  const shareReddit = async () => {
+    const finalUrl = await resolvePlatformUrl('reddit');
     const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(finalUrl)}&title=${encodeURIComponent(title)}`;
     window.open(redditUrl, '_blank', 'noopener,noreferrer,width=600,height=600');
   };
 
-  const shareWhatsApp = () => {
-    const finalUrl = getResolvedUrl();
+  const shareWhatsApp = async () => {
+    const finalUrl = await resolvePlatformUrl('whatsapp');
     const text = `${title}\n\n${finalUrl}`;
     const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
