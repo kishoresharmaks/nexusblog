@@ -242,20 +242,21 @@ export class ArticlesService {
       where.type = query.type;
     }
 
-    if (query.filter === 'featured') {
+    const filter = (query.filter as string)?.toLowerCase();
+    if (filter === 'featured') {
       where.featured = true;
     }
 
     let orderBy: any = { publishedAt: 'desc' };
-    if (query.filter === 'popular') {
+    if (filter === 'popular') {
       orderBy = { viewsCount: 'desc' };
-    } else if (query.filter === 'bookmarked' || (query.filter as string) === 'bookmarks') {
+    } else if (filter === 'bookmarked' || filter === 'bookmarks') {
       orderBy = { bookmarksCount: 'desc' };
-    } else if (query.filter === 'liked' || (query.filter as string) === 'likes') {
+    } else if (filter === 'liked' || filter === 'likes') {
       orderBy = { likesCount: 'desc' };
-    } else if ((query.filter as string) === 'quick_read') {
+    } else if (filter === 'quick_read') {
       orderBy = { readingTime: 'asc' };
-    } else if ((query.filter as string) === 'deep_dive') {
+    } else if (filter === 'deep_dive') {
       orderBy = { readingTime: 'desc' };
     }
 

@@ -49,5 +49,15 @@ export class QueryArticleDto {
   @ApiPropertyOptional({ example: 'featured' })
   @IsString()
   @IsOptional()
-  filter?: 'featured' | 'popular' | 'latest';
+  filter?:
+    | 'featured'
+    | 'popular'
+    | 'latest'
+    | 'bookmarked'
+    | 'bookmarks'
+    | 'liked'
+    | 'likes'
+    | 'quick_read'
+    | 'deep_dive'
+    | string;
 }
