@@ -35,6 +35,12 @@ async function bootstrap() {
   const clientUrl = process.env.CLIENT_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://nexusnation.in';
   const port = Number(process.env.PORT || process.env.API_PORT || 4000);
 
+  // Trust upstream reverse proxies (Cloudflare, Nginx, ALB, Caddy) for accurate client IP resolution
+  const expressApp = app.getHttpAdapter().getInstance();
+  if (typeof expressApp?.set === 'function') {
+    expressApp.set('trust proxy', true);
+  }
+
   // Security Headers
   app.use(
     helmet({

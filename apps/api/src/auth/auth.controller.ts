@@ -26,6 +26,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
+import { extractClientIp } from '../common/utils/ip.util';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -79,7 +80,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip = req.ip || req.socket.remoteAddress;
+    const ip = extractClientIp(req);
     const userAgent = req.headers['user-agent'];
     const result = await this.authService.register(dto, ip, userAgent);
 
@@ -100,7 +101,7 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip = req.ip || req.socket.remoteAddress;
+    const ip = extractClientIp(req);
     const userAgent = req.headers['user-agent'];
     const result = await this.authService.login(dto, ip, userAgent);
 
@@ -128,7 +129,7 @@ export class AuthController {
       };
     }
 
-    const ip = req.ip || req.socket.remoteAddress;
+    const ip = extractClientIp(req);
     const userAgent = req.headers['user-agent'];
 
     const result = await this.authService.refreshSession(refreshToken, ip, userAgent);

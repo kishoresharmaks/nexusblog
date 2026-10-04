@@ -4,6 +4,7 @@ import { AuditLogsService } from './audit-logs.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { QueryAuditLogsDto } from './dto/query-audit-logs.dto';
 
 @ApiTags('Audit Logs')
 @ApiBearerAuth()
@@ -14,16 +15,12 @@ export class AuditLogsController {
   constructor(private readonly auditLogsService: AuditLogsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get system audit logs (Admin only)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'skip', required: false, type: Number })
-  findAll(
-    @Query('limit') limit?: string,
-    @Query('skip') skip?: string,
-  ) {
-    return this.auditLogsService.findAll(
-      limit ? parseInt(limit, 10) : 50,
-      skip ? parseInt(skip, 10) : 0,
-    );
+  @ApiOperation({ summary: 'Get system audit logs (Admin only, 7-day retention window with cursor pagination)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (max 100)' })
+  @ApiQuery({ name: 'cursor', required: false, type: String, description: 'Cursor ID for forward pagination' })
+  @ApiQuery({ name: 'action', required: false, type: String, description: 'Filter by action code' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search across actions, resources, IPs, or users' })
+  findAll(@Query() query: QueryAuditLogsDto) {
+    return this.auditLogsService.findAll(query);
   }
 }

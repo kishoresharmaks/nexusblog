@@ -816,11 +816,41 @@ export const readingHistoryApi = {
 
 // Audit Logs API
 export const auditLogsApi = {
-  async getAll(limit = 50, skip = 0) {
-    const res = await request<any>(`/audit-logs?limit=${limit}&skip=${skip}`, {}, true);
-    const items = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : Array.isArray(res?.data) ? res.data : [];
-    const total = typeof res?.total === 'number' ? res.total : (res?.meta?.total ?? items.length);
-    return { items, total };
+  async getAll(
+    paramsOrLimit: number | { limit?: number; cursor?: string; action?: string; search?: string } = 50,
+    skip?: number,
+  ) {
+    const params = typeof paramsOrLimit === 'object' ? paramsOrLimit : { limit: paramsOrLimit };
+    const query = new URLSearchParams();
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.cursor) query.set('cursor', params.cursor);
+    if (params.action && params.action !== 'ALL') query.set('action', params.action);
+    if (params.search) query.set('search', params.search);
+    if (typeof skip === 'number') query.set('skip', String(skip));
+
+    const qs = query.toString();
+    const endpoint = qs ? `/audit-logs?${qs}` : '/audit-logs';
+    const res = await request<any>(endpoint, {}, true);
+
+    const items = Array.isArray(res)
+      ? res
+      : Array.isArray(res?.items)
+        ? res.items
+        : Array.isArray(res?.data)
+          ? res.data
+          : [];
+    const meta = res?.meta || {
+      total: typeof res?.total === 'number' ? res.total : items.length,
+      limit: params.limit || 50,
+      hasNextPage: false,
+      nextCursor: null,
+      retentionDays: 7,
+    };
+    return {
+      items,
+      total: meta.total ?? items.length,
+      meta,
+    };
   },
 };
 
