@@ -209,11 +209,16 @@ export class ArticlesService {
       status: ArticleStatus.PUBLISHED,
     };
 
-    if (query.search) {
+    if (query.search && query.search.trim().length > 0) {
+      const term = query.search.trim();
       where.OR = [
-        { title: { contains: query.search, mode: 'insensitive' } },
-        { excerpt: { contains: query.search, mode: 'insensitive' } },
-        { content: { contains: query.search, mode: 'insensitive' } },
+        { title: { contains: term, mode: 'insensitive' } },
+        { excerpt: { contains: term, mode: 'insensitive' } },
+        { slug: { contains: term, mode: 'insensitive' } },
+        { content: { contains: term, mode: 'insensitive' } },
+        { category: { name: { contains: term, mode: 'insensitive' } } },
+        { technologies: { some: { name: { contains: term, mode: 'insensitive' } } } },
+        { tags: { some: { name: { contains: term, mode: 'insensitive' } } } },
       ];
     }
 

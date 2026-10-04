@@ -1,147 +1,167 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { Search, SlidersHorizontal, ArrowRight, BookOpen, Clock, Tag } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  Search,
+  SlidersHorizontal,
+  ArrowRight,
+  BookOpen,
+  Clock,
+  Tag,
+  Hash,
+  X,
+  Sparkles,
+  Layers,
+  Cpu,
+  Loader2,
+  Filter,
+  Flame,
+  Calendar,
+} from 'lucide-react';
 import { ArticleCard } from '@/components/public/article-card';
+import { articlesApi, categoriesApi, technologiesApi, analyticsApi } from '@/lib/api-client';
 
-const SAMPLE_DATABASE = [
-  {
-    id: '1',
-    title: 'Designing a Distributed Rate Limiter with Redis and Lua Scripts',
-    slug: 'designing-distributed-rate-limiter',
-    excerpt:
-      'A deep dive into sub-millisecond sliding window counter algorithms, token buckets, and coordinating distributed rate limiting across multi-region API gateways.',
-    difficulty: 'ADVANCED' as const,
-    type: 'SYSTEM_DESIGN' as const,
-    featured: true,
-    readingTime: 12,
-    viewsCount: 14200,
-    publishedAt: new Date(),
-    author: {
-      id: 'a1',
-      name: 'Alex Rivera',
-      username: 'alexdev',
-    },
-    category: {
-      id: 'c1',
-      name: 'System Design',
-      slug: 'system-design',
-    },
-    technologies: [
-      { id: 't1', name: 'Redis', slug: 'redis' },
-      { id: 't2', name: 'NestJS', slug: 'nestjs' },
-    ],
-    tags: [
-      { id: 'tg1', name: 'Distributed Systems', slug: 'distributed-systems' },
-      { id: 'tg2', name: 'Rate Limiting', slug: 'rate-limiting' },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Zero-Downtime PostgreSQL Schema Migrations at Scale',
-    slug: 'zero-downtime-postgresql-migrations',
-    excerpt:
-      'Safe table alteration patterns, concurrent index creation, avoiding lock queues, and backward-compatible contract testing with Prisma.',
-    difficulty: 'ADVANCED' as const,
-    type: 'DEEP_DIVE' as const,
-    featured: true,
-    readingTime: 16,
-    viewsCount: 22400,
-    publishedAt: new Date(),
-    author: {
-      id: 'a1',
-      name: 'Alex Rivera',
-      username: 'alexdev',
-    },
-    category: {
-      id: 'c2',
-      name: 'Databases',
-      slug: 'databases',
-    },
-    technologies: [
-      { id: 't3', name: 'PostgreSQL', slug: 'postgresql' },
-      { id: 't4', name: 'Prisma', slug: 'prisma' },
-    ],
-    tags: [
-      { id: 'tg3', name: 'Database Internals', slug: 'database-internals' },
-      { id: 'tg4', name: 'Migrations', slug: 'migrations' },
-    ],
-  },
-  {
-    id: '3',
-    title: 'Kafka Consumer Group Rebalancing & Exactly-Once Semantics',
-    slug: 'kafka-consumer-rebalancing-internals',
-    excerpt:
-      'Demystifying cooperative sticky assignors, static group membership, and transactional outbox patterns in high-throughput streaming systems.',
-    difficulty: 'EXPERT' as const,
-    type: 'DEEP_DIVE' as const,
-    featured: false,
-    readingTime: 18,
-    viewsCount: 9100,
-    publishedAt: new Date(),
-    author: {
-      id: 'a2',
-      name: 'Elena Rostova',
-      username: 'erostova',
-    },
-    category: {
-      id: 'c3',
-      name: 'Backend Architecture',
-      slug: 'backend',
-    },
-    technologies: [
-      { id: 't5', name: 'Kafka', slug: 'kafka' },
-    ],
-    tags: [
-      { id: 'tg5', name: 'Event Driven', slug: 'event-driven' },
-    ],
-  },
+const SUGGESTED_QUERIES = [
+  'Redis',
+  'Kafka',
+  'PostgreSQL',
+  'System Design',
+  'NestJS',
+  'Distributed Systems',
+  'RAG',
+  'Microservices',
+  'Docker',
+  'Next.js',
 ];
 
-export default function SearchPage() {
-  const [query, setQuery] = useState('');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('ALL');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+function SearchPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const filteredArticles = useMemo(() => {
-    return SAMPLE_DATABASE.filter((art) => {
-      const matchQuery =
-        !query ||
-        art.title.toLowerCase().includes(query.toLowerCase()) ||
-        art.excerpt.toLowerCase().includes(query.toLowerCase()) ||
-        art.category.name.toLowerCase().includes(query.toLowerCase()) ||
-        art.technologies.some((t) => t.name.toLowerCase().includes(query.toLowerCase())) ||
-        art.tags?.some((t) => t.name.toLowerCase().includes(query.toLowerCase()));
+  const initialQuery = searchParams.get('q') || searchParams.get('search') || '';
+  const initialCategory = searchParams.get('category') || 'ALL';
+  const initialTechnology = searchParams.get('tech') || 'ALL';
+  const initialDifficulty = searchParams.get('difficulty') || 'ALL';
+  const initialFilter = (searchParams.get('filter') as 'featured' | 'popular' | undefined) || undefined;
 
-      const matchDifficulty =
-        selectedDifficulty === 'ALL' || art.difficulty === selectedDifficulty;
+  const [query, setQuery] = useState(initialQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>(initialDifficulty);
+  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
+  const [selectedTech, setSelectedTech] = useState<string>(initialTechnology);
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'featured' | 'popular'>(
+    initialFilter || 'all',
+  );
 
-      const matchCategory =
-        selectedCategory === 'ALL' || art.category.slug === selectedCategory;
+  const [articles, setArticles] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [technologies, setTechnologies] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-      return matchQuery && matchDifficulty && matchCategory;
+  // Load available categories and technologies for filter dropdowns
+  useEffect(() => {
+    Promise.all([
+      categoriesApi.getAll().catch(() => []),
+      technologiesApi.getAll().catch(() => []),
+    ]).then(([cats, techs]) => {
+      setCategories(Array.isArray(cats) ? cats : []);
+      setTechnologies(Array.isArray(techs) ? techs : []);
     });
-  }, [query, selectedDifficulty, selectedCategory]);
+  }, []);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // Sync state to URL search parameters
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedQuery) params.set('q', debouncedQuery);
+    if (selectedCategory && selectedCategory !== 'ALL') params.set('category', selectedCategory);
+    if (selectedTech && selectedTech !== 'ALL') params.set('tech', selectedTech);
+    if (selectedDifficulty && selectedDifficulty !== 'ALL') params.set('difficulty', selectedDifficulty);
+    if (selectedFilter && selectedFilter !== 'all') params.set('filter', selectedFilter);
+
+    const qs = params.toString();
+    const newUrl = qs ? `/search?${qs}` : '/search';
+    router.replace(newUrl, { scroll: false });
+  }, [debouncedQuery, selectedCategory, selectedTech, selectedDifficulty, selectedFilter, router]);
+
+  // Fetch articles based on active filters
+  const fetchResults = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await articlesApi.getPublicFeed({
+        search: debouncedQuery || undefined,
+        categorySlug: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+        technologySlug: selectedTech !== 'ALL' ? selectedTech : undefined,
+        difficulty: selectedDifficulty !== 'ALL' ? selectedDifficulty : undefined,
+        filter: selectedFilter !== 'all' ? selectedFilter : undefined,
+        limit: 30,
+      });
+
+      const items = res.items || [];
+      setArticles(items);
+      setTotalCount(res.total || items.length);
+
+      if (debouncedQuery) {
+        analyticsApi.logSearchQuery(debouncedQuery, items.length).catch(() => {});
+      }
+    } catch (err) {
+      console.error('Failed to fetch search results:', err);
+      setArticles([]);
+      setTotalCount(0);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [debouncedQuery, selectedCategory, selectedTech, selectedDifficulty, selectedFilter]);
+
+  useEffect(() => {
+    fetchResults();
+  }, [fetchResults]);
+
+  const clearAllFilters = () => {
+    setQuery('');
+    setDebouncedQuery('');
+    setSelectedCategory('ALL');
+    setSelectedTech('ALL');
+    setSelectedDifficulty('ALL');
+    setSelectedFilter('all');
+  };
+
+  const hasActiveFilters =
+    query ||
+    selectedCategory !== 'ALL' ||
+    selectedTech !== 'ALL' ||
+    selectedDifficulty !== 'ALL' ||
+    selectedFilter !== 'all';
 
   return (
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-8 font-sans">
+      {/* Header */}
       <div className="space-y-3">
         <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs font-mono text-muted-foreground">
-          <Search className="h-3.5 w-3.5 text-primary" />
-          <span>Full-Text Search</span>
+          <Search className="h-3.5 w-3.5 text-cyan-500" />
+          <span>Full-Text Engineering Search</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-          Search Engineering Guides
+          Search Technical Articles &amp; Blueprints
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground max-w-2xl leading-relaxed">
-          Explore architecture blueprints, performance deep dives, and system design case studies.
+          Explore distributed systems designs, database internals, cloud architectures, and production-grade engineering guides.
         </p>
       </div>
 
-      {/* Search Input */}
+      {/* Main Search Input */}
       <div className="relative max-w-3xl">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-muted-foreground">
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-cyan-500">
           <Search className="h-5 w-5" />
         </div>
         <input
@@ -149,93 +169,201 @@ export default function SearchPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by keyword, technology (e.g. Redis, Kafka, Raft), or topic..."
-          className="w-full rounded-xl border border-border bg-card py-3.5 pl-11 pr-4 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+          className="w-full rounded-2xl border border-border bg-card py-3.5 pl-12 pr-12 text-sm font-medium text-foreground placeholder:text-muted-foreground focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 shadow-sm transition-all"
         />
-        {query && (
+        {isLoading ? (
+          <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+            <Loader2 className="h-4 w-4 text-cyan-500 animate-spin" />
+          </div>
+        ) : query ? (
           <button
             onClick={() => setQuery('')}
-            className="absolute inset-y-0 right-0 flex items-center pr-4 text-xs font-mono text-muted-foreground hover:text-foreground"
+            className="absolute inset-y-0 right-0 flex items-center pr-4 text-muted-foreground hover:text-foreground transition-colors"
           >
-            Clear
+            <X className="h-4 w-4" />
           </button>
-        )}
+        ) : null}
       </div>
 
-      {/* Filter Chips */}
-      <div className="flex flex-wrap items-center gap-3 pt-1 text-xs font-mono">
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          <span>Filters:</span>
+      {/* Suggested Quick Search Chips */}
+      <div className="flex items-center gap-2 flex-wrap text-xs">
+        <span className="text-muted-foreground font-mono text-[11px]">Suggested:</span>
+        {SUGGESTED_QUERIES.map((item) => (
+          <button
+            key={item}
+            onClick={() => setQuery(item)}
+            className="px-2.5 py-1 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground font-mono text-[11px] transition-colors"
+          >
+            #{item}
+          </button>
+        ))}
+      </div>
+
+      {/* Filter Controls Toolbar */}
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-foreground font-mono uppercase tracking-wider">
+            <SlidersHorizontal className="h-4 w-4 text-cyan-500" />
+            <span>Refine Search Results</span>
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="text-xs text-rose-500 hover:underline font-mono font-medium flex items-center gap-1"
+            >
+              <X className="h-3 w-3" />
+              <span>Reset All Filters</span>
+            </button>
+          )}
         </div>
 
-        {/* Difficulty */}
-        <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/60">
-          {['ALL', 'INTERMEDIATE', 'ADVANCED', 'EXPERT'].map((diff) => (
-            <button
-              key={diff}
-              onClick={() => setSelectedDifficulty(diff)}
-              className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
-                selectedDifficulty === diff
-                  ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          {/* Category Filter */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-mono text-muted-foreground uppercase">
+              Architecture Category
+            </label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-cyan-500 focus:outline-none cursor-pointer"
             >
-              {diff === 'ALL' ? 'All Levels' : diff}
-            </button>
-          ))}
-        </div>
+              <option value="ALL">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.slug}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Category */}
-        <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/60">
-          {[
-            { label: 'All Topics', val: 'ALL' },
-            { label: 'System Design', val: 'system-design' },
-            { label: 'Databases', val: 'databases' },
-            { label: 'Backend', val: 'backend' },
-          ].map((cat) => (
-            <button
-              key={cat.val}
-              onClick={() => setSelectedCategory(cat.val)}
-              className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all ${
-                selectedCategory === cat.val
-                  ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+          {/* Technology Filter */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-mono text-muted-foreground uppercase">
+              Technology Stack
+            </label>
+            <select
+              value={selectedTech}
+              onChange={(e) => setSelectedTech(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-cyan-500 focus:outline-none cursor-pointer"
             >
-              {cat.label}
-            </button>
-          ))}
+              <option value="ALL">All Technologies</option>
+              {technologies.map((tech) => (
+                <option key={tech.id} value={tech.slug}>
+                  {tech.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Difficulty Filter */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-mono text-muted-foreground uppercase">
+              Engineering Depth
+            </label>
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-cyan-500 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All Depths</option>
+              <option value="BEGINNER">Beginner</option>
+              <option value="INTERMEDIATE">Intermediate</option>
+              <option value="ADVANCED">Advanced</option>
+              <option value="EXPERT">Expert</option>
+            </select>
+          </div>
+
+          {/* Sort / Ranking Filter */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-mono text-muted-foreground uppercase">
+              Sort By
+            </label>
+            <select
+              value={selectedFilter}
+              onChange={(e) => setSelectedFilter(e.target.value as any)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-cyan-500 focus:outline-none cursor-pointer"
+            >
+              <option value="all">Latest Published</option>
+              <option value="popular">Most Popular (Views)</option>
+              <option value="featured">Featured Blueprints</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Results Header */}
-      <div className="pt-4 border-t border-border/60 flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-border/60 pb-3">
         <p className="text-xs font-mono text-muted-foreground">
-          Showing <span className="font-bold text-foreground">{filteredArticles.length}</span> result{filteredArticles.length === 1 ? '' : 's'}
-          {query && (
+          Found <strong className="text-foreground">{totalCount}</strong> published blueprint
+          {totalCount === 1 ? '' : 's'}
+          {debouncedQuery && (
             <span>
               {' '}
-              for &quot;<span className="text-foreground font-semibold">{query}</span>&quot;
+              matching &quot;<strong className="text-cyan-500">{debouncedQuery}</strong>&quot;
             </span>
           )}
         </p>
       </div>
 
       {/* Results Grid */}
-      {filteredArticles.length > 0 ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredArticles.map((article) => (
+          {[1, 2, 3, 4].map((n) => (
+            <div
+              key={n}
+              className="rounded-2xl border border-border bg-card p-6 space-y-4 animate-pulse"
+            >
+              <div className="h-4 w-24 bg-muted rounded" />
+              <div className="h-6 w-3/4 bg-muted rounded" />
+              <div className="h-16 bg-muted rounded" />
+              <div className="h-4 w-1/2 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+      ) : articles.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {articles.map((article) => (
             <ArticleCard key={article.id} article={article} />
           ))}
         </div>
       ) : (
-        <div className="py-16 text-center space-y-3 rounded-2xl border border-dashed border-border bg-card/40">
-          <p className="text-base font-semibold text-foreground">No matching articles found</p>
-          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Try adjusting your search terms or filters to find what you are looking for.
-          </p>
+        <div className="py-16 text-center space-y-4 rounded-2xl border border-dashed border-border bg-card/40">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center text-muted-foreground">
+            <Search className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-foreground">No matching blueprints found</p>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              We couldn&apos;t find any published articles matching your criteria. Try loosening your filters or searching for broader topics.
+            </p>
+          </div>
+          <button
+            onClick={clearAllFilters}
+            className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+          >
+            Clear Filters &amp; Browse All
+          </button>
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+            <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />
+            <span>Loading search engine...</span>
+          </div>
+        </div>
+      }
+    >
+      <SearchPageContent />
+    </Suspense>
   );
 }
