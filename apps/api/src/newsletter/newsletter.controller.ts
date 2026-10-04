@@ -21,9 +21,20 @@ export class NewsletterController {
 
   @Public()
   @Post('unsubscribe')
-  @ApiOperation({ summary: 'Unsubscribe email from newsletter' })
-  unsubscribe(@Body('email') email: string) {
+  @ApiOperation({ summary: 'Unsubscribe email from newsletter (POST)' })
+  unsubscribePost(@Body('email') email: string) {
     return this.newsletterService.unsubscribe(email);
+  }
+
+  @Public()
+  @Get('unsubscribe')
+  @ApiOperation({ summary: 'Unsubscribe email from newsletter (GET)' })
+  @ApiQuery({ name: 'email', required: false, type: String })
+  unsubscribeGet(@Query('email') email?: string) {
+    if (!email || email.trim().length === 0) {
+      return { message: 'Email query parameter is required to unsubscribe.' };
+    }
+    return this.newsletterService.unsubscribe(email.trim());
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
