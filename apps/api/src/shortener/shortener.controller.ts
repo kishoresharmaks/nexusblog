@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Body, Param, Res, UseGuards, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { ShortenerService, GenerateShortUrlDto } from './shortener.service';
+import { ShortenerService, GenerateShortUrlDto, SyncAllOptions } from './shortener.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -54,7 +54,7 @@ export class ShortenerController {
   @ApiBearerAuth()
   @Post('admin/sync-all')
   @ApiOperation({ summary: 'Bulk sync, health check & backfill short links for all published articles (Admin)' })
-  syncAllArticles(@Body() body: { forceRegenerate?: boolean }) {
+  syncAllArticles(@Body() body: SyncAllOptions) {
     return this.shortenerService.syncAllArticles(body);
   }
 }

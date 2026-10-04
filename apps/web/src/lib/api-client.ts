@@ -1037,13 +1037,33 @@ export const shortenerApi = {
     }, true);
   },
 
-  async syncAllArticles(payload: { forceRegenerate?: boolean } = {}) {
+  async syncAllArticles(payload: {
+    forceRegenerate?: boolean;
+    provider?: string;
+    apiKey?: string;
+    customDomain?: string;
+    workspaceId?: string;
+    customEndpoint?: string;
+    customMethod?: string;
+    customHeaders?: string;
+    customBodyTemplate?: string;
+    customResponsePath?: string;
+    autoValidate?: boolean;
+  } = {}) {
     return request<{
       total: number;
       updated: number;
       validated: number;
       failed: number;
+      activeProvider: string;
       message: string;
+      errorSummary?: string;
+      errors?: Array<{
+        articleId: string;
+        slug: string;
+        title: string;
+        reason: string;
+      }>;
     }>('/shortener/admin/sync-all', {
       method: 'POST',
       body: JSON.stringify(payload),

@@ -14,6 +14,16 @@ export interface GenerateShortUrlDto {
   title?: string;
   platform?: 'twitter' | 'linkedin' | 'reddit' | 'whatsapp' | 'generic' | string;
   forceRegenerate?: boolean;
+  provider?: string;
+  apiKey?: string;
+  customDomain?: string;
+  workspaceId?: string;
+  customEndpoint?: string;
+  customMethod?: string;
+  customHeaders?: string;
+  customBodyTemplate?: string;
+  customResponsePath?: string;
+  autoValidate?: boolean;
 }
 
 export interface ShortUrlResult {
@@ -23,6 +33,39 @@ export interface ShortUrlResult {
   originalUrl: string;
   fromDb?: boolean;
   healed?: boolean;
+  error?: string;
+}
+
+export interface SyncAllOptions {
+  forceRegenerate?: boolean;
+  provider?: string;
+  apiKey?: string;
+  customDomain?: string;
+  workspaceId?: string;
+  customEndpoint?: string;
+  customMethod?: string;
+  customHeaders?: string;
+  customBodyTemplate?: string;
+  customResponsePath?: string;
+  autoValidate?: boolean;
+}
+
+export interface SyncErrorDetail {
+  articleId: string;
+  slug: string;
+  title: string;
+  reason: string;
+}
+
+export interface SyncArticlesResult {
+  total: number;
+  updated: number;
+  validated: number;
+  failed: number;
+  activeProvider: string;
+  message: string;
+  errorSummary?: string;
+  errors: SyncErrorDetail[];
 }
 
 @Injectable()
@@ -100,28 +143,64 @@ export class ShortenerService {
   }
 
   /**
-   * Gather current shortener runtime configuration
+   * Gather current shortener runtime configuration with support for dynamic overrides
    */
-  private async getRuntimeOptions(overrideUrl: string, title?: string, slug?: string, articleId?: string): Promise<{
+  private async getRuntimeOptions(
+    overrideUrl: string,
+    title?: string,
+    slug?: string,
+    articleId?: string,
+    overrides?: Partial<GenerateShortUrlDto>,
+  ): Promise<{
     provider: string;
     options: ShortenOptions;
     autoValidate: boolean;
   }> {
-    const provider = (await this.getSetting('shortenerProvider', 'SHORTENER_PROVIDER')) || 'none';
-    const apiKey = await this.getSetting('shortenerApiKey', 'SHORTENER_API_KEY');
-    const customDomain = await this.getSetting('shortenerCustomDomain', 'SHORTENER_CUSTOM_DOMAIN');
-    const workspaceId = await this.getSetting('shortenerWorkspaceId', 'SHORTENER_WORKSPACE_ID');
-    const customEndpoint = await this.getSetting('shortenerCustomEndpoint', 'SHORTENER_CUSTOM_ENDPOINT');
-    const customMethod = (await this.getSetting('shortenerCustomMethod', 'SHORTENER_CUSTOM_METHOD')) || 'POST';
-    const customHeaders = await this.getSetting('shortenerCustomHeaders', 'SHORTENER_CUSTOM_HEADERS');
-    const customBodyTemplate = await this.getSetting('shortenerCustomBodyTemplate', 'SHORTENER_CUSTOM_BODY_TEMPLATE');
-    const customResponsePath = await this.getSetting('shortenerCustomResponsePath', 'SHORTENER_CUSTOM_RESPONSE_PATH');
+    const rawProvider =
+      overrides?.provider !== undefined
+        ? overrides.provider
+        : (await this.getSetting('shortenerProvider', 'SHORTENER_PROVIDER')) || 'none';
+    const apiKey =
+      overrides?.apiKey !== undefined
+        ? overrides.apiKey
+        : await this.getSetting('shortenerApiKey', 'SHORTENER_API_KEY');
+    const customDomain =
+      overrides?.customDomain !== undefined
+        ? overrides.customDomain
+        : await this.getSetting('shortenerCustomDomain', 'SHORTENER_CUSTOM_DOMAIN');
+    const workspaceId =
+      overrides?.workspaceId !== undefined
+        ? overrides.workspaceId
+        : await this.getSetting('shortenerWorkspaceId', 'SHORTENER_WORKSPACE_ID');
+    const customEndpoint =
+      overrides?.customEndpoint !== undefined
+        ? overrides.customEndpoint
+        : await this.getSetting('shortenerCustomEndpoint', 'SHORTENER_CUSTOM_ENDPOINT');
+    const customMethod =
+      overrides?.customMethod !== undefined
+        ? overrides.customMethod
+        : (await this.getSetting('shortenerCustomMethod', 'SHORTENER_CUSTOM_METHOD')) || 'POST';
+    const customHeaders =
+      overrides?.customHeaders !== undefined
+        ? overrides.customHeaders
+        : await this.getSetting('shortenerCustomHeaders', 'SHORTENER_CUSTOM_HEADERS');
+    const customBodyTemplate =
+      overrides?.customBodyTemplate !== undefined
+        ? overrides.customBodyTemplate
+        : await this.getSetting('shortenerCustomBodyTemplate', 'SHORTENER_CUSTOM_BODY_TEMPLATE');
+    const customResponsePath =
+      overrides?.customResponsePath !== undefined
+        ? overrides.customResponsePath
+        : await this.getSetting('shortenerCustomResponsePath', 'SHORTENER_CUSTOM_RESPONSE_PATH');
     const autoValidateSetting = await this.getSetting('shortenerAutoValidate');
-    const autoValidate = autoValidateSetting !== 'false';
+    const autoValidate =
+      overrides?.autoValidate !== undefined
+        ? overrides.autoValidate
+        : autoValidateSetting !== 'false';
     const siteUrl = (await this.getSetting('siteUrl')) || 'https://nexusnation.in';
 
     return {
-      provider: provider.toLowerCase(),
+      provider: (rawProvider || 'none').toLowerCase(),
       autoValidate,
       options: {
         url: overrideUrl,
@@ -151,6 +230,7 @@ export class ShortenerService {
       dto.title,
       undefined,
       dto.articleId,
+      dto,
     );
 
     // 1. Check if this request corresponds to an existing article in the database
@@ -249,8 +329,24 @@ export class ShortenerService {
               };
             }
           } catch (err: any) {
-            this.logger.error(`Shortener provider [${provider}] failed for article "${article.title}": ${err.message}`);
+            const errMsg = err.message || `Provider [${provider}] failed`;
+            this.logger.error(`Shortener provider [${provider}] failed for article "${article.title}": ${errMsg}`);
+            return {
+              shortUrl: article.shortUrl || targetUrl,
+              isShortened: Boolean(article.shortUrl),
+              provider: article.shortUrl ? 'stored' : 'fallback',
+              originalUrl: targetUrl,
+              error: errMsg,
+            };
           }
+        } else {
+          return {
+            shortUrl: article.shortUrl || targetUrl,
+            isShortened: Boolean(article.shortUrl),
+            provider: 'fallback',
+            originalUrl: targetUrl,
+            error: `Unsupported provider "${provider}"`,
+          };
         }
       }
 
@@ -258,8 +354,9 @@ export class ShortenerService {
       return {
         shortUrl: article.shortUrl || targetUrl,
         isShortened: Boolean(article.shortUrl),
-        provider: article.shortUrl ? 'stored' : 'fallback',
+        provider: article.shortUrl ? (article.shortUrlProvider || 'stored') : 'none',
         originalUrl: targetUrl,
+        error: article.shortUrl ? undefined : 'Shortener provider is currently disabled ("none").',
       };
     }
 
@@ -280,6 +377,7 @@ export class ShortenerService {
         isShortened: false,
         provider: 'none',
         originalUrl: targetUrl,
+        error: 'Shortener provider is currently set to "none".',
       };
     }
 
@@ -297,7 +395,15 @@ export class ShortenerService {
           };
         }
       } catch (err: any) {
-        this.logger.error(`Shortener provider [${provider}] failed: ${err.message}`);
+        const errMsg = err.message || `Provider [${provider}] failed`;
+        this.logger.error(`Shortener provider [${provider}] failed: ${errMsg}`);
+        return {
+          shortUrl: targetUrl,
+          isShortened: false,
+          provider: 'fallback',
+          originalUrl: targetUrl,
+          error: errMsg,
+        };
       }
     }
 
@@ -307,6 +413,7 @@ export class ShortenerService {
       isShortened: false,
       provider: 'fallback',
       originalUrl: targetUrl,
+      error: `Unsupported provider "${provider}"`,
     };
   }
 
@@ -411,15 +518,51 @@ export class ShortenerService {
   /**
    * Admin Tool: Bulk Sync, Health Check & Backfill All Published Article Shortlinks
    */
-  async syncAllArticles(options: { forceRegenerate?: boolean } = {}) {
+  async syncAllArticles(options: SyncAllOptions = {}): Promise<SyncArticlesResult> {
+    const runtime = await this.getRuntimeOptions('https://nexusnation.in/articles/probe', undefined, undefined, undefined, options);
+    const activeProvider = runtime.provider;
+
     const articles = await this.prisma.article.findMany({
       where: { status: 'PUBLISHED' },
       select: { id: true, slug: true, title: true, shortUrl: true, shortUrlProvider: true },
     });
 
+    if (articles.length === 0) {
+      return {
+        total: 0,
+        updated: 0,
+        validated: 0,
+        failed: 0,
+        activeProvider,
+        message: 'No published articles found in database to sync.',
+        errors: [],
+      };
+    }
+
+    if (activeProvider === 'none') {
+      const errorMsg = 'Shortener provider is currently disabled ("none"). Select an active provider (Dub.co, Bitly, TinyURL, Custom API, or Native) and click "Save Configuration" before syncing.';
+      return {
+        total: articles.length,
+        updated: 0,
+        validated: 0,
+        failed: articles.length,
+        activeProvider,
+        message: `Sync skipped for ${articles.length} articles: Shortener provider is disabled ("none").`,
+        errorSummary: errorMsg,
+        errors: articles.map((art) => ({
+          articleId: art.id,
+          slug: art.slug,
+          title: art.title,
+          reason: 'Provider is set to "none". Please select and configure a provider in Dev Config first.',
+        })),
+      };
+    }
+
     let updated = 0;
     let validated = 0;
     let failed = 0;
+    const errors: SyncErrorDetail[] = [];
+    const reasonCounts: Record<string, number> = {};
 
     for (const art of articles) {
       try {
@@ -428,6 +571,7 @@ export class ShortenerService {
           articleId: art.id,
           title: art.title,
           forceRegenerate: options.forceRegenerate,
+          ...options,
         });
 
         if (res.isShortened && res.shortUrl) {
@@ -438,10 +582,38 @@ export class ShortenerService {
           }
         } else {
           failed++;
+          const reason =
+            res.error ||
+            (art.shortUrl
+              ? 'Stored short link validation probe failed'
+              : `Provider "${activeProvider}" failed to generate short link`);
+          errors.push({
+            articleId: art.id,
+            slug: art.slug,
+            title: art.title,
+            reason,
+          });
+          reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
         }
-      } catch {
+      } catch (err: any) {
         failed++;
+        const reason = err.message || 'Unexpected exception during sync';
+        errors.push({
+          articleId: art.id,
+          slug: art.slug,
+          title: art.title,
+          reason,
+        });
+        reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
       }
+    }
+
+    let errorSummary: string | undefined = undefined;
+    if (errors.length > 0) {
+      const topReasons = Object.entries(reasonCounts)
+        .map(([r, count]) => `${count}x: ${r}`)
+        .join('; ');
+      errorSummary = `Provider [${activeProvider.toUpperCase()}] issues detected: ${topReasons}`;
     }
 
     return {
@@ -449,7 +621,10 @@ export class ShortenerService {
       updated,
       validated,
       failed,
-      message: `Completed processing ${articles.length} articles: ${updated} updated/healed, ${validated} validated healthy, ${failed} failed/skipped.`,
+      activeProvider,
+      message: `Completed processing ${articles.length} articles (${activeProvider.toUpperCase()}): ${updated} updated/healed, ${validated} validated healthy, ${failed} failed/skipped.`,
+      errorSummary,
+      errors,
     };
   }
 }

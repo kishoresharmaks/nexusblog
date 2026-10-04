@@ -257,5 +257,65 @@ describe('ShortenerService', () => {
     expect(result.isShortened).toBe(false);
     expect(result.provider).toBe('fallback');
     expect(result.shortUrl).toContain(originalUrl);
+    expect(result.error).toContain('Unauthorized');
+  });
+
+  it('should return clear diagnostic error summary when syncAllArticles runs with provider set to "none"', async () => {
+    mockPrisma.systemSetting.findUnique.mockImplementation(async ({ where }: { where: { key: string } }) => {
+      if (where.key === 'shortenerProvider') return { value: 'none' };
+      if (where.key === 'siteUrl') return { value: 'https://nexusnation.in' };
+      return null;
+    });
+
+    mockPrisma.article.findMany.mockResolvedValue([
+      { id: '1', slug: 'art-1', title: 'Article 1', shortUrl: null, shortUrlProvider: null },
+      { id: '2', slug: 'art-2', title: 'Article 2', shortUrl: null, shortUrlProvider: null },
+    ]);
+
+    const result = await service.syncAllArticles();
+
+    expect(result.total).toBe(2);
+    expect(result.failed).toBe(2);
+    expect(result.activeProvider).toBe('none');
+    expect(result.errorSummary).toContain('disabled');
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors[0].reason).toContain('none');
+  });
+
+  it('should collect individual per-article error reasons when a provider fails during syncAllArticles', async () => {
+    mockPrisma.systemSetting.findUnique.mockImplementation(async ({ where }: { where: { key: string } }) => {
+      if (where.key === 'shortenerProvider') return { value: 'dub' };
+      if (where.key === 'shortenerApiKey') return { value: 'dub-bad-token' };
+      if (where.key === 'siteUrl') return { value: 'https://nexusnation.in' };
+      return null;
+    });
+
+    mockPrisma.article.findMany.mockResolvedValue([
+      { id: 'art-1', slug: 'art-1', title: 'System Architecture', shortUrl: null, shortUrlProvider: null },
+    ]);
+    mockPrisma.article.findUnique.mockResolvedValue({
+      id: 'art-1',
+      slug: 'art-1',
+      title: 'System Architecture',
+      status: 'PUBLISHED',
+      shortUrl: null,
+    });
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => 'Unauthorized: Invalid API Key',
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await service.syncAllArticles();
+
+    expect(result.total).toBe(1);
+    expect(result.failed).toBe(1);
+    expect(result.activeProvider).toBe('dub');
+    expect(result.errorSummary).toContain('Unauthorized');
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].title).toBe('System Architecture');
+    expect(result.errors[0].reason).toContain('Dub.co HTTP 401: Unauthorized');
   });
 });

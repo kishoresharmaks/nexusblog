@@ -31,6 +31,10 @@ import {
   Terminal,
   Share2,
   Link2,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { systemSettingsApi, shortenerApi } from '@/lib/api-client';
@@ -95,8 +99,17 @@ export default function AdminDevConfigPage() {
     updated: number;
     validated: number;
     failed: number;
+    activeProvider?: string;
     message: string;
+    errorSummary?: string;
+    errors?: Array<{
+      articleId: string;
+      slug: string;
+      title: string;
+      reason: string;
+    }>;
   } | null>(null);
+  const [showSyncErrorDetails, setShowSyncErrorDetails] = useState(true);
   const [shortenerTestResult, setShortenerTestResult] = useState<{
     success: boolean;
     message: string;
@@ -343,9 +356,27 @@ export default function AdminDevConfigPage() {
     setIsSyncingShortlinks(true);
     setSyncShortlinksResult(null);
     try {
-      const res = await shortenerApi.syncAllArticles({ forceRegenerate });
+      const res = await shortenerApi.syncAllArticles({
+        forceRegenerate,
+        provider: shortenerProvider,
+        apiKey: shortenerApiKey.trim() || undefined,
+        customDomain: shortenerCustomDomain.trim() || undefined,
+        workspaceId: shortenerWorkspaceId.trim() || undefined,
+        customEndpoint: shortenerCustomEndpoint.trim() || undefined,
+        customMethod: shortenerCustomMethod,
+        customHeaders: shortenerCustomHeaders.trim() || undefined,
+        customBodyTemplate: shortenerCustomBodyTemplate.trim() || undefined,
+        customResponsePath: shortenerCustomResponsePath.trim() || undefined,
+        autoValidate: shortenerAutoValidate,
+      });
       setSyncShortlinksResult(res);
-      toast.success(res.message);
+      if (res.failed > 0 && res.updated === 0 && res.validated === 0) {
+        toast.error(res.errorSummary || res.message);
+      } else if (res.failed > 0) {
+        toast.warning(res.message);
+      } else {
+        toast.success(res.message);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Failed to sync article shortlinks');
     } finally {
@@ -1002,17 +1033,73 @@ ROBOTS_INDEXING_MODE=${robotsIndexingMode}
 
                 {/* Bulk Sync Result Display */}
                 {syncShortlinksResult && (
-                  <div className="p-4 rounded-xl border border-purple-500/30 bg-purple-500/10 text-xs font-mono text-purple-300 space-y-2 animate-in fade-in duration-200">
-                    <div className="flex items-center gap-2 font-bold text-purple-200">
-                      <CheckCircle2 className="h-4 w-4 text-purple-400" />
-                      <span>{syncShortlinksResult.message}</span>
+                  <div
+                    className={`p-4 rounded-xl border text-xs font-mono space-y-3 animate-in fade-in duration-200 ${
+                      syncShortlinksResult.failed > 0 && syncShortlinksResult.updated === 0 && syncShortlinksResult.validated === 0
+                        ? 'border-rose-500/30 bg-rose-500/10 text-rose-300'
+                        : syncShortlinksResult.failed > 0
+                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                          : 'border-purple-500/30 bg-purple-500/10 text-purple-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2 font-bold">
+                      {syncShortlinksResult.failed === 0 ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      ) : syncShortlinksResult.updated === 0 && syncShortlinksResult.validated === 0 ? (
+                        <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                      )}
+                      <span className="leading-relaxed text-foreground">{syncShortlinksResult.message}</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-purple-500/20 text-[11px]">
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-border/40 text-[11px]">
                       <div>Total Articles: <strong className="text-foreground">{syncShortlinksResult.total}</strong></div>
                       <div>Updated / Healed: <strong className="text-emerald-400">{syncShortlinksResult.updated}</strong></div>
                       <div>Healthy Stored: <strong className="text-sky-400">{syncShortlinksResult.validated}</strong></div>
                       <div>Failed / Skipped: <strong className="text-rose-400">{syncShortlinksResult.failed}</strong></div>
                     </div>
+
+                    {/* Root Cause Diagnostic Callout */}
+                    {syncShortlinksResult.errorSummary && (
+                      <div className="p-2.5 rounded-lg bg-background/60 border border-rose-500/30 text-[11px] font-sans text-rose-200 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold font-mono text-rose-300 text-xs">
+                          <AlertCircle className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+                          <span>Root Cause Diagnostics:</span>
+                        </div>
+                        <p className="leading-relaxed">{syncShortlinksResult.errorSummary}</p>
+                      </div>
+                    )}
+
+                    {/* Per-Article Error Breakdown */}
+                    {syncShortlinksResult.errors && syncShortlinksResult.errors.length > 0 && (
+                      <div className="pt-2 border-t border-border/40 space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowSyncErrorDetails(!showSyncErrorDetails)}
+                          className="text-[11px] font-semibold text-muted-foreground hover:text-foreground inline-flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          {showSyncErrorDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          <span>{showSyncErrorDetails ? 'Hide' : 'View'} Failure Details ({syncShortlinksResult.errors.length} articles)</span>
+                        </button>
+
+                        {showSyncErrorDetails && (
+                          <div className="max-h-48 overflow-y-auto rounded-lg border border-border/50 bg-background/80 divide-y divide-border/30 text-[10px]">
+                            {syncShortlinksResult.errors.map((err, idx) => (
+                              <div key={idx} className="p-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 hover:bg-muted/30">
+                                <div className="truncate max-w-[280px]">
+                                  <span className="font-semibold text-foreground">{err.title}</span>
+                                  <span className="text-muted-foreground text-[9px] block">/articles/{err.slug}</span>
+                                </div>
+                                <span className="text-rose-400 shrink-0 font-mono text-[10px] bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                                  {err.reason}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
