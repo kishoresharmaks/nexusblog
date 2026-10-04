@@ -169,6 +169,16 @@ export class ShortenerService {
 
     // 2. Persistent Link Validation & Recovery Pipeline
     if (article) {
+      // Shortlinks are strictly generated and persisted ONLY when the article status is PUBLISHED
+      if (article.status !== 'PUBLISHED') {
+        return {
+          shortUrl: targetUrl,
+          isShortened: false,
+          provider: 'draft_bypass',
+          originalUrl: targetUrl,
+        };
+      }
+
       options.slug = article.slug;
       options.articleId = article.id;
       options.title = options.title || article.title;
@@ -385,6 +395,10 @@ export class ShortenerService {
 
     if (!article) {
       throw new NotFoundException(`Short link code '${code}' was not found.`);
+    }
+
+    if (article.status !== 'PUBLISHED') {
+      throw new NotFoundException(`Article is currently not published.`);
     }
 
     const siteUrl = (await this.getSetting('siteUrl')) || 'https://nexusnation.in';

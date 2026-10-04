@@ -29,6 +29,7 @@ import {
   ChevronDown,
   FileCode,
   Lightbulb,
+  Megaphone,
 } from 'lucide-react';
 import { MediaPickerModal } from '@/components/media/media-picker-modal';
 import { normalizeMediaUrl } from '@nexus/config';
@@ -616,6 +617,24 @@ Status: 0 packet loss, 100% idempotency verified.`,
                     <p className="text-[10px] text-muted-foreground">Tabs for TS, Python, Go, Rust</p>
                   </div>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertText('\n<InArticleAd slotIndex={1} />\n', '', '');
+                    setShowComponentMenu(false);
+                    toast.success('In-Article Ad Break inserted');
+                  }}
+                  className="w-full text-left px-2.5 py-2 rounded-xl text-xs hover:bg-muted/70 text-foreground flex items-center gap-2.5 transition-colors"
+                >
+                  <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-500">
+                    <Megaphone className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">In-Article Ad Placement</p>
+                    <p className="text-[10px] text-muted-foreground">Sponsored in-content ad break slot</p>
+                  </div>
+                </button>
               </div>
             )}
           </div>
@@ -663,6 +682,18 @@ Status: 0 packet loss, 100% idempotency verified.`,
           >
             <TerminalIcon className="h-2.5 w-2.5 text-violet-500" />
             <span>Terminal</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              insertText('\n<InArticleAd slotIndex={1} />\n', '', '');
+              toast.success('In-Article Ad Break inserted');
+            }}
+            className="px-2 py-0.5 rounded-md border border-border/80 bg-background hover:border-pink-500/50 hover:bg-pink-500/5 text-foreground transition-all flex items-center gap-1 cursor-pointer"
+          >
+            <Megaphone className="h-2.5 w-2.5 text-pink-500" />
+            <span>Ad Break</span>
           </button>
         </div>
 

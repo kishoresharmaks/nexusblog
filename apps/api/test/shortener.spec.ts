@@ -130,6 +130,7 @@ describe('ShortenerService', () => {
       id: 'art-001',
       title: 'Distributed Transactions',
       slug: 'distributed-transactions',
+      status: 'PUBLISHED',
       shortUrl: 'https://dub.sh/tx123',
       shortUrlProvider: 'dub',
     });
@@ -164,6 +165,7 @@ describe('ShortenerService', () => {
       id: 'art-002',
       title: 'Database Sharding',
       slug: 'database-sharding',
+      status: 'PUBLISHED',
       shortUrl: 'https://deadlink.com/broken',
       shortUrlProvider: 'dub',
     });
@@ -200,6 +202,37 @@ describe('ShortenerService', () => {
         shortUrlProvider: 'tinyurl',
       }),
     });
+  });
+
+  it('should bypass shortlink creation for DRAFT or unpublished articles', async () => {
+    mockPrisma.systemSetting.findUnique.mockImplementation(async ({ where }: { where: { key: string } }) => {
+      if (where.key === 'shortenerProvider') return { value: 'tinyurl' };
+      if (where.key === 'shortenerApiKey') return { value: 'tiny-token-123' };
+      if (where.key === 'siteUrl') return { value: 'https://nexusnation.in' };
+      return null;
+    });
+
+    mockPrisma.article.findUnique.mockResolvedValue({
+      id: 'art-draft-001',
+      title: 'Unpublished Draft Article',
+      slug: 'unpublished-draft-article',
+      status: 'DRAFT',
+    });
+
+    const mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await service.generateShortUrl({
+      url: 'https://nexusnation.in/articles/unpublished-draft-article',
+      articleId: 'art-draft-001',
+    });
+
+    expect(result.isShortened).toBe(false);
+    expect(result.provider).toBe('draft_bypass');
+    expect(result.shortUrl).toBe('https://nexusnation.in/articles/unpublished-draft-article');
+    // Ensure no external API call or DB update was made
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockPrisma.article.update).not.toHaveBeenCalled();
   });
 
   it('should gracefully fallback to canonical URL on provider error', async () => {

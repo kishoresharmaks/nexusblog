@@ -63,59 +63,61 @@ import { normalizeMediaUrl } from '@nexus/config';
 import { toast } from 'sonner';
 import { guestPostsApi, categoriesApi, articleTypesApi } from '@/lib/api-client';
 
-const SAMPLE_MDX_STARTER = `# Designing High-Performance Distributed Systems
+const SAMPLE_MDX_STARTER = `# [Article Title]: In-Depth Technical Architecture & Guide
 
-Modern distributed systems require strict isolation, predictable tail latency, and resilient failover topologies.
+Write a compelling introductory paragraph explaining the core problem, engineering motivation, and architectural goals of this technical guide...
 
-## System Architecture
+## 1. System Overview & Problem Statement
 
-Below is the distributed request flow across our edge API gateway, service mesh, and Raft consensus group:
+Explain the background, trade-offs, and why existing approaches fall short under production scale:
+- **Challenge 1:** Concurrency bottlenecks and tail latency spikes
+- **Challenge 2:** Distributed state consistency during node failovers
+- **Design Objective:** Sub-5ms p99 latency with zero data loss
+
+## 2. High-Level Architecture & Data Flow
+
+Illustrate your system design using a Mermaid diagram or flow chart:
 
 \`\`\`mermaid
 graph TD
-    Client[Web & Mobile Clients] -->|HTTPS / gRPC| Gateway[Envoy API Gateway]
-    Gateway -->|JWT Auth & Rate Limit| AuthEngine[Auth Engine]
-    Gateway -->|Internal RPC| Broker[Kafka Event Log]
-    Broker -->|CDC Outbox| DB[(TimescaleDB Cluster)]
+    Client[Client Traffic] --> Gateway[API Gateway]
+    Gateway --> ServiceA[Core Service]
+    ServiceA --> DB[(Primary Store)]
+    ServiceA --> Cache[(Redis Cluster)]
 \`\`\`
 
-<Callout type="tip" title="Production Architecture Tip">
-Always deploy Raft state machines across at least 3 distinct availability zones to survive regional network partitions without split-brain anomalies.
+<Callout type="tip" title="Engineering Best Practice">
+Always define clear timeout budgets and circuit breaker thresholds across internal service boundaries to prevent cascading failures.
 </Callout>
 
-## Benchmark Results
+## 3. Core Implementation & Code Example
 
-<Benchmark
-  title="Sliding Window vs Token Bucket (1M ops/sec)"
-  description="Measured p99 latency under simulated 20ms network jitter."
-  metrics={[
-    { label: "Sliding Window (Lua)", value: "0.84ms", change: "-42% latency", trend: "up" },
-    { label: "Token Bucket (Redis)", value: "1.12ms", change: "-28% latency", trend: "up" },
-    { label: "Memory Footprint", value: "64MB", change: "O(1) memory", trend: "neutral" }
-  ]}
-/>
-
-## Implementation Code
+Provide syntax-highlighted code snippets demonstrating atomic transactions, concurrency guards, or data structures:
 
 \`\`\`typescript
-export async function acquireDistributedLock(key: string, ttlMs: number): Promise<boolean> {
-  const nonce = crypto.randomUUID();
-  const acquired = await redis.set(key, nonce, 'PX', ttlMs, 'NX');
-  return acquired === 'OK';
+export async function executeAtomicTransaction(key: string, value: any): Promise<boolean> {
+  // Implement idempotent write logic with TTL guards
+  return true;
 }
 \`\`\`
 
-## Terminal Verification
+## 4. Performance & Benchmark Metrics
 
-<Terminal
-  title="benchmarks/run-load.sh"
-  command="./run-load.sh --concurrency=50 --duration=30s"
->
-Running 100k requests over 50 parallel gRPC streams...
-All requests finished in 842ms (118,764 req/sec)
-p50: 0.42ms | p90: 0.78ms | p99: 1.12ms | p99.9: 2.84ms
-Status: 0 packet loss, 100% idempotency verified.
-</Terminal>
+Show real-world benchmarks or simulated load testing numbers:
+
+<Benchmark
+  title="Latency & Throughput Comparison"
+  description="Measured p99 latency under 50,000 concurrent requests/sec."
+  metrics={[
+    { label: "Optimized Pipeline", value: "1.24ms", change: "-45% latency", trend: "up" },
+    { label: "Standard Baseline", value: "3.80ms", change: "Baseline", trend: "neutral" },
+    { label: "CPU Utilization", value: "28%", change: "-30% CPU", trend: "up" }
+  ]}
+/>
+
+## 5. Key Takeaways & Lessons Learned
+
+Summarize the key architectural decisions, lessons learned, and recommendations for engineers implementing this system in production.
 `;
 
 function GuestPostSubmitContent() {
@@ -145,10 +147,10 @@ function GuestPostSubmitContent() {
   } | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Form states
-  const [title, setTitle] = useState('Designing High-Performance Distributed Systems');
-  const [slug, setSlug] = useState('designing-high-performance-distributed-systems');
-  const [excerpt, setExcerpt] = useState('An engineering breakdown of distributed consensus, latency isolation, and Raft failover topologies.');
+  // Form states - Empty defaults with clear placeholders for new submissions
+  const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
+  const [excerpt, setExcerpt] = useState('');
   const [category, setCategory] = useState('');
   const [categoriesList, setCategoriesList] = useState<Array<{ id: string; name: string; slug: string }>>([]);
   const [articleTypesList, setArticleTypesList] = useState<Array<{ id: string; name: string; slug: string }>>([]);

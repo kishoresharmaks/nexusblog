@@ -17,6 +17,7 @@ import { InteractiveDiagram } from './interactive-diagram';
 import { CodeTabs, CodeTab } from './code-tabs';
 import { ApiRequest, ApiResponse } from './api-spec';
 import { KaTeX } from './katex-math';
+import { InArticleAd } from '../ads/in-article-ad';
 import { normalizeMediaUrl } from '@nexus/config';
 
 function getHeadingId(children: any): string | undefined {
@@ -191,6 +192,13 @@ export function ClientMdxRenderer({
     KaTeX: ({ math, block, children }: any) => (
       <KaTeX math={math || (typeof children === 'string' ? children : '')} block={block} />
     ),
+
+    inarticlead: ({ slotIndex = 1 }: any) => <InArticleAd slotIndex={Number(slotIndex) || 1} />,
+    InArticleAd: ({ slotIndex = 1 }: any) => <InArticleAd slotIndex={Number(slotIndex) || 1} />,
+    adbreak: ({ slotIndex = 1 }: any) => <InArticleAd slotIndex={Number(slotIndex) || 1} />,
+    AdBreak: ({ slotIndex = 1 }: any) => <InArticleAd slotIndex={Number(slotIndex) || 1} />,
+    sponsorbreak: ({ slotIndex = 1 }: any) => <InArticleAd slotIndex={Number(slotIndex) || 1} />,
+    SponsorBreak: ({ slotIndex = 1 }: any) => <InArticleAd slotIndex={Number(slotIndex) || 1} />,
 
     // HTML standard elements
     h1: ({ node, children, ...props }: any) => (
