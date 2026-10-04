@@ -77,12 +77,26 @@ export default function AdminDevConfigPage() {
   const [robotsCustomContent, setRobotsCustomContent] = useState('');
 
   // URL Shortener Configuration State
-  const [shortenerProvider, setShortenerProvider] = useState<'none' | 'dub' | 'bitly' | 'tinyurl'>('none');
+  const [shortenerProvider, setShortenerProvider] = useState<'none' | 'dub' | 'bitly' | 'tinyurl' | 'custom' | 'native'>('none');
   const [shortenerApiKey, setShortenerApiKey] = useState('');
   const [shortenerCustomDomain, setShortenerCustomDomain] = useState('');
   const [shortenerWorkspaceId, setShortenerWorkspaceId] = useState('');
+  const [shortenerCustomEndpoint, setShortenerCustomEndpoint] = useState('');
+  const [shortenerCustomMethod, setShortenerCustomMethod] = useState<'POST' | 'GET'>('POST');
+  const [shortenerCustomHeaders, setShortenerCustomHeaders] = useState('{\n  "Content-Type": "application/json"\n}');
+  const [shortenerCustomBodyTemplate, setShortenerCustomBodyTemplate] = useState('{\n  "url": "{{url}}",\n  "domain": "{{domain}}"\n}');
+  const [shortenerCustomResponsePath, setShortenerCustomResponsePath] = useState('shortUrl');
+  const [shortenerAutoValidate, setShortenerAutoValidate] = useState(true);
   const [showShortenerKey, setShowShortenerKey] = useState(false);
   const [isTestingShortener, setIsTestingShortener] = useState(false);
+  const [isSyncingShortlinks, setIsSyncingShortlinks] = useState(false);
+  const [syncShortlinksResult, setSyncShortlinksResult] = useState<{
+    total: number;
+    updated: number;
+    validated: number;
+    failed: number;
+    message: string;
+  } | null>(null);
   const [shortenerTestResult, setShortenerTestResult] = useState<{
     success: boolean;
     message: string;
@@ -144,6 +158,12 @@ export default function AdminDevConfigPage() {
         setShortenerApiKey(settingsData.shortenerApiKey?.value || '');
         setShortenerCustomDomain(settingsData.shortenerCustomDomain?.value || '');
         setShortenerWorkspaceId(settingsData.shortenerWorkspaceId?.value || '');
+        setShortenerCustomEndpoint(settingsData.shortenerCustomEndpoint?.value || '');
+        setShortenerCustomMethod((settingsData.shortenerCustomMethod?.value as any) || 'POST');
+        setShortenerCustomHeaders(settingsData.shortenerCustomHeaders?.value || '{\n  "Content-Type": "application/json"\n}');
+        setShortenerCustomBodyTemplate(settingsData.shortenerCustomBodyTemplate?.value || '{\n  "url": "{{url}}",\n  "domain": "{{domain}}"\n}');
+        setShortenerCustomResponsePath(settingsData.shortenerCustomResponsePath?.value || 'shortUrl');
+        setShortenerAutoValidate(settingsData.shortenerAutoValidate?.value !== 'false');
       }
 
       if (diagData) {
@@ -183,6 +203,12 @@ export default function AdminDevConfigPage() {
         shortenerApiKey: shortenerApiKey.trim(),
         shortenerCustomDomain: shortenerCustomDomain.trim(),
         shortenerWorkspaceId: shortenerWorkspaceId.trim(),
+        shortenerCustomEndpoint: shortenerCustomEndpoint.trim(),
+        shortenerCustomMethod,
+        shortenerCustomHeaders: shortenerCustomHeaders.trim(),
+        shortenerCustomBodyTemplate: shortenerCustomBodyTemplate.trim(),
+        shortenerCustomResponsePath: shortenerCustomResponsePath.trim(),
+        shortenerAutoValidate: String(shortenerAutoValidate),
       };
 
       await systemSettingsApi.updateBatch(payload);
@@ -274,7 +300,7 @@ export default function AdminDevConfigPage() {
 
   const handleTestShortener = async () => {
     if (shortenerProvider === 'none') {
-      toast.info('Please select a shortener provider (Dub.co, Bitly, or TinyURL) to test.');
+      toast.info('Please select a shortener provider (Dub.co, Bitly, TinyURL, Custom API, or Native) to test.');
       return;
     }
 
@@ -289,6 +315,11 @@ export default function AdminDevConfigPage() {
         apiKey: apiKeyToTest || shortenerApiKey,
         customDomain: shortenerCustomDomain.trim() || undefined,
         workspaceId: shortenerWorkspaceId.trim() || undefined,
+        customEndpoint: shortenerCustomEndpoint.trim() || undefined,
+        customMethod: shortenerCustomMethod,
+        customHeaders: shortenerCustomHeaders.trim() || undefined,
+        customBodyTemplate: shortenerCustomBodyTemplate.trim() || undefined,
+        customResponsePath: shortenerCustomResponsePath.trim() || undefined,
       });
 
       setShortenerTestResult(res);
@@ -305,6 +336,20 @@ export default function AdminDevConfigPage() {
       toast.error(err.message || 'Shortener connection test error');
     } finally {
       setIsTestingShortener(false);
+    }
+  };
+
+  const handleSyncAllShortlinks = async (forceRegenerate = false) => {
+    setIsSyncingShortlinks(true);
+    setSyncShortlinksResult(null);
+    try {
+      const res = await shortenerApi.syncAllArticles({ forceRegenerate });
+      setSyncShortlinksResult(res);
+      toast.success(res.message);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sync article shortlinks');
+    } finally {
+      setIsSyncingShortlinks(false);
     }
   };
 
@@ -699,12 +744,14 @@ ROBOTS_INDEXING_MODE=${robotsIndexingMode}
               <label className="font-mono text-xs font-bold text-foreground">
                 Shortener Provider Engine
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 {[
                   { id: 'none', label: 'Disabled', desc: 'Canonical URL' },
                   { id: 'dub', label: 'Dub.co', desc: 'Modern & Fast' },
                   { id: 'bitly', label: 'Bitly API', desc: 'bit.ly links' },
                   { id: 'tinyurl', label: 'TinyURL', desc: 'Simple API' },
+                  { id: 'custom', label: 'Custom API', desc: 'Webhook / REST' },
+                  { id: 'native', label: 'Native /s/', desc: 'Self-Hosted' },
                 ].map((prov) => (
                   <button
                     key={prov.id}
@@ -723,99 +770,256 @@ ROBOTS_INDEXING_MODE=${robotsIndexingMode}
               </div>
             </div>
 
+            {/* Provider Configuration Forms */}
             {shortenerProvider !== 'none' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-border/40">
-                {/* API Key */}
-                <div className="space-y-2 md:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
-                      <Key className="h-3.5 w-3.5 text-primary" />
-                      <span>{shortenerProvider.toUpperCase()} API Key / Bearer Token *</span>
-                    </label>
+              <div className="space-y-6 pt-2 border-t border-border/40">
+                {/* 1. Dub.co / Bitly / TinyURL Configuration */}
+                {(shortenerProvider === 'dub' || shortenerProvider === 'bitly' || shortenerProvider === 'tinyurl') && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-2 md:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <Key className="h-3.5 w-3.5 text-primary" />
+                          <span>{shortenerProvider.toUpperCase()} API Key / Bearer Token *</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowShortenerKey(!showShortenerKey)}
+                          className="text-[11px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                        >
+                          {showShortenerKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                          <span>{showShortenerKey ? 'Hide' : 'Reveal'}</span>
+                        </button>
+                      </div>
+                      <input
+                        type={showShortenerKey ? 'text' : 'password'}
+                        placeholder={`Enter your ${shortenerProvider.toUpperCase()} API Key`}
+                        value={shortenerApiKey}
+                        onChange={(e) => setShortenerApiKey(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Globe className="h-3.5 w-3.5 text-primary" />
+                        <span>Custom Short Domain (Optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. nx.link, nxs.to, or dub.sh"
+                        value={shortenerCustomDomain}
+                        onChange={(e) => setShortenerCustomDomain(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                      />
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        Leave blank to use provider default domain.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Sliders className="h-3.5 w-3.5 text-primary" />
+                        <span>Workspace / Group ID (Optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. ws_12345 (Dub.co) or Bk12345 (Bitly)"
+                        value={shortenerWorkspaceId}
+                        onChange={(e) => setShortenerWorkspaceId(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                      />
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        Target workspace or group GUID for team accounts.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Custom REST API / Webhook Configuration */}
+                {shortenerProvider === 'custom' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 p-4 rounded-xl border border-sky-500/20 bg-sky-500/5">
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Code2 className="h-3.5 w-3.5 text-sky-400" />
+                        <span>Custom REST API Endpoint URL *</span>
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https://api.short.io/links or https://kutt.it/api/v2/links"
+                        value={shortenerCustomEndpoint}
+                        onChange={(e) => setShortenerCustomEndpoint(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-mono text-xs font-bold text-foreground">HTTP Method</label>
+                      <select
+                        value={shortenerCustomMethod}
+                        onChange={(e) => setShortenerCustomMethod(e.target.value as any)}
+                        className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                      >
+                        <option value="POST">POST (JSON Body Payload)</option>
+                        <option value="GET">GET (Query Parameters)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="font-mono text-xs font-bold text-foreground">Response JSON Key Path</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. shortURL, data.short_url, or link"
+                        value={shortenerCustomResponsePath}
+                        onChange={(e) => setShortenerCustomResponsePath(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                      />
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        Dot notation path to extract the shortened URL from response.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="font-mono text-xs font-bold text-foreground">Custom HTTP Headers (JSON)</label>
+                      <textarea
+                        rows={3}
+                        value={shortenerCustomHeaders}
+                        onChange={(e) => setShortenerCustomHeaders(e.target.value)}
+                        placeholder={'{\n  "Authorization": "Bearer YOUR_KEY",\n  "Content-Type": "application/json"\n}'}
+                        className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="font-mono text-xs font-bold text-foreground">Request Body Template (JSON)</label>
+                      <textarea
+                        rows={3}
+                        value={shortenerCustomBodyTemplate}
+                        onChange={(e) => setShortenerCustomBodyTemplate(e.target.value)}
+                        placeholder={'{\n  "originalURL": "{{url}}",\n  "domain": "{{domain}}"\n}'}
+                        className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                      />
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        Placeholders: <code className="text-primary font-bold">{'{{url}}'}</code>, <code className="text-primary font-bold">{'{{domain}}'}</code>, <code className="text-primary font-bold">{'{{title}}'}</code>, <code className="text-primary font-bold">{'{{slug}}'}</code>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Native Internal Shortener Configuration */}
+                {shortenerProvider === 'native' && (
+                  <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-emerald-400" />
+                      <h3 className="text-xs font-bold font-mono text-emerald-400 uppercase">
+                        Self-Hosted MongoDB &amp; Next.js Internal Shortener
+                      </h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Generates collision-resistant short codes (e.g. <code className="text-primary font-mono font-bold">nexusnation.in/s/k9x2ab</code>) permanently saved to MongoDB and redirected with HTTP 308. 100% free, zero external API keys, 0ms latency.
+                    </p>
+
+                    <div className="space-y-2">
+                      <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Globe className="h-3.5 w-3.5 text-primary" />
+                        <span>Custom Domain for Shortlinks (Optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. nx.to or leave blank to use site URL"
+                        value={shortenerCustomDomain}
+                        onChange={(e) => setShortenerCustomDomain(e.target.value)}
+                        className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Link Health Verification & Auto-Healing Settings */}
+                <div className="p-4 rounded-xl border border-border/60 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs font-mono font-bold text-foreground flex items-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      <span>Persistent Storage &amp; Auto-Healing Probe</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Reuses the same database shortlink for each article across all shares. If a stored link becomes unreachable, automatically regenerates a healthy link.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={shortenerAutoValidate}
+                      onChange={(e) => setShortenerAutoValidate(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                {/* Test Connection & Bulk Sync Actions */}
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
-                      onClick={() => setShowShortenerKey(!showShortenerKey)}
-                      className="text-[11px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                      onClick={handleTestShortener}
+                      disabled={isTestingShortener || (shortenerProvider !== 'native' && shortenerProvider !== 'custom' && !shortenerApiKey)}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono font-bold hover:bg-sky-500/20 transition-all cursor-pointer disabled:opacity-50 shrink-0"
                     >
-                      {showShortenerKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                      <span>{showShortenerKey ? 'Hide' : 'Reveal'}</span>
+                      {isTestingShortener ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Testing Provider...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="h-3.5 w-3.5" />
+                          <span>Test Provider &amp; Generate Sample</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSyncAllShortlinks(false)}
+                      disabled={isSyncingShortlinks}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/30 text-xs font-mono font-bold hover:bg-purple-500/20 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                    >
+                      {isSyncingShortlinks ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Syncing Articles...</span>
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          <span>Sync &amp; Validate All Article Shortlinks</span>
+                        </>
+                      )}
                     </button>
                   </div>
-                  <input
-                    type={showShortenerKey ? 'text' : 'password'}
-                    placeholder={`Enter your ${shortenerProvider.toUpperCase()} API Key`}
-                    value={shortenerApiKey}
-                    onChange={(e) => setShortenerApiKey(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                  />
                 </div>
 
-                {/* Custom Short Domain */}
-                <div className="space-y-2">
-                  <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <Globe className="h-3.5 w-3.5 text-primary" />
-                    <span>Custom Short Domain (Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. nx.link, nxs.to, or dub.sh"
-                    value={shortenerCustomDomain}
-                    onChange={(e) => setShortenerCustomDomain(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                  />
-                  <p className="text-[10px] text-muted-foreground font-mono">
-                    Leave blank to use provider default domain.
-                  </p>
-                </div>
-
-                {/* Workspace / Group GUID */}
-                <div className="space-y-2">
-                  <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <Sliders className="h-3.5 w-3.5 text-primary" />
-                    <span>Workspace / Group ID (Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. ws_12345 (Dub.co) or Bk12345 (Bitly)"
-                    value={shortenerWorkspaceId}
-                    onChange={(e) => setShortenerWorkspaceId(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                  />
-                  <p className="text-[10px] text-muted-foreground font-mono">
-                    Target workspace or group GUID for team accounts.
-                  </p>
-                </div>
-
-                {/* Test Connection Button */}
-                <div className="md:col-span-2 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <p className="text-xs text-muted-foreground">
-                    Test your credentials by generating a sample short link before saving.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={handleTestShortener}
-                    disabled={isTestingShortener || !shortenerApiKey}
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/30 text-xs font-mono font-bold hover:bg-sky-500/20 transition-all cursor-pointer disabled:opacity-50 shrink-0"
-                  >
-                    {isTestingShortener ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Testing Shortener...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="h-3.5 w-3.5" />
-                        <span>Test Connection &amp; Generate Link</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+                {/* Bulk Sync Result Display */}
+                {syncShortlinksResult && (
+                  <div className="p-4 rounded-xl border border-purple-500/30 bg-purple-500/10 text-xs font-mono text-purple-300 space-y-2 animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2 font-bold text-purple-200">
+                      <CheckCircle2 className="h-4 w-4 text-purple-400" />
+                      <span>{syncShortlinksResult.message}</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-purple-500/20 text-[11px]">
+                      <div>Total Articles: <strong className="text-foreground">{syncShortlinksResult.total}</strong></div>
+                      <div>Updated / Healed: <strong className="text-emerald-400">{syncShortlinksResult.updated}</strong></div>
+                      <div>Healthy Stored: <strong className="text-sky-400">{syncShortlinksResult.validated}</strong></div>
+                      <div>Failed / Skipped: <strong className="text-rose-400">{syncShortlinksResult.failed}</strong></div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Test Result Display */}
                 {shortenerTestResult && (
                   <div
-                    className={`md:col-span-2 p-4 rounded-xl border text-xs font-mono space-y-2 animate-in fade-in duration-200 ${
+                    className={`p-4 rounded-xl border text-xs font-mono space-y-2 animate-in fade-in duration-200 ${
                       shortenerTestResult.success
                         ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                         : 'bg-rose-500/10 border-rose-500/30 text-rose-300'

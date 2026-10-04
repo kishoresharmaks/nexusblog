@@ -259,6 +259,9 @@ model Article {
   seoTitle        String?
   seoDescription  String?
   canonicalUrl    String?
+  shortUrl        String?
+  shortUrlProvider String?
+  shortCode       String?     @unique
   noIndex         Boolean     @default(false)
   isGuestPost     Boolean     @default(false)
   guestAuthorName String?

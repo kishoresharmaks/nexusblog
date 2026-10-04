@@ -996,12 +996,15 @@ export const shortenerApi = {
     articleId?: string;
     title?: string;
     platform?: 'twitter' | 'linkedin' | 'reddit' | 'whatsapp' | 'generic' | string;
+    forceRegenerate?: boolean;
   }) {
     return request<{
       shortUrl: string;
       isShortened: boolean;
       provider: string;
       originalUrl: string;
+      fromDb?: boolean;
+      healed?: boolean;
     }>('/shortener/generate', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -1010,15 +1013,33 @@ export const shortenerApi = {
 
   async testConnection(payload: {
     provider: string;
-    apiKey: string;
+    apiKey?: string;
     customDomain?: string;
     workspaceId?: string;
+    customEndpoint?: string;
+    customMethod?: string;
+    customHeaders?: string;
+    customBodyTemplate?: string;
+    customResponsePath?: string;
   }) {
     return request<{
       success: boolean;
       message: string;
       sampleShortUrl?: string;
     }>('/shortener/test-connection', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+
+  async syncAllArticles(payload: { forceRegenerate?: boolean } = {}) {
+    return request<{
+      total: number;
+      updated: number;
+      validated: number;
+      failed: number;
+      message: string;
+    }>('/shortener/admin/sync-all', {
       method: 'POST',
       body: JSON.stringify(payload),
     }, true);

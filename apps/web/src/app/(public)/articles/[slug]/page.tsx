@@ -376,6 +376,8 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               <ShareButtons
                 title={article.title}
                 url={`/articles/${article.slug}`}
+                articleId={article.id}
+                shortUrl={article.shortUrl}
                 excerpt={article.excerpt}
                 author={authorName}
                 category={categoryName}
@@ -558,6 +560,8 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               <ShareButtons
                 title={article.title}
                 url={`/articles/${article.slug}`}
+                articleId={article.id}
+                shortUrl={article.shortUrl}
                 excerpt={article.excerpt}
                 author={authorName}
                 category={categoryName}

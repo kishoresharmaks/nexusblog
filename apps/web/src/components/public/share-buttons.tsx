@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 interface ShareButtonsProps {
   title: string;
   url?: string;
+  articleId?: string;
+  shortUrl?: string;
   excerpt?: string;
   author?: string;
   category?: string;
@@ -18,6 +20,8 @@ interface ShareButtonsProps {
 export function ShareButtons({
   title,
   url,
+  articleId,
+  shortUrl,
   excerpt,
   author,
   category,
@@ -28,6 +32,13 @@ export function ShareButtons({
   const [shareUrl, setShareUrl] = useState<string>(url || '');
   const [isShortening, setIsShortening] = useState(false);
   const shortLinksCache = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    if (shortUrl) {
+      shortLinksCache.current['generic'] = shortUrl;
+      shortLinksCache.current['default'] = shortUrl;
+    }
+  }, [shortUrl]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -64,8 +75,8 @@ export function ShareButtons({
 
     try {
       const res = await Promise.race([
-        shortenerApi.generateShortUrl({ url: rawUrl, title, platform }),
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+        shortenerApi.generateShortUrl({ url: rawUrl, articleId, title, platform }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500)),
       ]);
 
       if (res && res.shortUrl) {

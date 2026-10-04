@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 
-const SENSITIVE_KEYS = ['brevoApiKey', 'smtpPassword', 'jwtSecret', 'adminSecret', 'shortenerApiKey'];
+const SENSITIVE_KEYS = ['brevoApiKey', 'smtpPassword', 'jwtSecret', 'adminSecret', 'shortenerApiKey', 'shortenerCustomHeaders'];
 
 @Injectable()
 export class SystemSettingsService {
@@ -111,6 +111,36 @@ export class SystemSettingsService {
         defaultValue: process.env.SHORTENER_WORKSPACE_ID || '',
         isSecret: false,
         description: 'Workspace / Group ID for Dub.co or Bitly (optional)',
+      },
+      shortenerCustomEndpoint: {
+        defaultValue: process.env.SHORTENER_CUSTOM_ENDPOINT || '',
+        isSecret: false,
+        description: 'Custom REST API / Webhook endpoint URL for link shortening',
+      },
+      shortenerCustomMethod: {
+        defaultValue: process.env.SHORTENER_CUSTOM_METHOD || 'POST',
+        isSecret: false,
+        description: 'HTTP method for custom shortener API (POST or GET)',
+      },
+      shortenerCustomHeaders: {
+        defaultValue: process.env.SHORTENER_CUSTOM_HEADERS || '{\n  "Content-Type": "application/json"\n}',
+        isSecret: true,
+        description: 'Custom HTTP Headers JSON (e.g. {"Authorization": "Bearer ...", "apikey": "..."})',
+      },
+      shortenerCustomBodyTemplate: {
+        defaultValue: process.env.SHORTENER_CUSTOM_BODY_TEMPLATE || '{\n  "url": "{{url}}",\n  "domain": "{{domain}}"\n}',
+        isSecret: false,
+        description: 'JSON request payload template with {{url}}, {{domain}}, {{title}}, {{slug}} placeholders',
+      },
+      shortenerCustomResponsePath: {
+        defaultValue: process.env.SHORTENER_CUSTOM_RESPONSE_PATH || 'shortUrl',
+        isSecret: false,
+        description: 'JSON path or key name to extract short URL from API response (e.g. shortUrl, link, data.short_url)',
+      },
+      shortenerAutoValidate: {
+        defaultValue: 'true',
+        isSecret: false,
+        description: 'Automatically verify link accessibility before serving and auto-heal if dead',
       },
     };
 
