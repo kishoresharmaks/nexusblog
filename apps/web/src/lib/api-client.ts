@@ -598,15 +598,94 @@ export const newsletterApi = {
       total: number;
       active: number;
       inactive: number;
+      totalCampaigns?: number;
+      lifetimeDelivered?: number;
+      deliveryRate?: number;
       estimatedOpenRate: number;
       estimatedCtr: number;
     }>('/newsletter/stats', {}, true);
   },
-  async broadcast(payload: { subject: string; content: string; previewText?: string; testEmail?: string }) {
-    return request<any>('/newsletter/broadcast', {
+  async generateTemplate(payload: {
+    preset: 'weekly_digest' | 'spotlight' | 'trending_roundup' | 'custom';
+    articleIds?: string[];
+    spotlightSlug?: string;
+    customIntro?: string;
+    customSubject?: string;
+    siteUrl?: string;
+  }) {
+    return request<{
+      preset: string;
+      subject: string;
+      previewText: string;
+      markdownContent: string;
+      htmlContent: string;
+      articleIds: string[];
+      articles: Array<{
+        id: string;
+        title: string;
+        slug: string;
+        excerpt: string;
+        category?: string;
+        viewsCount: number;
+        readingTime: number;
+        coverImage?: string;
+      }>;
+    }>('/newsletter/generate-template', {
       method: 'POST',
       body: JSON.stringify(payload),
     }, true);
+  },
+  async broadcast(payload: {
+    subject: string;
+    content: string;
+    previewText?: string;
+    htmlContent?: string;
+    articleIds?: string[];
+    type?: string;
+    testEmail?: string;
+  }) {
+    return request<{
+      success: boolean;
+      provider?: string;
+      subject: string;
+      previewText?: string;
+      totalRecipients?: number;
+      sentCount?: number;
+      failedCount?: number;
+      campaignId?: string;
+      dispatchedAt?: string;
+      message: string;
+      isTest?: boolean;
+      recipient?: string;
+    }>('/newsletter/broadcast', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }, true);
+  },
+  async getCampaigns(limit = 50, skip = 0) {
+    return request<{
+      items: Array<{
+        id: string;
+        subject: string;
+        previewText?: string;
+        type: string;
+        status: string;
+        content: string;
+        htmlContent?: string;
+        totalRecipients: number;
+        sentCount: number;
+        failedCount: number;
+        provider: string;
+        dispatchedAt: string;
+        createdAt: string;
+      }>;
+      total: number;
+      limit: number;
+      skip: number;
+    }>(`/newsletter/campaigns?limit=${limit}&skip=${skip}`, {}, true);
+  },
+  async getCampaignById(id: string) {
+    return request<any>(`/newsletter/campaigns/${id}`, {}, true);
   },
   async deleteSubscriber(id: string) {
     return request<any>(`/newsletter/subscribers/${id}`, {

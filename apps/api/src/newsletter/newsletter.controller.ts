@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { NewsletterService } from './newsletter.service';
+import { GenerateTemplateDto } from './strategies/newsletter-generator.strategy';
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -37,12 +38,56 @@ export class NewsletterController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR')
   @ApiBearerAuth()
+  @Post('generate-template')
+  @ApiOperation({ summary: 'Auto-generate structured newsletter template from published articles (Admin/Editor)' })
+  generateTemplate(@Body() dto: GenerateTemplateDto) {
+    return this.newsletterService.generateTemplate(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR')
+  @ApiBearerAuth()
   @Post('broadcast')
   @ApiOperation({ summary: 'Send email dispatch broadcast to active subscribers (Admin/Editor)' })
   broadcast(
-    @Body() payload: { subject: string; content: string; previewText?: string },
+    @Body()
+    payload: {
+      subject: string;
+      content: string;
+      previewText?: string;
+      htmlContent?: string;
+      articleIds?: string[];
+      type?: any;
+      testEmail?: string;
+    },
   ) {
     return this.newsletterService.broadcast(payload);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR')
+  @ApiBearerAuth()
+  @Get('campaigns')
+  @ApiOperation({ summary: 'List historical dispatched newsletter campaigns (Admin/Editor)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
+  getCampaigns(
+    @Query('limit') limit?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return this.newsletterService.getCampaigns(
+      limit ? parseInt(limit, 10) : 50,
+      skip ? parseInt(skip, 10) : 0,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'EDITOR')
+  @ApiBearerAuth()
+  @Get('campaigns/:id')
+  @ApiOperation({ summary: 'Get newsletter campaign details by ID (Admin/Editor)' })
+  getCampaignById(@Param('id') id: string) {
+    return this.newsletterService.getCampaignById(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

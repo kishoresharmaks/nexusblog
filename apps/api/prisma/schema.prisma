@@ -427,6 +427,44 @@ model NewsletterSubscriber {
   @@map("newsletter_subscribers")
 }
 
+enum NewsletterCampaignType {
+  WEEKLY_DIGEST
+  DEEP_DIVE_SPOTLIGHT
+  TRENDING_ROUNDUP
+  SECURITY_ADVISORY
+  CUSTOM
+}
+
+enum NewsletterCampaignStatus {
+  DRAFT
+  SENT
+  FAILED
+}
+
+model NewsletterCampaign {
+  id              String                   @id @default(auto()) @map("_id") @db.ObjectId
+  subject         String
+  previewText     String?
+  slug            String?
+  type            NewsletterCampaignType   @default(WEEKLY_DIGEST)
+  status          NewsletterCampaignStatus @default(SENT)
+  content         String                   // Markdown content
+  htmlContent     String?                  // Compiled responsive HTML
+  articleIds      String[]                 @db.ObjectId
+  totalRecipients Int                      @default(0)
+  sentCount       Int                      @default(0)
+  failedCount     Int                      @default(0)
+  provider        String                   @default("brevo")
+  metadata        Json?
+  dispatchedAt    DateTime                 @default(now())
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([type, dispatchedAt])
+  @@index([dispatchedAt])
+  @@map("newsletter_campaigns")
+}
+
 model SystemSetting {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   key         String   @unique

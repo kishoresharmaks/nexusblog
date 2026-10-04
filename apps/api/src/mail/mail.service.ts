@@ -206,11 +206,15 @@ export class MailService {
   async sendBroadcast(params: {
     subject: string;
     content: string;
+    htmlContent?: string;
     previewText?: string;
     recipients: string[];
-  }): Promise<BroadcastResult> {
+    articleIds?: string[];
+    type?: any;
+    metadata?: any;
+  }): Promise<BroadcastResult & { campaignId?: string }> {
     const config = await this.getConfig();
-    const { subject, content, previewText, recipients } = params;
+    const { subject, content, previewText, recipients, htmlContent } = params;
 
     if (!recipients || recipients.length === 0) {
       return {
@@ -223,16 +227,41 @@ export class MailService {
       };
     }
 
-    const htmlBody = this.markdownToEmailHtml(content, subject, previewText);
+    const htmlBody = htmlContent || this.markdownToEmailHtml(content, subject, previewText);
 
     // If Brevo API key is not configured, simulate
     if (!config.brevoApiKey) {
+      let campaignId: string | undefined = undefined;
+      try {
+        const campaign = await this.prisma.newsletterCampaign.create({
+          data: {
+            subject,
+            previewText,
+            content,
+            htmlContent: htmlBody,
+            articleIds: params.articleIds || [],
+            totalRecipients: recipients.length,
+            sentCount: recipients.length,
+            failedCount: 0,
+            provider: 'simulated',
+            status: 'SENT',
+            type: params.type || 'WEEKLY_DIGEST',
+            metadata: params.metadata || {},
+            dispatchedAt: new Date(),
+          },
+        });
+        campaignId = campaign.id;
+      } catch (err: any) {
+        this.logger.warn(`Failed to persist simulated campaign record: ${err.message}`);
+      }
+
       return {
         success: true,
         provider: 'simulated',
         totalRecipients: recipients.length,
         sentCount: recipients.length,
         failedCount: 0,
+        campaignId,
         message: `Simulated broadcast dispatched to ${recipients.length} subscribers. (Configure Brevo API Key in Dev Config for live sending)`,
       };
     }
@@ -272,12 +301,37 @@ export class MailService {
       ? `Successfully dispatched to all ${sentCount} active subscribers via Brevo.`
       : `Dispatched to ${sentCount} subscribers with ${failedCount} failures.${errors.length ? ` (${errors[0]})` : ''}`;
 
+    let campaignId: string | undefined = undefined;
+    try {
+      const campaign = await this.prisma.newsletterCampaign.create({
+        data: {
+          subject,
+          previewText,
+          content,
+          htmlContent: htmlBody,
+          articleIds: params.articleIds || [],
+          totalRecipients: recipients.length,
+          sentCount,
+          failedCount,
+          provider: 'brevo',
+          status: success ? 'SENT' : 'FAILED',
+          type: params.type || 'WEEKLY_DIGEST',
+          metadata: params.metadata || {},
+          dispatchedAt: new Date(),
+        },
+      });
+      campaignId = campaign.id;
+    } catch (err: any) {
+      this.logger.warn(`Failed to persist newsletter campaign record: ${err.message}`);
+    }
+
     return {
       success,
       provider: 'brevo',
       totalRecipients: recipients.length,
       sentCount,
       failedCount,
+      campaignId,
       message,
       details: { errors },
     };
