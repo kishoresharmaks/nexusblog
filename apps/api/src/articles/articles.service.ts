@@ -631,10 +631,28 @@ export class ArticlesService {
     return { bookmarked: true };
   }
 
-  async toggleLike(articleId: string) {
+  async toggleLike(articleId: string, action?: 'like' | 'unlike') {
+    const existing = await this.prisma.article.findUnique({
+      where: { id: articleId },
+      select: { id: true, likesCount: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Article with ID '${articleId}' not found`);
+    }
+
+    const currentLikes = typeof existing.likesCount === 'number' ? existing.likesCount : 0;
+    let nextLikes = currentLikes;
+
+    if (action === 'unlike') {
+      nextLikes = Math.max(0, currentLikes - 1);
+    } else {
+      nextLikes = currentLikes + 1;
+    }
+
     const article = await this.prisma.article.update({
       where: { id: articleId },
-      data: { likesCount: { increment: 1 } },
+      data: { likesCount: nextLikes },
       select: { likesCount: true },
     });
 

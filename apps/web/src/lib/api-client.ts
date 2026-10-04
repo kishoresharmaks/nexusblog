@@ -1,7 +1,36 @@
 import { siteConfig } from '@nexus/config';
 import { authClient } from './auth-client';
 
-async function request<T>(
+// In-flight request deduplication map (prevents duplicate concurrent network requests)
+const inFlightRequests = new Map<string, Promise<any>>();
+
+// Client-side in-memory cache for GET endpoints (TTL in milliseconds)
+const clientCache = new Map<string, { data: any; expiry: number }>();
+
+// Cache TTL configuration (in ms)
+const CACHE_CONFIG: Record<string, number> = {
+  '/ads/public/config': 5 * 60 * 1000, // 5 minutes
+  '/ads/public/placements': 5 * 60 * 1000, // 5 minutes
+  '/categories': 3 * 60 * 1000, // 3 minutes
+  '/article-types': 3 * 60 * 1000, // 3 minutes
+  '/technologies': 3 * 60 * 1000, // 3 minutes
+  '/tags': 3 * 60 * 1000, // 3 minutes
+  '/series': 3 * 60 * 1000, // 3 minutes
+};
+
+export function clearApiClientCache(pattern?: string) {
+  if (!pattern) {
+    clientCache.clear();
+    return;
+  }
+  for (const key of clientCache.keys()) {
+    if (key.includes(pattern)) {
+      clientCache.delete(key);
+    }
+  }
+}
+
+async function executeRequest<T>(
   endpoint: string,
   options: RequestInit = {},
   requireAuth = false,
@@ -64,7 +93,7 @@ async function request<T>(
     try {
       const refreshed = await authClient.refreshToken();
       if (refreshed) {
-        return request<T>(endpoint, options, requireAuth, false);
+        return executeRequest<T>(endpoint, options, requireAuth, false);
       }
     } catch {
       // Refresh failed
@@ -103,6 +132,62 @@ async function request<T>(
   }
 
   return data?.data !== undefined ? data.data : data;
+}
+
+async function request<T>(
+  endpoint: string,
+  options: RequestInit = {},
+  requireAuth = false,
+  retryOnAuthFailure = true,
+): Promise<T> {
+  const isServer = typeof window === 'undefined';
+  const method = (options.method || 'GET').toUpperCase();
+  const isGet = method === 'GET';
+
+  // Client-side cache and deduplication check for GET requests
+  if (!isServer && isGet) {
+    const token = authClient.getAccessToken();
+    const cacheKey = `${endpoint}:${requireAuth ? token || 'auth' : 'pub'}`;
+
+    const cached = clientCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return cached.data as T;
+    }
+
+    // In-flight deduplication: if the exact same GET request is currently in flight, reuse the promise
+    if (inFlightRequests.has(cacheKey)) {
+      return inFlightRequests.get(cacheKey)! as Promise<T>;
+    }
+
+    const fetchPromise = executeRequest<T>(endpoint, options, requireAuth, retryOnAuthFailure)
+      .then((data) => {
+        // If endpoint is cacheable or is public GET config/metadata
+        const baseEndpoint = endpoint.split('?')[0];
+        const ttl = CACHE_CONFIG[baseEndpoint] || (endpoint.startsWith('/ads/public') ? 300000 : 0);
+        if (ttl > 0) {
+          clientCache.set(cacheKey, { data, expiry: Date.now() + ttl });
+        }
+        return data;
+      })
+      .finally(() => {
+        inFlightRequests.delete(cacheKey);
+      });
+
+    inFlightRequests.set(cacheKey, fetchPromise);
+    return fetchPromise;
+  }
+
+  // If non-GET mutation, invalidate relevant cached GET entries
+  if (!isServer && !isGet) {
+    if (endpoint.includes('/ads')) clearApiClientCache('/ads');
+    if (endpoint.includes('/tags')) clearApiClientCache('/tags');
+    if (endpoint.includes('/technologies')) clearApiClientCache('/technologies');
+    if (endpoint.includes('/categories')) clearApiClientCache('/categories');
+    if (endpoint.includes('/articles')) clearApiClientCache('/articles');
+    if (endpoint.includes('/bookmarks')) clearApiClientCache('/bookmarks');
+  }
+
+  return executeRequest<T>(endpoint, options, requireAuth, retryOnAuthFailure);
 }
 
 // Articles API
@@ -193,9 +278,10 @@ export const articlesApi = {
     }, true);
   },
 
-  async like(id: string) {
+  async like(id: string, action?: 'like' | 'unlike') {
     return request<{ likesCount: number }>(`/articles/${id}/like`, {
       method: 'POST',
+      body: JSON.stringify({ action: action || 'like' }),
     });
   },
 };

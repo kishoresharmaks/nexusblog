@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Bookmark, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
-import { siteConfig } from '@nexus/config';
-import { bookmarksApi } from '@/lib/api-client';
+import { articlesApi, bookmarksApi } from '@/lib/api-client';
 import { toast } from 'sonner';
 
 interface ArticleActionsProps {
@@ -25,6 +24,17 @@ export function ArticleActions({
   const [hasLiked, setHasLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+
+  // Sync state if initialLikes prop updates
+  useEffect(() => {
+    if (typeof initialLikes === 'number') {
+      setLikes((prev) => {
+        if (prev === 0 && initialLikes > 0) return initialLikes;
+        return prev > 0 ? prev : initialLikes;
+      });
+    }
+  }, [initialLikes]);
 
   // Initialize from localStorage and initialBookmarked on mount
   useEffect(() => {
@@ -32,6 +42,8 @@ export function ArticleActions({
       const savedLike = localStorage.getItem(`nexus_liked_${articleId}`) === 'true';
       if (savedLike) {
         setHasLiked(true);
+        // Ensure that if it is recorded as liked, the display count is at least 1
+        setLikes((prev) => (prev === 0 ? Math.max(1, initialLikes || 1) : prev));
       }
       const savedBookmark = localStorage.getItem(`nexus_bookmarked_${articleId}`);
       if (savedBookmark !== null) {
@@ -40,7 +52,7 @@ export function ArticleActions({
         setIsBookmarked(true);
       }
     }
-  }, [articleId, initialBookmarked]);
+  }, [articleId, initialBookmarked, initialLikes]);
 
   // Check authenticated bookmark status from backend
   useEffect(() => {
@@ -70,8 +82,12 @@ export function ArticleActions({
   useEffect(() => {
     const handleLikedEvent = (e: any) => {
       if (e.detail?.articleId === articleId) {
-        setLikes(e.detail.likes);
-        setHasLiked(true);
+        if (typeof e.detail.likes === 'number') {
+          setLikes(e.detail.likes);
+        }
+        if (typeof e.detail.hasLiked === 'boolean') {
+          setHasLiked(e.detail.hasLiked);
+        }
       }
     };
 
@@ -90,26 +106,55 @@ export function ArticleActions({
   }, [articleId]);
 
   const handleLike = async () => {
-    if (hasLiked) return;
-    const nextLikes = likes + 1;
-    setHasLiked(true);
+    if (isLiking) return;
+    setIsLiking(true);
+
+    const nextHasLiked = !hasLiked;
+    const nextLikes = nextHasLiked ? Math.max(1, likes + 1) : Math.max(0, likes - 1);
+
+    // Optimistic UI update
+    setHasLiked(nextHasLiked);
     setLikes(nextLikes);
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`nexus_liked_${articleId}`, 'true');
+      if (nextHasLiked) {
+        localStorage.setItem(`nexus_liked_${articleId}`, 'true');
+      } else {
+        localStorage.removeItem(`nexus_liked_${articleId}`);
+      }
       window.dispatchEvent(
         new CustomEvent('nexus_article_liked', {
-          detail: { articleId, likes: nextLikes },
+          detail: { articleId, likes: nextLikes, hasLiked: nextHasLiked },
         }),
       );
     }
 
     try {
-      await fetch(`${siteConfig.apiUrl}/articles/${articleId}/like`, {
-        method: 'POST',
-      });
+      const res: any = await articlesApi.like(articleId, nextHasLiked ? 'like' : 'unlike');
+      const serverLikes =
+        typeof res?.likesCount === 'number'
+          ? res.likesCount
+          : typeof res?.data?.likesCount === 'number'
+          ? res.data.likesCount
+          : nextLikes;
+
+      setLikes(serverLikes);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('nexus_article_liked', {
+            detail: { articleId, likes: serverLikes, hasLiked: nextHasLiked },
+          }),
+        );
+      }
+      if (nextHasLiked) {
+        toast.success('Liked article!');
+      } else {
+        toast.info('Removed like');
+      }
     } catch {
-      // silent
+      // Keep optimistic state if network glitch
+    } finally {
+      setIsLiking(false);
     }
   };
 
@@ -155,7 +200,8 @@ export function ArticleActions({
       <button
         type="button"
         onClick={handleLike}
-        className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-mono font-medium transition-colors ${
+        disabled={isLiking}
+        className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-mono font-medium transition-colors cursor-pointer ${
           hasLiked
             ? 'border-rose-500/40 bg-rose-500/10 text-rose-500 font-semibold'
             : 'border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground'

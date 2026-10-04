@@ -112,8 +112,11 @@ export class ArticlesController {
 
   @Public()
   @Post(':id/like')
-  @ApiOperation({ summary: 'Increment like count on article' })
-  toggleLike(@Param('id') id: string) {
-    return this.articlesService.toggleLike(id);
+  @ApiOperation({ summary: 'Toggle like count on article' })
+  toggleLike(
+    @Param('id') id: string,
+    @Body('action') action?: 'like' | 'unlike',
+  ) {
+    return this.articlesService.toggleLike(id, action);
   }
 }

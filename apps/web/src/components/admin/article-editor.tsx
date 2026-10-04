@@ -32,6 +32,9 @@ import {
   Cpu,
   BookOpen,
   Hash,
+  Search,
+  Plus,
+  Loader2,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
@@ -140,6 +143,13 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
   const [isSlugLocked, setIsSlugLocked] = useState(true);
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
   const [mediaPickerMode, setMediaPickerMode] = useState<'cover' | 'content'>('cover');
+
+  // Search & dynamic tag addition state
+  const [techSearch, setTechSearch] = useState('');
+  const [tagSearch, setTagSearch] = useState('');
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [isCreatingTag, setIsCreatingTag] = useState(false);
 
   // Helper to slugify title
   const generateSlug = (text: string) => {
@@ -280,6 +290,70 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
       prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
     );
   };
+
+  const handleCreateTag = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanName = newTagName.trim().replace(/^#+/, '');
+    if (!cleanName) {
+      toast.error('Please enter a tag name');
+      return;
+    }
+
+    const tagSlug = generateSlug(cleanName);
+    const existing = tagsList.find(
+      (t) => t.slug?.toLowerCase() === tagSlug.toLowerCase() || t.name?.toLowerCase() === cleanName.toLowerCase(),
+    );
+
+    if (existing) {
+      const idToSelect = existing.id || existing.slug;
+      if (!selectedTagIds.includes(idToSelect)) {
+        setSelectedTagIds((prev) => [...prev, idToSelect]);
+      }
+      toast.info(`Tag '#${existing.name}' already exists and was selected.`);
+      setNewTagName('');
+      setIsAddingTag(false);
+      return;
+    }
+
+    setIsCreatingTag(true);
+    try {
+      const created = await tagsApi.create({
+        name: cleanName,
+        slug: tagSlug,
+      });
+
+      const newTagItem = created?.data || created || { id: tagSlug, name: cleanName, slug: tagSlug };
+      setTagsList((prev) => [...prev, newTagItem]);
+      const newId = newTagItem.id || newTagItem.slug || tagSlug;
+      setSelectedTagIds((prev) => (prev.includes(newId) ? prev : [...prev, newId]));
+      toast.success(`Created and selected tag: #${cleanName}`);
+      setNewTagName('');
+      setIsAddingTag(false);
+      setTagSearch('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create tag');
+    } finally {
+      setIsCreatingTag(false);
+    }
+  };
+
+  const filteredTechnologies = technologiesList.filter((tech) => {
+    if (!techSearch.trim()) return true;
+    const q = techSearch.toLowerCase().trim();
+    return (
+      (tech.name && tech.name.toLowerCase().includes(q)) ||
+      (tech.slug && tech.slug.toLowerCase().includes(q))
+    );
+  });
+
+  const filteredTags = tagsList.filter((tag) => {
+    if (!tagSearch.trim()) return true;
+    const q = tagSearch.toLowerCase().trim().replace(/^#+/, '');
+    return (
+      (tag.name && tag.name.toLowerCase().includes(q)) ||
+      (tag.slug && tag.slug.toLowerCase().includes(q))
+    );
+  });
 
   const handleSave = async (publishStatus: 'DRAFT' | 'PUBLISHED') => {
     setIsSaving(true);
@@ -724,16 +798,39 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
                     {selectedTechnologyIds.length} selected
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 rounded-lg border border-border/60 bg-muted/20">
-                  {technologiesList.length > 0 ? (
-                    technologiesList.map((tech) => {
+
+                {/* Technology Hubs Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={techSearch}
+                    onChange={(e) => setTechSearch(e.target.value)}
+                    placeholder="Search technology hubs..."
+                    className="w-full pl-7.5 pr-7 py-1.5 text-xs font-mono rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+                  />
+                  {techSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setTechSearch('')}
+                      className="absolute right-2 top-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                      title="Clear search"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 rounded-lg border border-border/60 bg-muted/20">
+                  {filteredTechnologies.length > 0 ? (
+                    filteredTechnologies.map((tech) => {
                       const isSelected = selectedTechnologyIds.includes(tech.id) || selectedTechnologyIds.includes(tech.slug);
                       return (
                         <button
                           key={tech.id}
                           type="button"
                           onClick={() => toggleTech(tech.id)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono transition-all ${
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono transition-all cursor-pointer ${
                             isSelected
                               ? 'bg-primary text-primary-foreground font-bold shadow-xs'
                               : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50'
@@ -744,6 +841,17 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
                         </button>
                       );
                     })
+                  ) : technologiesList.length > 0 ? (
+                    <div className="w-full text-center py-2 space-y-1">
+                      <p className="text-[11px] text-muted-foreground font-mono">No hubs matching &quot;{techSearch}&quot;</p>
+                      <button
+                        type="button"
+                        onClick={() => setTechSearch('')}
+                        className="text-[10px] font-mono text-primary hover:underline cursor-pointer"
+                      >
+                        Clear search
+                      </button>
+                    </div>
                   ) : (
                     <p className="text-[11px] text-muted-foreground p-1">No technology hubs configured.</p>
                   )}
@@ -757,20 +865,106 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
                     <Hash className="h-3.5 w-3.5 text-primary" />
                     <span>Tags Taxonomy</span>
                   </label>
-                  <span className="text-[10px] font-mono text-muted-foreground">
-                    {selectedTagIds.length} selected
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      {selectedTagIds.length} selected
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingTag((prev) => !prev)}
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium transition-colors cursor-pointer ${
+                        isAddingTag
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20'
+                      }`}
+                      title="Add a new tag to taxonomy"
+                    >
+                      <Plus className="h-3 w-3" />
+                      <span>Add</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 rounded-lg border border-border/60 bg-muted/20">
-                  {tagsList.length > 0 ? (
-                    tagsList.map((tag) => {
+
+                {/* Inline Quick Add Tag Form */}
+                {isAddingTag && (
+                  <form
+                    onSubmit={handleCreateTag}
+                    className="p-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-mono text-emerald-500 font-semibold">
+                      <span>Create New Tag</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingTag(false);
+                          setNewTagName('');
+                        }}
+                        className="text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative flex-1">
+                        <span className="absolute left-2 top-1.5 text-xs font-mono text-muted-foreground">#</span>
+                        <input
+                          type="text"
+                          value={newTagName}
+                          onChange={(e) => setNewTagName(e.target.value)}
+                          placeholder="e.g. Distributed-Locking"
+                          autoFocus
+                          disabled={isCreatingTag}
+                          className="w-full pl-5 pr-2 py-1 text-xs font-mono rounded border border-border bg-background text-foreground focus:outline-none focus:border-emerald-500 placeholder:text-muted-foreground/60"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isCreatingTag || !newTagName.trim()}
+                        className="px-2.5 py-1 text-xs font-mono font-medium rounded bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors inline-flex items-center gap-1 shrink-0 cursor-pointer"
+                      >
+                        {isCreatingTag ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Plus className="h-3 w-3" />
+                        )}
+                        <span>Save</span>
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Tag Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={tagSearch}
+                    onChange={(e) => setTagSearch(e.target.value)}
+                    placeholder="Search or filter tags..."
+                    className="w-full pl-7.5 pr-7 py-1.5 text-xs font-mono rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
+                  />
+                  {tagSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setTagSearch('')}
+                      className="absolute right-2 top-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                      title="Clear search"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 rounded-lg border border-border/60 bg-muted/20">
+                  {filteredTags.length > 0 ? (
+                    filteredTags.map((tag) => {
                       const isSelected = selectedTagIds.includes(tag.id) || selectedTagIds.includes(tag.slug);
                       return (
                         <button
                           key={tag.id}
                           type="button"
                           onClick={() => toggleTag(tag.id)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono transition-all ${
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono transition-all cursor-pointer ${
                             isSelected
                               ? 'bg-emerald-500 text-white font-bold shadow-xs'
                               : 'bg-background hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50'
@@ -781,6 +975,21 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
                         </button>
                       );
                     })
+                  ) : tagSearch.trim() ? (
+                    <div className="w-full py-2 px-1 text-center space-y-1.5">
+                      <p className="text-[11px] text-muted-foreground font-mono">No tag matching &quot;#{tagSearch}&quot;</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewTagName(tagSearch.trim().replace(/^#+/, ''));
+                          setIsAddingTag(true);
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-mono bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 cursor-pointer"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>Create tag &quot;#{tagSearch.trim().replace(/^#+/, '')}&quot;</span>
+                      </button>
+                    </div>
                   ) : (
                     <p className="text-[11px] text-muted-foreground p-1">No tags configured.</p>
                   )}
