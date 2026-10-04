@@ -21,6 +21,7 @@ import {
 
 import { IconRenderer } from '@/components/common/icon-renderer';
 import { HomeTopAd, HomeFeedAd } from '@/components/ads/in-article-ad';
+import { HomeQuickSearch } from '@/components/public/home-quick-search';
 
 export const revalidate = 60; // ISR cache for 60 seconds
 
@@ -142,6 +143,9 @@ export default async function HomePage() {
                   <span>Technology Hubs</span>
                 </Link>
               </div>
+
+              {/* Instant Hero Search Bar */}
+              <HomeQuickSearch />
 
               {/* Engineering Guarantees / Quality Highlights */}
               <div className="pt-2 sm:pt-3 border-t border-border/40 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] sm:text-xs font-mono text-muted-foreground">

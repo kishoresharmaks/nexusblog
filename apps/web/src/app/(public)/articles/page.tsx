@@ -1,9 +1,8 @@
 import React from 'react';
-import Link from 'next/link';
 import { siteConfig } from '@nexus/config';
-import { ArticleCard } from '@/components/public/article-card';
-import { articlesApi, categoriesApi } from '@/lib/api-client';
-import { BookOpen, Filter, Search, Sparkles } from 'lucide-react';
+import { articlesApi, categoriesApi, technologiesApi } from '@/lib/api-client';
+import { BookOpen } from 'lucide-react';
+import { ArticlesFeed } from '@/components/public/articles-feed';
 
 export const revalidate = 60;
 
@@ -13,28 +12,34 @@ interface ArticlesPageProps {
     difficulty?: string;
     technology?: string;
     search?: string;
+    filter?: string;
   }>;
 }
 
 export default async function ArticlesPage({ searchParams }: ArticlesPageProps) {
   const params = await searchParams;
 
-  let articles: any[] = [];
+  let initialArticles: any[] = [];
+  let totalCount = 0;
   try {
     const res = await articlesApi.getPublicFeed({
       categorySlug: params.category,
       difficulty: params.difficulty,
       technologySlug: params.technology,
       search: params.search,
+      filter: params.filter as any,
+      limit: 40,
     });
     if (res?.items && Array.isArray(res.items)) {
-      articles = res.items;
+      initialArticles = res.items;
+      totalCount = res.total || res.items.length;
     }
   } catch {
-    articles = [];
+    initialArticles = [];
+    totalCount = 0;
   }
 
-  // Fetch categories from API with fallback
+  // Fetch categories with fallback
   let categories: any[] = [];
   try {
     const catRes = await categoriesApi.getAll();
@@ -55,98 +60,55 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
     }));
   }
 
+  // Fetch technologies with fallback
+  let technologies: any[] = [];
+  try {
+    const techRes = await technologiesApi.getAll();
+    if (Array.isArray(techRes) && techRes.length > 0) {
+      technologies = techRes;
+    }
+  } catch {
+    technologies = siteConfig.technologies.map((name) => ({
+      name,
+      slug: name.toLowerCase(),
+    }));
+  }
+
+  if (technologies.length === 0) {
+    technologies = siteConfig.technologies.map((name) => ({
+      name,
+      slug: name.toLowerCase(),
+    }));
+  }
+
   return (
-    <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-8">
-      {/* Header */}
+    <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-8 font-sans">
+      {/* Page Header */}
       <div className="space-y-3">
         <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs font-mono text-muted-foreground">
-          <BookOpen className="h-3.5 w-3.5 text-primary" />
-          <span>Engineering Archive</span>
+          <BookOpen className="h-3.5 w-3.5 text-cyan-500" />
+          <span>Engineering Knowledge Archive</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-          Technical Articles & Blueprints
+          Technical Articles &amp; Architecture Blueprints
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
-          Browse all architecture case studies, tutorials, and benchmarks curated for distributed systems and backend developers.
+        <p className="text-sm sm:text-base text-muted-foreground max-w-3xl leading-relaxed">
+          Explore distributed systems designs, database internals, cloud infrastructure, and low-latency benchmarks curated for backend developers and architects.
         </p>
       </div>
 
-      {/* Filter & Topic Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-y border-border/40 py-4 text-xs font-sans">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-muted-foreground mr-1 flex items-center gap-1">
-            <Filter className="h-3 w-3" /> Categories:
-          </span>
-          <Link
-            href="/articles"
-            className={`rounded-full px-3 py-1 font-medium font-mono transition-colors ${
-              !params.category ? 'bg-foreground text-background' : 'border border-border bg-card text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            All
-          </Link>
-          {categories.slice(0, 6).map((cat: any) => {
-            const isSelected = params.category === cat.slug;
-            return (
-              <Link
-                key={cat.slug}
-                href={`/articles?category=${cat.slug}`}
-                className={`rounded-full px-3 py-1 transition-colors font-mono ${
-                  isSelected
-                    ? 'bg-foreground text-background font-semibold'
-                    : 'border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
-              >
-                {cat.name}
-              </Link>
-            );
-          })}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-muted-foreground">Level:</span>
-          {['Beginner', 'Intermediate', 'Advanced'].map((lvl) => {
-            const isSelected = params.difficulty === lvl.toUpperCase();
-            return (
-              <Link
-                key={lvl}
-                href={`/articles?difficulty=${lvl.toUpperCase()}`}
-                className={`rounded border px-2 py-0.5 font-mono text-[11px] transition-colors ${
-                  isSelected
-                    ? 'border-primary bg-primary text-primary-foreground font-semibold'
-                    : 'border-border text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {lvl}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Articles Grid */}
-      {articles.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-12 text-center space-y-3 font-mono">
-          <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
-          <p className="text-sm font-semibold text-foreground">No articles match your filter criteria.</p>
-          <Link href="/articles" className="text-xs text-primary underline">
-            Reset all filters
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {articles.map((article) => (
-            <ArticleCard
-              key={article.id}
-              article={{
-                ...article,
-                category: article.category || { name: 'System Design', slug: 'system-design' },
-                author: article.author || { name: 'Alex Rivera', username: 'alexdev' },
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {/* Interactive Articles Feed with Live Search & Filtering */}
+      <ArticlesFeed
+        initialArticles={initialArticles}
+        initialTotal={totalCount}
+        categories={categories}
+        technologies={technologies}
+        initialCategory={params.category}
+        initialTechnology={params.technology}
+        initialDifficulty={params.difficulty}
+        initialSearch={params.search}
+        initialFilter={params.filter}
+      />
     </div>
   );
 }

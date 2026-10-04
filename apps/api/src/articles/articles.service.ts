@@ -249,6 +249,14 @@ export class ArticlesService {
     let orderBy: any = { publishedAt: 'desc' };
     if (query.filter === 'popular') {
       orderBy = { viewsCount: 'desc' };
+    } else if (query.filter === 'bookmarked' || (query.filter as string) === 'bookmarks') {
+      orderBy = { bookmarksCount: 'desc' };
+    } else if (query.filter === 'liked' || (query.filter as string) === 'likes') {
+      orderBy = { likesCount: 'desc' };
+    } else if ((query.filter as string) === 'quick_read') {
+      orderBy = { readingTime: 'asc' };
+    } else if ((query.filter as string) === 'deep_dive') {
+      orderBy = { readingTime: 'desc' };
     }
 
     const [items, total] = await Promise.all([
