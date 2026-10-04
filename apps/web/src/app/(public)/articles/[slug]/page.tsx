@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ArticleJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld';
-import { HeaderAd, SidebarAd, FooterAd } from '@/components/ads/in-article-ad';
+import { HeaderAd, SidebarAd, FooterAd, InArticleAd } from '@/components/ads/in-article-ad';
 
 export const revalidate = 60;
 
@@ -449,6 +449,9 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
             )}
 
             <MdxRenderer source={article.content} />
+
+            {/* In-Article Native Break Ad Placement (article-in-content-1) */}
+            <InArticleAd slotIndex={1} />
 
             {/* Editorial Transparency & Standards Card */}
             <div className="mt-12 rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-muted/20 p-6 sm:p-7 space-y-5 font-sans shadow-xs">

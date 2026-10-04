@@ -956,18 +956,21 @@ export const adsApi = {
     return request<any[]>('/ads/admin/placements', {}, true);
   },
   async createPlacement(payload: any) {
+    clearApiClientCache('/ads');
     return request<any>('/ads/admin/placements', {
       method: 'POST',
       body: JSON.stringify(payload),
     }, true);
   },
   async updatePlacement(id: string, payload: any) {
+    clearApiClientCache('/ads');
     return request<any>(`/ads/admin/placements/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     }, true);
   },
   async deletePlacement(id: string) {
+    clearApiClientCache('/ads');
     return request<any>(`/ads/admin/placements/${id}`, {
       method: 'DELETE',
     }, true);
@@ -976,12 +979,14 @@ export const adsApi = {
     return request<Record<string, any>>('/ads/admin/config', {}, true);
   },
   async updateAdminConfig(payload: Record<string, any>) {
+    clearApiClientCache('/ads');
     return request<any>('/ads/admin/config', {
       method: 'PUT',
       body: JSON.stringify(payload),
     }, true);
   },
   async updateAdsTxt(ads_txt_content: string) {
+    clearApiClientCache('/ads');
     return request<any>('/ads/admin/ads-txt', {
       method: 'PUT',
       body: JSON.stringify({ ads_txt_content }),
