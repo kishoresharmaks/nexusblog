@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 
-const SENSITIVE_KEYS = ['brevoApiKey', 'smtpPassword', 'jwtSecret', 'adminSecret', 'shortenerApiKey', 'shortenerCustomHeaders'];
+const SENSITIVE_KEYS = ['brevoApiKey', 'smtpPassword', 'jwtSecret', 'adminSecret', 'shortenerApiKey', 'shortenerCustomHeaders', 'aiSummaryApiKey'];
 
 @Injectable()
 export class SystemSettingsService {
@@ -141,6 +141,31 @@ export class SystemSettingsService {
         defaultValue: 'true',
         isSecret: false,
         description: 'Automatically verify link accessibility before serving and auto-heal if dead',
+      },
+      aiSummaryEnabled: {
+        defaultValue: process.env.AI_SUMMARY_ENABLED || 'true',
+        isSecret: false,
+        description: 'Enable AI Content Summarizer feature on public article detail pages',
+      },
+      aiSummaryProvider: {
+        defaultValue: process.env.AI_SUMMARY_PROVIDER || 'hybrid',
+        isSecret: false,
+        description: 'AI Summarizer strategy: "hybrid" (Gemini AI with smart fallback), "gemini" (Gemini AI only), or "smart_extractor" (Zero-cost smart parser)',
+      },
+      aiSummaryApiKey: {
+        defaultValue: process.env.GEMINI_API_KEY || process.env.AI_SUMMARY_API_KEY ? this.maskSecret(process.env.GEMINI_API_KEY || process.env.AI_SUMMARY_API_KEY || '') : '',
+        isSecret: true,
+        description: 'Gemini API Key or Google AI Studio Key for article summarization',
+      },
+      aiSummaryModel: {
+        defaultValue: process.env.AI_SUMMARY_MODEL || 'gemini-1.5-flash',
+        isSecret: false,
+        description: 'Gemini AI model engine (e.g. gemini-1.5-flash, gemini-2.0-flash, gemini-1.5-pro)',
+      },
+      aiSummaryMaxBullets: {
+        defaultValue: process.env.AI_SUMMARY_MAX_BULLETS || '3',
+        isSecret: false,
+        description: 'Maximum number of bullet points generated per summary (3 to 5)',
       },
     };
 
@@ -339,6 +364,8 @@ export class SystemSettingsService {
             'siteUrl',
             'robotsIndexingMode',
             'robotsCustomContent',
+            'aiSummaryEnabled',
+            'aiSummaryProvider',
           ],
         },
       },
@@ -379,12 +406,24 @@ export class SystemSettingsService {
       process.env.ROBOTS_CUSTOM_CONTENT ||
       '# Custom robots.txt directives\nUser-Agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /api/*';
 
+    const aiSummaryEnabled =
+      (settingsMap.aiSummaryEnabled !== undefined
+        ? settingsMap.aiSummaryEnabled
+        : process.env.AI_SUMMARY_ENABLED || 'true') === 'true';
+
+    const aiSummaryProvider =
+      settingsMap.aiSummaryProvider ||
+      process.env.AI_SUMMARY_PROVIDER ||
+      'hybrid';
+
     return {
       maintenanceMode,
       siteName,
       siteUrl,
       robotsIndexingMode,
       robotsCustomContent,
+      aiSummaryEnabled,
+      aiSummaryProvider,
     };
   }
 }

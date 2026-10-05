@@ -52,6 +52,13 @@ export class ArticlesController {
     return this.articlesService.findPublicFeed(query);
   }
 
+  @Public()
+  @Post('summarize')
+  @ApiOperation({ summary: 'Summarize article content into key takeaways using Gemini AI or Smart Extractor' })
+  summarizeArticle(@Body() body: { slug?: string; title?: string; excerpt?: string; content?: string }) {
+    return this.articlesService.summarizeArticle(body);
+  }
+
   @UseGuards(OptionalJwtAuthGuard)
   @Get(':slug')
   @ApiOperation({ summary: 'Get public article by slug with views increment' })

@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SystemSettingsService } from '../system-settings/system-settings.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { QueryArticleDto } from './dto/query-article.dto';
@@ -15,7 +16,10 @@ import { ArticleStatus, Role } from '@prisma/client';
 export class ArticlesService {
   private readonly logger = new Logger(ArticlesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly systemSettingsService: SystemSettingsService,
+  ) {}
 
   public sanitizeUrl(url?: string | null): string {
     if (!url || typeof url !== 'string') return '';
@@ -671,5 +675,140 @@ export class ArticlesService {
     });
 
     return { likesCount: article.likesCount };
+  }
+
+  /**
+   * Summarize article content using Gemini AI or Smart Extractive Engine based on Admin Dev Config
+   */
+  async summarizeArticle(dto: { slug?: string; title?: string; excerpt?: string; content?: string }) {
+    const settingsMap = await this.systemSettingsService.getAllSettings();
+
+    const enabledVal = settingsMap.aiSummaryEnabled?.value ?? process.env.AI_SUMMARY_ENABLED ?? 'true';
+    const isEnabled = enabledVal === 'true';
+
+    if (!isEnabled) {
+      throw new ForbiddenException('AI Content Summarizer feature is disabled by administrator in Dev Config.');
+    }
+
+    let title = dto.title || '';
+    let excerpt = dto.excerpt || '';
+    let content = dto.content || '';
+
+    if (dto.slug && (!title || !content)) {
+      const article = await this.prisma.article.findUnique({
+        where: { slug: dto.slug },
+        select: { title: true, excerpt: true, content: true },
+      });
+      if (article) {
+        title = title || article.title;
+        excerpt = excerpt || article.excerpt;
+        content = content || article.content;
+      }
+    }
+
+    if (!title && !content) {
+      throw new NotFoundException('Article content or title is required for summarization.');
+    }
+
+    const provider = settingsMap.aiSummaryProvider?.value || process.env.AI_SUMMARY_PROVIDER || 'hybrid';
+    let apiKey = settingsMap.aiSummaryApiKey?.value || '';
+    if (!apiKey || apiKey.includes('...')) {
+      apiKey = process.env.GEMINI_API_KEY || process.env.AI_SUMMARY_API_KEY || '';
+    }
+    const model = settingsMap.aiSummaryModel?.value || process.env.AI_SUMMARY_MODEL || 'gemini-1.5-flash';
+    const maxBullets = parseInt(settingsMap.aiSummaryMaxBullets?.value || '3', 10) || 3;
+
+    const generateSmartFallback = () => {
+      const bullets: string[] = [];
+      const cleanText = content
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/<[^>]*>/g, '')
+        .replace(/#+\s+/g, '')
+        .replace(/!\[.*?\]\(.*?\)/g, '');
+
+      const headingMatches = content.match(/^##\s+(.+)$/gm);
+      if (headingMatches && headingMatches.length >= 2) {
+        headingMatches.slice(0, maxBullets).forEach((h) => {
+          const cleanH = h.replace(/^##\s+/, '').trim();
+          if (cleanH.length > 5) {
+            bullets.push(`Key Topic: ${cleanH}`);
+          }
+        });
+      }
+
+      if (bullets.length < maxBullets && excerpt) {
+        const sentences = excerpt.split('.').filter((s) => s.trim().length > 15);
+        sentences.forEach((s) => {
+          if (bullets.length < maxBullets) {
+            bullets.push(s.trim());
+          }
+        });
+      }
+
+      if (bullets.length < maxBullets) {
+        const bodySentences = cleanText.split(/\. |\n+/).filter((s) => s.trim().length > 25 && s.trim().length < 180);
+        bodySentences.slice(0, maxBullets - bullets.length).forEach((s) => {
+          bullets.push(s.trim().replace(/^[-*•]\s*/, ''));
+        });
+      }
+
+      while (bullets.length < Math.min(maxBullets, 3)) {
+        if (bullets.length === 0) bullets.push(`High-performance technical blueprint for ${title}.`);
+        else if (bullets.length === 1) bullets.push('Covers production readiness, architecture trade-offs, and design patterns.');
+        else bullets.push('Includes benchmark performance metrics and reproducible source code.');
+      }
+
+      return bullets.slice(0, maxBullets);
+    };
+
+    if ((provider === 'hybrid' || provider === 'gemini') && apiKey && apiKey.length > 5) {
+      try {
+        const promptText = `You are a principal software architect. Summarize the following engineering article into exactly ${maxBullets} concise, high-impact bullet points. Return ONLY a raw JSON array of strings, for example: ["Bullet 1", "Bullet 2", "Bullet 3"]. Do not wrap in markdown or backticks.\n\nTitle: ${title}\nExcerpt: ${excerpt}\nContent:\n${content.substring(0, 4000)}`;
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptText }] }],
+              generationConfig: {
+                temperature: 0.2,
+                maxOutputTokens: 500,
+              },
+            }),
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const cleanJson = rawText.replace(/```json|```/gi, '').trim();
+
+          const parsed = JSON.parse(cleanJson);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return {
+              success: true,
+              bullets: parsed.slice(0, maxBullets),
+              source: 'gemini',
+              modelUsed: model,
+            };
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`Gemini AI summarization failed, reverting to smart fallback: ${err}`);
+      }
+    }
+
+    if (provider === 'gemini' && (!apiKey || apiKey.length <= 5)) {
+      throw new ForbiddenException('Gemini API key is not configured in Admin Dev Config.');
+    }
+
+    return {
+      success: true,
+      bullets: generateSmartFallback(),
+      source: 'smart_fallback',
+      modelUsed: 'smart_extractor',
+    };
   }
 }

@@ -8,6 +8,7 @@ import { TableOfContents } from '@/components/public/table-of-contents';
 import { ReadingProgress } from '@/components/public/reading-progress';
 import { ShareButtons } from '@/components/public/share-buttons';
 import { ArticleActions } from '@/components/public/article-actions';
+import { ArticleSummarizer } from '@/components/public/article-summarizer';
 import { ArticleComments } from '@/components/public/article-comments';
 import { articlesApi } from '@/lib/api-client';
 import {
@@ -366,13 +367,21 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
               </div>
             </div>
 
-            {/* Top Interactive Actions Bar (Like, Save, Share) */}
+            {/* Top Interactive Actions Bar (Like, Save, Share, AI Summarize) */}
             <div className="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-border/30">
-              <ArticleActions
-                articleId={article.id}
-                initialLikes={article.likesCount || 0}
-                commentsCount={article.commentsCount || 0}
-              />
+              <div className="flex items-center gap-3 flex-wrap">
+                <ArticleActions
+                  articleId={article.id}
+                  initialLikes={article.likesCount || 0}
+                  commentsCount={article.commentsCount || 0}
+                />
+                <ArticleSummarizer
+                  slug={article.slug}
+                  title={article.title}
+                  excerpt={article.excerpt}
+                  content={article.content}
+                />
+              </div>
               <ShareButtons
                 title={article.title}
                 url={`/articles/${article.slug}`}

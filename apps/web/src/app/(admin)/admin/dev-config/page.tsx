@@ -37,7 +37,7 @@ import {
   Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { systemSettingsApi, shortenerApi } from '@/lib/api-client';
+import { systemSettingsApi, shortenerApi, articlesApi } from '@/lib/api-client';
 
 interface Diagnostics {
   database: {
@@ -116,6 +116,21 @@ export default function AdminDevConfigPage() {
     sampleShortUrl?: string;
   } | null>(null);
 
+  // AI Content Summarizer State
+  const [aiSummaryEnabled, setAiSummaryEnabled] = useState(true);
+  const [aiSummaryProvider, setAiSummaryProvider] = useState<'hybrid' | 'gemini' | 'smart_extractor'>('hybrid');
+  const [aiSummaryApiKey, setAiSummaryApiKey] = useState('');
+  const [aiSummaryModel, setAiSummaryModel] = useState('gemini-1.5-flash');
+  const [aiSummaryMaxBullets, setAiSummaryMaxBullets] = useState(3);
+  const [showAiSummaryKey, setShowAiSummaryKey] = useState(false);
+  const [isTestingAiSummary, setIsTestingAiSummary] = useState(false);
+  const [aiSummaryTestResult, setAiSummaryTestResult] = useState<{
+    success: boolean;
+    bullets?: string[];
+    source?: string;
+    message?: string;
+  } | null>(null);
+
   // Diagnostics State
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
 
@@ -177,6 +192,11 @@ export default function AdminDevConfigPage() {
         setShortenerCustomBodyTemplate(settingsData.shortenerCustomBodyTemplate?.value || '{\n  "url": "{{url}}",\n  "domain": "{{domain}}"\n}');
         setShortenerCustomResponsePath(settingsData.shortenerCustomResponsePath?.value || 'shortUrl');
         setShortenerAutoValidate(settingsData.shortenerAutoValidate?.value !== 'false');
+        setAiSummaryEnabled(settingsData.aiSummaryEnabled?.value !== 'false');
+        setAiSummaryProvider((settingsData.aiSummaryProvider?.value as any) || 'hybrid');
+        setAiSummaryApiKey(settingsData.aiSummaryApiKey?.value || '');
+        setAiSummaryModel(settingsData.aiSummaryModel?.value || 'gemini-1.5-flash');
+        setAiSummaryMaxBullets(parseInt(settingsData.aiSummaryMaxBullets?.value || '3', 10) || 3);
       }
 
       if (diagData) {
@@ -222,6 +242,11 @@ export default function AdminDevConfigPage() {
         shortenerCustomBodyTemplate: shortenerCustomBodyTemplate.trim(),
         shortenerCustomResponsePath: shortenerCustomResponsePath.trim(),
         shortenerAutoValidate: String(shortenerAutoValidate),
+        aiSummaryEnabled: String(aiSummaryEnabled),
+        aiSummaryProvider,
+        aiSummaryApiKey: aiSummaryApiKey.trim(),
+        aiSummaryModel,
+        aiSummaryMaxBullets: String(aiSummaryMaxBullets),
       };
 
       await systemSettingsApi.updateBatch(payload);
@@ -349,6 +374,33 @@ export default function AdminDevConfigPage() {
       toast.error(err.message || 'Shortener connection test error');
     } finally {
       setIsTestingShortener(false);
+    }
+  };
+
+  const handleTestAiSummary = async () => {
+    setIsTestingAiSummary(true);
+    setAiSummaryTestResult(null);
+    try {
+      const res = await articlesApi.summarize({
+        title: 'High-Throughput Distributed Microservices Architecture',
+        excerpt: 'A technical deep dive on CQRS, event-driven streaming, and sub-millisecond database caching.',
+        content: '## Microservices Architecture\nDistributed systems require fault isolation and event-driven messaging...\n## Database Caching\nUsing Redis write-through cache reduces latency to sub-millisecond ranges.',
+      });
+      setAiSummaryTestResult({
+        success: true,
+        bullets: res.bullets,
+        source: res.source,
+        message: `AI Summarizer test completed successfully using ${res.source === 'gemini' ? 'Gemini AI' : 'Smart Extractor'} engine!`,
+      });
+      toast.success('AI Summarizer test completed!');
+    } catch (err: any) {
+      setAiSummaryTestResult({
+        success: false,
+        message: err.message || 'AI Summarizer test failed',
+      });
+      toast.error(err.message || 'AI Summarizer test failed');
+    } finally {
+      setIsTestingAiSummary(false);
     }
   };
 
@@ -1139,6 +1191,182 @@ ROBOTS_INDEXING_MODE=${robotsIndexingMode}
                 )}
               </div>
             )}
+          </div>
+
+          {/* Card: AI Content Summarizer Engine & Feature Toggle */}
+          <div className="rounded-2xl border border-primary/30 bg-card p-6 shadow-xs space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground font-mono uppercase tracking-wider flex items-center gap-2">
+                    <span>AI Article Content Summarizer</span>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                      ENTERPRISE FEATURE
+                    </span>
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Control public article summarization visibility, Gemini AI LLM parameters, and zero-cost fallback strategy.
+                  </p>
+                </div>
+              </div>
+
+              {/* Master Feature Enable/Disable Toggle */}
+              <div className="flex items-center gap-3 self-start sm:self-center shrink-0">
+                <span className={`text-xs font-mono font-bold ${aiSummaryEnabled ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+                  {aiSummaryEnabled ? 'FEATURE ENABLED' : 'FEATURE DISABLED'}
+                </span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={aiSummaryEnabled}
+                    onChange={(e) => setAiSummaryEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+              </div>
+            </div>
+
+            {/* Summarizer Settings Controls */}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Engine Strategy Provider */}
+                <div className="space-y-2">
+                  <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Zap className="h-3.5 w-3.5 text-primary" />
+                    <span>Summarizer Engine Strategy</span>
+                  </label>
+                  <select
+                    value={aiSummaryProvider}
+                    onChange={(e) => setAiSummaryProvider(e.target.value as any)}
+                    className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                  >
+                    <option value="hybrid">Hybrid (Gemini AI + Smart Extractor Fallback) [Recommended]</option>
+                    <option value="gemini">Gemini AI Only (Requires Gemini API Key)</option>
+                    <option value="smart_extractor">Smart Extractor Only (Zero-Cost, 0 API Key Needed)</option>
+                  </select>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    Hybrid strategy automatically uses Gemini LLM if API Key is set, falling back to smart local extraction if absent.
+                  </p>
+                </div>
+
+                {/* Gemini AI Model Selection */}
+                <div className="space-y-2">
+                  <label className="font-mono text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Cpu className="h-3.5 w-3.5 text-amber-400" />
+                    <span>Gemini AI Model Engine</span>
+                  </label>
+                  <select
+                    value={aiSummaryModel}
+                    onChange={(e) => setAiSummaryModel(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                  >
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash (Ultra-fast, High Accuracy)</option>
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash (Latest Next-Gen Model)</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Technical Reasoning)</option>
+                  </select>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    Target Google Generative AI model endpoint for markdown processing.
+                  </p>
+                </div>
+
+                {/* Gemini API Key */}
+                <div className="space-y-2 md:col-span-2">
+                  <label className="font-mono text-xs font-bold text-foreground flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Key className="h-3.5 w-3.5 text-amber-400" />
+                      <span>Gemini AI API Key (Google AI Studio Key)</span>
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">Runtime ENV: GEMINI_API_KEY</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showAiSummaryKey ? 'text' : 'password'}
+                      placeholder="AIzaSy... (Leave blank to use ENV or Smart Extractor)"
+                      value={aiSummaryApiKey}
+                      onChange={(e) => setAiSummaryApiKey(e.target.value)}
+                      className="w-full rounded-xl border border-border bg-background py-2.5 pl-4 pr-10 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAiSummaryKey(!showAiSummaryKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      {showAiSummaryKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Max Bullets */}
+                <div className="space-y-2">
+                  <label className="font-mono text-xs font-bold text-foreground">
+                    Max Summary Takeaway Bullets
+                  </label>
+                  <select
+                    value={aiSummaryMaxBullets}
+                    onChange={(e) => setAiSummaryMaxBullets(parseInt(e.target.value, 10))}
+                    className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs font-mono text-foreground focus:border-primary focus:outline-none"
+                  >
+                    <option value={3}>3 Bullets (Concise Executive Overview)</option>
+                    <option value={4}>4 Bullets (Detailed Technical Overview)</option>
+                    <option value={5}>5 Bullets (Full Architecture Breakdown)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Test Action & Results */}
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-border/40">
+                <button
+                  type="button"
+                  onClick={handleTestAiSummary}
+                  disabled={isTestingAiSummary}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30 text-xs font-mono font-bold hover:bg-amber-500/20 transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  {isTestingAiSummary ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Running AI Summarizer Probe...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Test AI Summarizer &amp; Sample Generation</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Test Result Display */}
+              {aiSummaryTestResult && (
+                <div
+                  className={`p-4 rounded-xl border text-xs font-mono space-y-2 animate-in fade-in duration-200 ${
+                    aiSummaryTestResult.success
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                      : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-2 font-bold">
+                    {aiSummaryTestResult.success ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                    )}
+                    <span>{aiSummaryTestResult.message}</span>
+                  </div>
+                  {aiSummaryTestResult.bullets && (
+                    <ul className="pl-6 space-y-1 pt-1 list-disc text-foreground/90">
+                      {aiSummaryTestResult.bullets.map((bullet, idx) => (
+                        <li key={idx}>{bullet}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Card 3: Platform & Portal Runtime */}

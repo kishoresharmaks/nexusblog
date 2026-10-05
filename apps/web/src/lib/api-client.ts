@@ -222,6 +222,18 @@ export const articlesApi = {
     return { items, meta, total: meta.total || items.length };
   },
 
+  async summarize(body: { slug?: string; title?: string; excerpt?: string; content?: string }) {
+    return request<{
+      success: boolean;
+      bullets: string[];
+      source: 'gemini' | 'smart_fallback';
+      modelUsed?: string;
+    }>('/articles/summarize', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
   async getAdminArticles(params: {
     page?: number;
     limit?: number;
@@ -703,6 +715,8 @@ export const systemSettingsApi = {
       siteUrl: string;
       robotsIndexingMode?: 'allow' | 'disallow_all' | 'custom';
       robotsCustomContent?: string;
+      aiSummaryEnabled?: boolean;
+      aiSummaryProvider?: string;
     }>('/system-settings/public');
   },
   async getAll() {
