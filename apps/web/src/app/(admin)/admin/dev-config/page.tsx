@@ -35,6 +35,7 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { systemSettingsApi, shortenerApi, articlesApi } from '@/lib/api-client';
