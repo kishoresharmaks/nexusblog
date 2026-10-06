@@ -260,15 +260,15 @@ Status: 0 packet loss, 100% idempotency verified.`,
   };
 
   const handleInsertBenchmark = () => {
-    const metricsStr = JSON.stringify(benchmarkForm.metrics, null, 2);
-    const snippet = `\n<Benchmark\n  title="${benchmarkForm.title}"\n  description="${benchmarkForm.description}"\n  metrics={${metricsStr}}\n/>\n`;
+    const metricsStr = JSON.stringify(benchmarkForm.metrics);
+    const snippet = `\n<Benchmark title="${benchmarkForm.title}" description="${benchmarkForm.description}" metrics='${metricsStr}' />\n`;
     insertText(snippet, '', '');
     setActiveModal(null);
     toast.success('Benchmark card inserted');
   };
 
   const handleInsertTerminal = () => {
-    const snippet = `\n<Terminal\n  title="${terminalForm.title}"\n  command="${terminalForm.command}"\n>\n${terminalForm.output}\n</Terminal>\n`;
+    const snippet = `\n<Terminal title="${terminalForm.title}" command="${terminalForm.command}">\n${terminalForm.output}\n</Terminal>\n`;
     insertText(snippet, '', '');
     setActiveModal(null);
     toast.success('Terminal console inserted');

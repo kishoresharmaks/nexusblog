@@ -51,11 +51,17 @@ export function ClientMdxRenderer({
   const rawText = content || source || '';
   const processedText = React.useMemo(() => {
     if (!rawText) return '';
-    // Normalize loose markdown delimiters (e.g. **bold ** -> **bold**) so user typing errors render cleanly
+    // 1. Normalize loose markdown delimiters (e.g. **bold ** -> **bold**) so user typing errors render cleanly
     let normalized = rawText
       .replace(/\*\*([^\*\n]+?)\s+\*\*/g, '**$1** ')
       .replace(/\*([^\*\n]+?)\s+\*/g, '*$1* ')
       .replace(/_([^_\n]+?)\s+_/g, '_$1_ ');
+
+    // 2. Convert JSX expression props (e.g. metrics={[...]}) to single-quoted attributes (metrics='[...]') so rehype-raw can parse HTML tags
+    normalized = normalized.replace(/(\w+)=\{\s*(\[[\s\S]*?\]|\{[\s\S]*?\}|[^}]+)\s*\}/g, (match, attrName, attrValue) => {
+      const cleanVal = attrValue.trim();
+      return `${attrName}='${cleanVal}'`;
+    });
 
     return autoLinkTopicClusters(normalized);
   }, [rawText]);
@@ -102,23 +108,109 @@ export function ClientMdxRenderer({
       </Callout>
     ),
 
-    benchmark: ({ title, description, rows, metrics }: any) => (
-      <Benchmark title={title} description={description} rows={rows} metrics={metrics} />
-    ),
-    Benchmark: ({ title, description, rows, metrics }: any) => (
-      <Benchmark title={title} description={description} rows={rows} metrics={metrics} />
-    ),
+    benchmark: ({ title, description, rows, metrics }: any) => {
+      let parsedMetrics = metrics;
+      if (typeof metrics === 'string') {
+        try {
+          parsedMetrics = JSON.parse(metrics);
+        } catch {
+          try {
+            // eslint-disable-next-line no-eval
+            parsedMetrics = eval(`(${metrics})`);
+          } catch {
+            parsedMetrics = [];
+          }
+        }
+      }
+      let parsedRows = rows;
+      if (typeof rows === 'string') {
+        try {
+          parsedRows = JSON.parse(rows);
+        } catch {
+          try {
+            // eslint-disable-next-line no-eval
+            parsedRows = eval(`(${rows})`);
+          } catch {
+            parsedRows = [];
+          }
+        }
+      }
+      return (
+        <Benchmark
+          title={title}
+          description={description}
+          rows={parsedRows}
+          metrics={parsedMetrics || parsedRows}
+        />
+      );
+    },
+    Benchmark: ({ title, description, rows, metrics }: any) => {
+      let parsedMetrics = metrics;
+      if (typeof metrics === 'string') {
+        try {
+          parsedMetrics = JSON.parse(metrics);
+        } catch {
+          try {
+            // eslint-disable-next-line no-eval
+            parsedMetrics = eval(`(${metrics})`);
+          } catch {
+            parsedMetrics = [];
+          }
+        }
+      }
+      let parsedRows = rows;
+      if (typeof rows === 'string') {
+        try {
+          parsedRows = JSON.parse(rows);
+        } catch {
+          try {
+            // eslint-disable-next-line no-eval
+            parsedRows = eval(`(${rows})`);
+          } catch {
+            parsedRows = [];
+          }
+        }
+      }
+      return (
+        <Benchmark
+          title={title}
+          description={description}
+          rows={parsedRows}
+          metrics={parsedMetrics || parsedRows}
+        />
+      );
+    },
 
-    terminal: ({ title, command, children }: any) => (
-      <Terminal title={title} command={command}>
-        {children}
-      </Terminal>
-    ),
-    Terminal: ({ title, command, children }: any) => (
-      <Terminal title={title} command={command}>
-        {children}
-      </Terminal>
-    ),
+    terminal: ({ title, command, children }: any) => {
+      const extractText = (node: any): string => {
+        if (!node) return '';
+        if (typeof node === 'string') return node;
+        if (Array.isArray(node)) return node.map(extractText).join('');
+        if (node.props?.children) return extractText(node.props.children);
+        return String(node);
+      };
+      const textOutput = extractText(children).trim();
+      return (
+        <Terminal title={title} command={command}>
+          {textOutput}
+        </Terminal>
+      );
+    },
+    Terminal: ({ title, command, children }: any) => {
+      const extractText = (node: any): string => {
+        if (!node) return '';
+        if (typeof node === 'string') return node;
+        if (Array.isArray(node)) return node.map(extractText).join('');
+        if (node.props?.children) return extractText(node.props.children);
+        return String(node);
+      };
+      const textOutput = extractText(children).trim();
+      return (
+        <Terminal title={title} command={command}>
+          {textOutput}
+        </Terminal>
+      );
+    },
 
     mermaiddiagram: ({ code, caption, children }: any) => (
       <MermaidDiagram code={code} caption={caption}>
