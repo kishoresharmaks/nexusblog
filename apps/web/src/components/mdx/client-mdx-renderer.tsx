@@ -19,6 +19,7 @@ import { ApiRequest, ApiResponse } from './api-spec';
 import { KaTeX } from './katex-math';
 import { InArticleAd } from '../ads/in-article-ad';
 import { normalizeMediaUrl } from '@nexus/config';
+import { autoLinkTopicClusters } from '@/lib/topic-cluster-linker';
 
 function getHeadingId(children: any): string | undefined {
   const getText = (node: any): string => {
@@ -48,6 +49,9 @@ export function ClientMdxRenderer({
   customComponents: externalComponents,
 }: ClientMdxRendererProps) {
   const rawText = content || source || '';
+  const processedText = React.useMemo(() => {
+    return autoLinkTopicClusters(rawText);
+  }, [rawText]);
 
   const customComponents: any = {
     // Code and Syntax Highlighting
@@ -293,7 +297,7 @@ export function ClientMdxRenderer({
         rehypePlugins={[rehypeRaw, rehypeKatex]}
         components={customComponents}
       >
-        {rawText}
+        {processedText}
       </ReactMarkdown>
     </div>
   );

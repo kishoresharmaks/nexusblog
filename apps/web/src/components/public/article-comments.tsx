@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { normalizeMediaUrl } from '@nexus/config';
+
+const DEFAULT_BLUR_DATA_URL =
+  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4IDgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiMxODE4MWIiLz48L3N2Zz4=';
 import {
   MessageSquare,
   Send,
@@ -299,10 +304,14 @@ export function ArticleComments({
               }`}
             >
               {item.user?.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.user.avatar}
-                  alt={item.user.name}
+                <Image
+                  src={normalizeMediaUrl(item.user.avatar)}
+                  alt={item.user.name || 'User avatar'}
+                  width={32}
+                  height={32}
+                  placeholder="blur"
+                  blurDataURL={DEFAULT_BLUR_DATA_URL}
+                  unoptimized
                   className="h-full w-full rounded-full object-cover"
                 />
               ) : (

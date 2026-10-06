@@ -2,9 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { format } from 'date-fns';
 import { normalizeMediaUrl } from '@nexus/config';
 import { IconRenderer } from '@/components/common/icon-renderer';
+
+const DEFAULT_BLUR_DATA_URL =
+  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4IDgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiMxODE4MWIiLz48L3N2Zz4=';
 import {
   BookOpen,
   Calendar,
@@ -147,7 +151,7 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
         <div className="flex items-center justify-between gap-2 pb-3 border-b border-border/60">
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-semibold text-primary whitespace-nowrap shrink-0">
-              <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
+              <Calendar className="h-3 w-3 text-primary shrink-0" />
               <span>Today&apos;s Edition</span>
               <span className="text-muted-foreground/60 hidden xs:inline sm:inline">&bull;</span>
               <span className="text-muted-foreground hidden xs:inline sm:inline">{todayFormatted}</span>
@@ -188,12 +192,15 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
         {/* 2. Visual Cover Image & Category Badges */}
         <div className="relative rounded-xl overflow-hidden border border-border/70 bg-muted/40 aspect-[16/9] sm:aspect-[16/7] group/img">
           {imageSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={imageSrc}
               alt={article.title}
-              crossOrigin="anonymous"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              placeholder="blur"
+              blurDataURL={DEFAULT_BLUR_DATA_URL}
+              unoptimized
+              className="object-cover transition-transform duration-500 group-hover/img:scale-105"
               onError={() => setImageError(true)}
             />
           ) : (
@@ -254,10 +261,14 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
           {/* Author info */}
           <div className="flex items-center space-x-2 min-w-0">
             {article.author?.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={normalizeMediaUrl(article.author.avatar)}
                 alt={authorName}
+                width={24}
+                height={24}
+                placeholder="blur"
+                blurDataURL={DEFAULT_BLUR_DATA_URL}
+                unoptimized
                 className="h-6 w-6 rounded-full object-cover shrink-0 border border-border"
               />
             ) : (
@@ -393,10 +404,14 @@ export function DailyArchitectureDigest({ articles }: DailyArchitectureDigestPro
             <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-muted/20 text-xs font-mono">
               <div className="flex items-center gap-3">
                 {article.author?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={normalizeMediaUrl(article.author.avatar)}
                     alt={authorName}
+                    width={36}
+                    height={36}
+                    placeholder="blur"
+                    blurDataURL={DEFAULT_BLUR_DATA_URL}
+                    unoptimized
                     className="h-9 w-9 rounded-full object-cover border border-border"
                   />
                 ) : (

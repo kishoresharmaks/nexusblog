@@ -27,6 +27,7 @@ import { OgModule } from './og/og.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AdsModule } from './ads/ads.module';
 import { ShortenerModule } from './shortener/shortener.module';
+import { IndexNowModule } from './indexnow/indexnow.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 
 @Module({
@@ -63,6 +64,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
     PrismaModule,
     MailModule,
     SystemSettingsModule,
+    IndexNowModule,
     AuthModule,
     UsersModule,
     CategoriesModule,

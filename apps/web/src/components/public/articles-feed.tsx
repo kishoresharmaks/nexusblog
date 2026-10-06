@@ -256,8 +256,8 @@ export function ArticlesFeed({
 
         {/* Popular Search Suggestions */}
         <div className="flex items-center gap-2 flex-wrap text-xs pt-1 border-t border-border/40">
-          <span className="text-muted-foreground font-mono text-[11px] flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-cyan-500" /> Suggestions:
+          <span className="text-muted-foreground font-mono text-[11px] flex items-center gap-1 font-semibold">
+            <Flame className="h-3 w-3 text-primary" /> Popular Topics:
           </span>
           {POPULAR_SEARCH_CHIPS.map((chip) => (
             <button
@@ -278,7 +278,7 @@ export function ArticlesFeed({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
             <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-foreground">
-              <Layers className="h-3.5 w-3.5 text-cyan-500" /> Topic Categories
+              <Layers className="h-3.5 w-3.5 text-primary" /> Topic Categories
             </span>
             <span>{categories.length} Topics</span>
           </div>
@@ -304,7 +304,7 @@ export function ArticlesFeed({
                   onClick={() => setSelectedCategory(isSelected ? '' : cat.slug)}
                   className={`rounded-xl px-3 py-1.5 text-xs font-mono font-medium transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-cyan-500 text-black font-bold shadow-xs'
+                      ? 'bg-primary text-primary-foreground font-bold shadow-xs'
                       : 'border border-border/80 bg-card text-muted-foreground hover:text-foreground hover:bg-muted/50'
                   }`}
                 >

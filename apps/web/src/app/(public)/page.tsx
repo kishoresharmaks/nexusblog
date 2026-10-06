@@ -11,7 +11,7 @@ import {
   Database,
   ArrowRight,
   ChevronRight,
-  Sparkles,
+  Compass,
   Terminal,
   Activity,
   ShieldCheck,
@@ -177,7 +177,7 @@ export default async function HomePage() {
         <div className="flex items-center justify-between mb-5 sm:mb-6">
           <div>
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground mb-1">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <Compass className="h-3.5 w-3.5 text-primary" />
               <span>Curated Selection</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
@@ -308,7 +308,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
             <div className="lg:col-span-8 space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-mono text-primary font-semibold">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                 <span>Editorial Transparency &amp; Standards</span>
               </div>
               <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">

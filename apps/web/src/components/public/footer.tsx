@@ -81,7 +81,7 @@ export function Footer() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
             <div className="lg:col-span-7 space-y-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-mono text-primary font-semibold">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                <Terminal className="h-3.5 w-3.5 text-primary" />
                 <span>Weekly Technical Dispatch</span>
               </div>
 

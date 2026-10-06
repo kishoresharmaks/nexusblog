@@ -228,7 +228,7 @@ function SearchPageContent() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-cyan-500 focus:outline-none cursor-pointer"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none cursor-pointer"
             >
               <option value="ALL">All Categories</option>
               {categories.map((cat) => (
@@ -247,7 +247,7 @@ function SearchPageContent() {
             <select
               value={selectedTech}
               onChange={(e) => setSelectedTech(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-cyan-500 focus:outline-none cursor-pointer"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none cursor-pointer"
             >
               <option value="ALL">All Technologies</option>
               {technologies.map((tech) => (
@@ -266,7 +266,7 @@ function SearchPageContent() {
             <select
               value={selectedDifficulty}
               onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-cyan-500 focus:outline-none cursor-pointer"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none cursor-pointer"
             >
               <option value="ALL">All Depths</option>
               <option value="BEGINNER">Beginner</option>
@@ -284,7 +284,7 @@ function SearchPageContent() {
             <select
               value={selectedFilter}
               onChange={(e) => setSelectedFilter(e.target.value as any)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-cyan-500 focus:outline-none cursor-pointer"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none cursor-pointer"
             >
               <option value="all">Latest Published</option>
               <option value="popular">Most Popular (Views)</option>
@@ -302,7 +302,7 @@ function SearchPageContent() {
           {debouncedQuery && (
             <span>
               {' '}
-              matching &quot;<strong className="text-cyan-500">{debouncedQuery}</strong>&quot;
+              matching &quot;<strong className="text-primary">{debouncedQuery}</strong>&quot;
             </span>
           )}
         </p>
@@ -358,7 +358,7 @@ export default function SearchPage() {
       fallback={
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-            <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
             <span>Loading search engine...</span>
           </div>
         </div>

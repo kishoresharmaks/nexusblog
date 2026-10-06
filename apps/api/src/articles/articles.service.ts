@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SystemSettingsService } from '../system-settings/system-settings.service';
+import { IndexNowService } from '../indexnow/indexnow.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { QueryArticleDto } from './dto/query-article.dto';
@@ -19,6 +20,7 @@ export class ArticlesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly systemSettingsService: SystemSettingsService,
+    private readonly indexNowService: IndexNowService,
   ) {}
 
   public sanitizeUrl(url?: string | null): string {
@@ -508,6 +510,10 @@ export class ArticlesService {
       },
     });
 
+    if (created.status === ArticleStatus.PUBLISHED) {
+      this.indexNowService.submitArticleUrl(created.slug);
+    }
+
     return this.sanitizeArticle(created);
   }
 
@@ -589,6 +595,10 @@ export class ArticlesService {
         publishedAt,
       },
     });
+
+    if (updated.status === ArticleStatus.PUBLISHED) {
+      this.indexNowService.submitArticleUrl(updated.slug);
+    }
 
     return this.sanitizeArticle(updated);
   }
@@ -801,7 +811,7 @@ export class ArticlesService {
     }
 
     if (provider === 'gemini' && (!apiKey || apiKey.length <= 5)) {
-      throw new ForbiddenException('Gemini API key is not configured in Admin Dev Config.');
+      this.logger.warn('Gemini API key is not configured in Admin Dev Config. Falling back to smart summary extractor.');
     }
 
     return {

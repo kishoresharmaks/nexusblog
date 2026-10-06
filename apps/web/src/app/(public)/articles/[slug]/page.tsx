@@ -368,28 +368,30 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
             </div>
 
             {/* Top Interactive Actions Bar (Like, Save, Share, AI Summarize) */}
-            <div className="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-border/30">
-              <div className="flex items-center gap-3 flex-wrap">
-                <ArticleActions
-                  articleId={article.id}
-                  initialLikes={article.likesCount || 0}
-                  commentsCount={article.commentsCount || 0}
-                />
-                <ArticleSummarizer
-                  slug={article.slug}
-                  title={article.title}
-                  excerpt={article.excerpt}
-                  content={article.content}
-                />
-              </div>
-              <ShareButtons
+            <div className="pt-4 border-t border-border/30">
+              <ArticleSummarizer
+                slug={article.slug}
                 title={article.title}
-                url={`/articles/${article.slug}`}
-                articleId={article.id}
-                shortUrl={article.shortUrl}
                 excerpt={article.excerpt}
-                author={authorName}
-                category={categoryName}
+                content={article.content}
+                actionsSlot={
+                  <ArticleActions
+                    articleId={article.id}
+                    initialLikes={article.likesCount || 0}
+                    commentsCount={article.commentsCount || 0}
+                  />
+                }
+                shareSlot={
+                  <ShareButtons
+                    title={article.title}
+                    url={`/articles/${article.slug}`}
+                    articleId={article.id}
+                    shortUrl={article.shortUrl}
+                    excerpt={article.excerpt}
+                    author={authorName}
+                    category={categoryName}
+                  />
+                }
               />
             </div>
           </div>

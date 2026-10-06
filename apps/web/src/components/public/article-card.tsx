@@ -2,11 +2,15 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Article } from '@nexus/types';
 import { normalizeMediaUrl } from '@nexus/config';
-import { Clock, Eye, Sparkles } from 'lucide-react';
+import { Clock, Eye, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { IconRenderer } from '@/components/common/icon-renderer';
+
+const DEFAULT_BLUR_DATA_URL =
+  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4IDgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiMxODE4MWIiLz48L3N2Zz4=';
 
 export interface ArticleCardItem extends Partial<Omit<Article, 'author' | 'category' | 'technologies' | 'tags'>> {
   author?: {
@@ -67,7 +71,7 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
     if (type === 'CASE_STUDY') {
       return {
         label: 'Case Study',
-        color: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+        color: 'bg-primary/10 text-primary border-primary/20',
       };
     }
     if (type === 'DEEP_DIVE') {
@@ -123,7 +127,7 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
 
               {article.featured && (
                 <span className="flex items-center gap-1 text-[11px] font-mono text-amber-500 font-semibold shrink-0">
-                  <Sparkles className="h-3 w-3" /> Featured
+                  <Star className="h-3 w-3 fill-amber-500/20" /> Featured
                 </span>
               )}
             </div>
@@ -134,12 +138,15 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
               className="block md:hidden relative w-full aspect-[16/9] sm:aspect-[16/8] rounded-xl overflow-hidden border border-border/70 bg-muted/30 group/img transition-all duration-300 group-hover:border-primary/40"
             >
               {imageSrc ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={imageSrc}
                   alt={article.title || 'Article cover'}
-                  crossOrigin="anonymous"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-105"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  placeholder="blur"
+                  blurDataURL={DEFAULT_BLUR_DATA_URL}
+                  unoptimized={true}
+                  className="object-cover transition-transform duration-500 group-hover/img:scale-105"
                   onError={() => setImageError(true)}
                 />
               ) : (
@@ -186,10 +193,12 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
           <div className="pt-3.5 mt-auto border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center space-x-2 min-w-0">
               {article.author?.avatar && !isGuest ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={normalizeMediaUrl(article.author.avatar)}
                   alt={authorDisplayName}
+                  width={20}
+                  height={20}
+                  unoptimized={true}
                   className="h-5 w-5 rounded-full object-cover shrink-0 border border-border"
                 />
               ) : (
@@ -215,13 +224,13 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
               </span>
             </div>
 
-            <div className="flex items-center space-x-3 font-mono text-[11px] shrink-0">
+            <div className="flex items-center space-x-3 font-mono text-[11px] tabular-nums shrink-0">
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" /> {article.readingTime || 5}m
               </span>
               {typeof article.viewsCount === 'number' && (
                 <span className="hidden sm:flex items-center gap-1">
-                  <Eye className="h-3 w-3" /> {article.viewsCount}
+                  <Eye className="h-3 w-3" /> {article.viewsCount.toLocaleString()}
                 </span>
               )}
             </div>
@@ -234,12 +243,15 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
           className="hidden md:block shrink-0 w-32 h-32 md:w-40 md:h-40 lg:w-44 lg:h-44 xl:w-48 xl:h-48 rounded-2xl overflow-hidden border border-border/70 bg-muted/30 relative transition-all duration-300 group-hover:border-primary/40 group-hover:shadow-md self-center md:self-stretch"
         >
           {imageSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={imageSrc}
               alt={article.title || 'Article cover'}
-              crossOrigin="anonymous"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fill
+              sizes="(max-width: 1200px) 200px, 250px"
+              placeholder="blur"
+              blurDataURL={DEFAULT_BLUR_DATA_URL}
+              unoptimized={true}
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
               onError={() => setImageError(true)}
             />
           ) : (

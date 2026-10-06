@@ -213,7 +213,7 @@ export function ReadingProgress({
         className="fixed top-0 left-0 right-0 z-50 h-[3px] bg-border/20 pointer-events-none"
       >
         <div
-          className="h-full bg-gradient-to-r from-primary via-indigo-500 to-sky-400 transition-all duration-100 ease-out shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]"
+          className="h-full bg-primary transition-all duration-100 ease-out opacity-90"
           style={{ width: `${Math.min(Math.max(completion, 0), 100)}%` }}
         />
       </div>

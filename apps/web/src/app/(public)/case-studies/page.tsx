@@ -6,7 +6,6 @@ import { articlesApi } from '@/lib/api-client';
 import {
   Bookmark,
   ArrowRight,
-  Sparkles,
   Layers,
   Cpu,
   Database,
@@ -207,7 +206,11 @@ export default async function CaseStudiesPage({ searchParams }: CaseStudiesPageP
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-4">
                 <div className="flex items-center gap-2 font-mono text-xs">
                   <span className="px-2.5 py-0.5 rounded-md bg-primary/10 text-primary font-bold">
-                    {study.category?.name || study.category || 'System Design'}
+                    {typeof study.category === 'object' && study.category
+                      ? study.category.name || study.category.slug
+                      : typeof study.category === 'string'
+                      ? study.category
+                      : 'System Design'}
                   </span>
                   <span className="text-muted-foreground">•</span>
                   <span className="text-muted-foreground flex items-center gap-1">
@@ -263,14 +266,23 @@ export default async function CaseStudiesPage({ searchParams }: CaseStudiesPageP
               {/* Tech Badges & Read Action */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
                 <div className="flex flex-wrap gap-1.5 font-mono text-[11px]">
-                  {techList.map((tech: string, tIdx: number) => (
-                    <span
-                      key={tIdx}
-                      className="px-2.5 py-1 rounded-lg bg-muted border border-border/60 text-muted-foreground"
-                    >
-                      #{typeof tech === 'string' ? tech.toLowerCase() : tech}
-                    </span>
-                  ))}
+                  {techList.map((tech: any, tIdx: number) => {
+                    const techName =
+                      typeof tech === 'string'
+                        ? tech
+                        : typeof tech === 'object' && tech
+                        ? tech.name || tech.slug || ''
+                        : '';
+                    if (!techName) return null;
+                    return (
+                      <span
+                        key={tech?.id || tech?.slug || tIdx}
+                        className="px-2.5 py-1 rounded-lg bg-muted border border-border/60 text-muted-foreground"
+                      >
+                        #{techName.toLowerCase()}
+                      </span>
+                    );
+                  })}
                 </div>
 
                 <Link
