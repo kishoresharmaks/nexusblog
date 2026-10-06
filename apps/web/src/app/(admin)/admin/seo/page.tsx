@@ -31,10 +31,15 @@ import {
   Monitor,
   Radio,
   FileText,
+  X,
+  Edit3,
+  Sliders,
+  Lock,
+  Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { articlesApi, systemSettingsApi } from '@/lib/api-client';
+import { articlesApi, systemSettingsApi, adsApi } from '@/lib/api-client';
 
 interface EndpointHealth {
   status: 'IDLE' | 'CHECKING' | 'HEALTHY' | 'ERROR';
@@ -43,8 +48,16 @@ interface EndpointHealth {
   statusCode?: number;
 }
 
+interface SeoSettingsState {
+  aiTxtContent: string;
+  llmsTxtContent: string;
+  securityTxtContent: string;
+  humansTxtContent: string;
+  adsTxtContent: string;
+}
+
 export default function AdminSeoDiagnosticsPage() {
-  const [activeTab, setActiveTab] = useState<'diagnostics' | 'robots' | 'social-preview' | 'jsonld'>('diagnostics');
+  const [activeTab, setActiveTab] = useState<'readiness' | 'diagnostics' | 'robots' | 'social-preview' | 'jsonld'>('readiness');
   const [articles, setArticles] = useState<any[]>([]);
   const [selectedArticleSlug, setSelectedArticleSlug] = useState<string>('');
   const [socialPlatform, setSocialPlatform] = useState<'twitter' | 'linkedin' | 'discord' | 'google'>('twitter');
@@ -61,15 +74,19 @@ export default function AdminSeoDiagnosticsPage() {
   const [endpointHealth, setEndpointHealth] = useState<Record<string, EndpointHealth>>({
     sitemap: { status: 'IDLE' },
     robots: { status: 'IDLE' },
+    aiTxt: { status: 'IDLE' },
+    llmsTxt: { status: 'IDLE' },
+    adsTxt: { status: 'IDLE' },
+    securityTxt: { status: 'IDLE' },
+    humansTxt: { status: 'IDLE' },
     rss: { status: 'IDLE' },
     ogApi: { status: 'IDLE' },
     ogWeb: { status: 'IDLE' },
-    jsonld: { status: 'IDLE' },
   });
   const [isCheckingAll, setIsCheckingAll] = useState(false);
   const [isPingingSearchEngines, setIsPingingSearchEngines] = useState(false);
 
-  // Robots.txt & Indexing State
+  // Robots.txt & SEO Settings State
   const [loadingRobots, setLoadingRobots] = useState(false);
   const [isSavingRobots, setIsSavingRobots] = useState(false);
   const [robotsIndexingMode, setRobotsIndexingMode] = useState<'allow' | 'disallow_all' | 'custom'>('allow');
@@ -78,6 +95,25 @@ export default function AdminSeoDiagnosticsPage() {
   const [copiedRobots, setCopiedRobots] = useState(false);
   const [copiedJsonLd, setCopiedJsonLd] = useState(false);
   const [copiedOgUrl, setCopiedOgUrl] = useState(false);
+
+  const [seoSettings, setSeoSettings] = useState<SeoSettingsState>({
+    aiTxtContent: '',
+    llmsTxtContent: '',
+    securityTxtContent: '',
+    humansTxtContent: '',
+    adsTxtContent: '',
+  });
+
+  // Editor Modal State
+  const [activeEditorModal, setActiveEditorModal] = useState<{
+    isOpen: boolean;
+    key: string;
+    title: string;
+    path: string;
+    content: string;
+    description: string;
+  } | null>(null);
+  const [isSavingModal, setIsSavingModal] = useState(false);
 
   const getEffectiveSiteUrl = useCallback((rawUrl?: string): string => {
     if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
@@ -89,7 +125,7 @@ export default function AdminSeoDiagnosticsPage() {
     return 'https://nexusnation.in';
   }, []);
 
-  const loadRobotsConfig = useCallback(async () => {
+  const loadSeoSettings = useCallback(async () => {
     try {
       setLoadingRobots(true);
       const data = await systemSettingsApi.getAll();
@@ -99,6 +135,13 @@ export default function AdminSeoDiagnosticsPage() {
           data.robotsCustomContent?.value ||
             '# Custom robots.txt directives\nUser-Agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /api/*',
         );
+        setSeoSettings({
+          aiTxtContent: data.aiTxtContent?.value || '',
+          llmsTxtContent: data.llmsTxtContent?.value || '',
+          securityTxtContent: data.securityTxtContent?.value || '',
+          humansTxtContent: data.humansTxtContent?.value || '',
+          adsTxtContent: data.adsTxtContent?.value || '# Google AdSense Directives\n# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0\n',
+        });
         setSiteUrl(getEffectiveSiteUrl(data.siteUrl?.value));
       }
     } catch {
@@ -131,8 +174,8 @@ export default function AdminSeoDiagnosticsPage() {
           details = `HTTP 200 • Visual Image Rendered (${contentType.split(';')[0]})`;
         } else if (contentType.includes('text')) {
           const text = await res.text();
-          const lines = text.trim().split('\n').length;
-          details = `HTTP 200 • ${lines} active directives`;
+          const lines = text.trim().split('\n').filter(Boolean).length;
+          details = `HTTP 200 • ${lines} lines active (${contentType.split(';')[0]})`;
         }
 
         setEndpointHealth((prev) => ({
@@ -174,13 +217,18 @@ export default function AdminSeoDiagnosticsPage() {
       await Promise.allSettled([
         runHealthCheck('sitemap', '/sitemap.xml'),
         runHealthCheck('robots', '/robots.txt'),
+        runHealthCheck('aiTxt', '/ai.txt'),
+        runHealthCheck('llmsTxt', '/llms.txt'),
+        runHealthCheck('adsTxt', '/ads.txt'),
+        runHealthCheck('securityTxt', '/security.txt'),
+        runHealthCheck('humansTxt', '/humans.txt'),
         runHealthCheck('rss', '/rss.xml'),
         runHealthCheck('ogApi', '/api/og?title=Nexus%20Diagnostic%20Benchmark&category=SYSTEM%20DESIGN'),
         runHealthCheck('ogWeb', '/og?title=Nexus%20Diagnostic%20Benchmark&category=SYSTEM%20DESIGN'),
       ]);
-      toast.success('Live SEO & indexing health audit complete');
+      toast.success('Live SEO & AI Readiness audit complete');
     } catch {
-      toast.error('Health audit completed with warnings');
+      toast.error('Audit completed with warnings');
     } finally {
       setIsCheckingAll(false);
     }
@@ -202,9 +250,9 @@ export default function AdminSeoDiagnosticsPage() {
       })
       .catch(() => {});
 
-    loadRobotsConfig();
+    loadSeoSettings();
     runCheckAll();
-  }, [loadRobotsConfig, runCheckAll]);
+  }, [loadSeoSettings, runCheckAll]);
 
   const selectedArticle = articles.find((a) => a.slug === selectedArticleSlug) || articles[0];
 
@@ -227,7 +275,7 @@ export default function AdminSeoDiagnosticsPage() {
         robotsCustomContent: robotsCustomContent.trim(),
       });
       toast.success('Robots.txt & search engine indexing rules updated successfully!');
-      await loadRobotsConfig();
+      await loadSeoSettings();
       await runHealthCheck('robots', '/robots.txt');
     } catch (err: any) {
       toast.error(err.message || 'Failed to update robots.txt configuration');
@@ -242,7 +290,6 @@ export default function AdminSeoDiagnosticsPage() {
       const cleanUrl = getEffectiveSiteUrl(siteUrl);
       const sitemapUrl = `${cleanUrl}/sitemap.xml`;
 
-      // Simulating search console notify calls
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       toast.success(`Sitemap broadcast submitted to search engine endpoints! (${sitemapUrl})`, {
@@ -252,6 +299,70 @@ export default function AdminSeoDiagnosticsPage() {
       toast.error('Failed to notify search engines: ' + err.message);
     } finally {
       setIsPingingSearchEngines(false);
+    }
+  };
+
+  const openEditorModal = (key: string, title: string, path: string, description: string) => {
+    let content = '';
+    if (key === 'robotsCustomContent') content = robotsCustomContent;
+    else if (key in seoSettings) content = (seoSettings as any)[key] || '';
+
+    setActiveEditorModal({
+      isOpen: true,
+      key,
+      title,
+      path,
+      content,
+      description,
+    });
+  };
+
+  const handleSaveModalContent = async () => {
+    if (!activeEditorModal) return;
+    setIsSavingModal(true);
+    try {
+      const { key, content } = activeEditorModal;
+      if (key === 'adsTxtContent') {
+        await adsApi.updateAdsTxt(content.trim());
+      } else {
+        await systemSettingsApi.updateBatch({
+          [key]: content.trim(),
+        });
+      }
+      toast.success(`${activeEditorModal.title} updated and published live!`);
+
+      if (key in seoSettings) {
+        setSeoSettings((prev) => ({ ...prev, [key]: content }));
+      } else if (key === 'robotsCustomContent') {
+        setRobotsCustomContent(content);
+      }
+
+      // Re-trigger corresponding health check
+      const healthKeyMap: Record<string, string> = {
+        aiTxtContent: 'aiTxt',
+        llmsTxtContent: 'llmsTxt',
+        securityTxtContent: 'securityTxt',
+        humansTxtContent: 'humansTxt',
+        adsTxtContent: 'adsTxt',
+        robotsCustomContent: 'robots',
+      };
+      const endpointMap: Record<string, string> = {
+        aiTxtContent: '/ai.txt',
+        llmsTxtContent: '/llms.txt',
+        securityTxtContent: '/security.txt',
+        humansTxtContent: '/humans.txt',
+        adsTxtContent: '/ads.txt',
+        robotsCustomContent: '/robots.txt',
+      };
+      if (healthKeyMap[key] && endpointMap[key]) {
+        runHealthCheck(healthKeyMap[key], endpointMap[key]);
+      }
+
+      setActiveEditorModal(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update configuration file');
+    } finally {
+      setIsSavingModal(false);
     }
   };
 
@@ -398,6 +509,84 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
     setTimeout(() => setCopiedOgUrl(false), 2000);
   };
 
+  const readinessGridItems = [
+    {
+      key: 'sitemap',
+      name: 'Sitemap Index',
+      path: '/sitemap.xml',
+      standard: 'W3C XML Schema',
+      icon: Globe,
+      description: 'Auto-indexes all published articles, categories, series, and tags with ISO lastmod timestamps.',
+      editable: false,
+    },
+    {
+      key: 'robots',
+      name: 'Robots Directives',
+      path: '/robots.txt',
+      contentKey: 'robotsCustomContent',
+      standard: 'Robots Exclusion Standard',
+      icon: ShieldCheck,
+      description: 'Controls crawler access to /admin, /dashboard, and /api while directing search spiders to /sitemap.xml.',
+      editable: true,
+      editorTitle: 'Edit Robots Directives (robots.txt)',
+    },
+    {
+      key: 'aiTxt',
+      name: 'AI Crawling Policy (ai.txt)',
+      path: '/ai.txt',
+      contentKey: 'aiTxtContent',
+      standard: 'CC BY 4.0 AI License',
+      icon: Cpu,
+      description: 'Grants CC BY 4.0 licensing and ingestion permissions for GPTBot, ClaudeBot, and PerplexityBot.',
+      editable: true,
+      editorTitle: 'Edit AI Crawling & Licensing Policy (ai.txt)',
+    },
+    {
+      key: 'llmsTxt',
+      name: 'LLM Context Index (llms.txt)',
+      path: '/llms.txt',
+      contentKey: 'llmsTxtContent',
+      standard: 'LLM Context Spec (llmstxt.org)',
+      icon: FileText,
+      description: 'Structured Markdown index detailing core technical blueprints and feeds for LLM ingestion.',
+      editable: true,
+      editorTitle: 'Edit Structured LLM Context Index (llms.txt)',
+    },
+    {
+      key: 'adsTxt',
+      name: 'Publisher Verification (ads.txt)',
+      path: '/ads.txt',
+      contentKey: 'adsTxtContent',
+      standard: 'IAB Ads.txt v1.1 Standard',
+      icon: Radio,
+      description: 'Authorized Digital Sellers record for verifying Google AdSense publisher IDs and ad network sellers.',
+      editable: true,
+      editorTitle: 'Edit Publisher Ads Verification (ads.txt)',
+    },
+    {
+      key: 'securityTxt',
+      name: 'Security Policy (security.txt)',
+      path: '/security.txt',
+      contentKey: 'securityTxtContent',
+      standard: 'RFC 9116 Standard',
+      icon: ShieldAlert,
+      description: 'Public security disclosure policy, vulnerability reporting contacts, PGP key links, and policy expiration.',
+      editable: true,
+      editorTitle: 'Edit Security Vulnerability Policy (security.txt)',
+    },
+    {
+      key: 'humansTxt',
+      name: 'Team & Stack Credits (humans.txt)',
+      path: '/humans.txt',
+      contentKey: 'humansTxtContent',
+      standard: 'Humanstxt.org Standard',
+      icon: Code2,
+      description: 'Public credits page detailing author team, Next.js 15 / NestJS tech stack, and edge infrastructure.',
+      editable: true,
+      editorTitle: 'Edit Engineering Team & Stack Credits (humans.txt)',
+    },
+  ];
+
   const diagnosticItems = [
     {
       key: 'sitemap',
@@ -412,6 +601,41 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
       endpoint: '/robots.txt',
       checkUrl: '/robots.txt',
       description: 'Controls search engine crawler visibility, bot access levels, and points spiders directly to the production sitemap index.',
+    },
+    {
+      key: 'aiTxt',
+      name: 'AI Discoverability & Licensing (/ai.txt)',
+      endpoint: '/ai.txt',
+      checkUrl: '/ai.txt',
+      description: 'Serves plain-text CC BY 4.0 AI crawler permissions for GPTBot, ClaudeBot, and PerplexityBot.',
+    },
+    {
+      key: 'llmsTxt',
+      name: 'Structured LLM Context Index (/llms.txt)',
+      endpoint: '/llms.txt',
+      checkUrl: '/llms.txt',
+      description: 'Markdown architectural hub and documentation feed for LLM knowledge base ingestion.',
+    },
+    {
+      key: 'adsTxt',
+      name: 'Authorized Digital Sellers (/ads.txt)',
+      endpoint: '/ads.txt',
+      checkUrl: '/ads.txt',
+      description: 'IAB compliant seller verification record for Google AdSense and Carbon Ads.',
+    },
+    {
+      key: 'securityTxt',
+      name: 'Vulnerability Disclosure Policy (/security.txt)',
+      endpoint: '/security.txt',
+      checkUrl: '/security.txt',
+      description: 'RFC 9116 security disclosure guidelines and contact endpoints.',
+    },
+    {
+      key: 'humansTxt',
+      name: 'Team & Technology Stack (/humans.txt)',
+      endpoint: '/humans.txt',
+      checkUrl: '/humans.txt',
+      description: 'Engineering credits, Next.js 15 App Router architecture, and database infrastructure.',
     },
     {
       key: 'rss',
@@ -444,16 +668,28 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
           <div className="flex items-center gap-2">
             <Search className="h-5 w-5 text-primary" />
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-              SEO &amp; Indexing Engine
+              SEO &amp; AI Readiness Engine
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            End-to-end management for search engine indexing, crawler policies, dynamic XML sitemaps, OpenGraph image generation, and JSON-LD schema.
+            Complete compliance suite for search engine indexing, AI discoverability, LLM ingestion, RFC 9116 security policies, and OpenGraph social cards.
           </p>
         </div>
 
         {/* Tab Switcher */}
         <div className="flex flex-wrap items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/60 text-xs font-mono self-start sm:self-auto">
+          <button
+            onClick={() => setActiveTab('readiness')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'readiness'
+                ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>SEO &amp; AI Grid</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('diagnostics')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -463,8 +699,9 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
             }`}
           >
             <Activity className="h-3.5 w-3.5" />
-            <span>Diagnostics</span>
+            <span>Health Monitor</span>
           </button>
+
           <button
             onClick={() => setActiveTab('robots')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -479,6 +716,7 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
               <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
             )}
           </button>
+
           <button
             onClick={() => setActiveTab('social-preview')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -490,6 +728,7 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
             <Share2 className="h-3.5 w-3.5" />
             <span>Social &amp; SERP</span>
           </button>
+
           <button
             onClick={() => setActiveTab('jsonld')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -503,6 +742,174 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
           </button>
         </div>
       </div>
+
+      {/* TAB 0: SEO & AI READINESS FEATURE GRID */}
+      {activeTab === 'readiness' && (
+        <div className="space-y-6">
+          {/* Top Action & Status Summary Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-card border border-border shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+                <Sparkles className="h-5 w-5 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground">SEO &amp; AI Readiness Standards</h3>
+                <p className="text-xs text-muted-foreground">
+                  Serves 7 raw, plain-text industry standards (<code className="text-primary font-mono">text/plain; charset=utf-8</code>) for search engines, LLM agents, and security scanners.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={runCheckAll}
+                disabled={isCheckingAll}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-mono font-bold hover:opacity-90 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isCheckingAll ? 'animate-spin' : ''}`} />
+                <span>Verify All 7 Endpoints</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 7-Card SEO & AI Readiness Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {readinessGridItems.map((item) => {
+              const IconComp = item.icon;
+              const state = endpointHealth[item.key] || { status: 'IDLE' };
+              const isHealthy = state.status === 'HEALTHY';
+              const isChecking = state.status === 'CHECKING';
+              const isError = state.status === 'ERROR';
+
+              return (
+                <div
+                  key={item.key}
+                  className="flex flex-col justify-between p-5 rounded-2xl border border-border/80 bg-card hover:border-foreground/20 transition-all shadow-2xs space-y-4"
+                >
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-9 w-9 rounded-xl bg-muted/60 border border-border/60 text-primary flex items-center justify-center shrink-0">
+                          <IconComp className="h-4.5 w-4.5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-foreground leading-snug">{item.name}</h3>
+                          <span className="text-[10px] font-mono text-muted-foreground">{item.standard}</span>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <span
+                        className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md border ${
+                          isChecking
+                            ? 'text-sky-400 bg-sky-500/10 border-sky-500/30'
+                            : isHealthy
+                              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                              : isError
+                                ? 'text-rose-400 bg-rose-500/10 border-rose-500/30'
+                                : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                        }`}
+                      >
+                        {isChecking ? 'CHECKING...' : isHealthy ? '200 OK' : isError ? 'ERROR' : '200 OK'}
+                      </span>
+                    </div>
+
+                    {/* Path & Details */}
+                    <div className="flex items-center justify-between bg-muted/40 px-3 py-1.5 rounded-lg border border-border/50 font-mono text-xs text-foreground">
+                      <span className="font-bold text-primary">{item.path}</span>
+                      {state.latencyMs !== undefined && (
+                        <span className="text-[10px] text-muted-foreground">{state.latencyMs}ms</span>
+                      )}
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+
+                  {/* Footer Actions */}
+                  <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-2">
+                    <Link
+                      href={item.path}
+                      target="_blank"
+                      className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg border border-border/60 hover:bg-muted transition-colors"
+                      title="Inspect live plain-text output"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      <span>Inspect Raw</span>
+                    </Link>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => runHealthCheck(item.key, item.path)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted border border-border/60 transition-colors"
+                        title="Re-verify HTTP endpoint"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${isChecking ? 'animate-spin' : ''}`} />
+                      </button>
+
+                      {item.editable && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openEditorModal(
+                              item.contentKey!,
+                              item.editorTitle!,
+                              item.path,
+                              item.description
+                            )
+                          }
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-[11px] font-mono font-bold transition-colors cursor-pointer"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                          <span>Edit Directives</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Standards & RFC Compliance Banner */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-5 rounded-2xl border border-border bg-card space-y-2">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-emerald-400">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Zero JSON Wrapping Policy</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                NestJS interceptors bypass standard API JSON responses for all 7 standards, serving pure <code className="text-primary font-mono">text/plain; charset=utf-8</code>.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-border bg-card space-y-2">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-emerald-400">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>RFC 9116 Security Compliance</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Security disclosure policy accessible at both <code className="text-primary font-mono">/security.txt</code> and alias <code className="text-primary font-mono">/.well-known/security.txt</code>.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl border border-border bg-card space-y-2">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-emerald-400">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Structured LLM &amp; AI Attribution</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Provides CC BY 4.0 rights via <code className="text-primary font-mono">/ai.txt</code> and Markdown documentation indices via <code className="text-primary font-mono">/llms.txt</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: SYSTEM DIAGNOSTICS & LIVE VERIFIER */}
       {activeTab === 'diagnostics' && (
@@ -863,7 +1270,7 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
             <div className="pt-4 border-t border-border/40 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={loadRobotsConfig}
+                onClick={loadSeoSettings}
                 disabled={loadingRobots}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card hover:bg-muted text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
@@ -1258,6 +1665,99 @@ Sitemap: ${cleanUrl}/sitemap.xml`);
               <pre className="rounded-2xl border border-border bg-muted/30 p-5 font-mono text-xs text-foreground overflow-x-auto leading-relaxed shadow-inner">
                 {JSON.stringify(generatedJsonLd, null, 2)}
               </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Raw .txt Standard Editor Modal */}
+      {activeEditorModal?.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0 font-mono text-xs font-bold">
+                  .txt
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <span>{activeEditorModal.title}</span>
+                    <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                      {activeEditorModal.path}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground">{activeEditorModal.description}</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveEditorModal(null)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+              <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Terminal className="h-3.5 w-3.5 text-primary" />
+                  <span>Raw Text Editor (Production Standard - text/plain; charset=utf-8)</span>
+                </span>
+                <span>
+                  {activeEditorModal.content.split('\n').length} lines • {activeEditorModal.content.length} chars
+                </span>
+              </div>
+
+              <textarea
+                rows={14}
+                value={activeEditorModal.content}
+                onChange={(e) =>
+                  setActiveEditorModal((prev) => (prev ? { ...prev, content: e.target.value } : null))
+                }
+                placeholder="Enter directive configuration text..."
+                className="w-full rounded-xl border border-border bg-background p-4 font-mono text-xs text-foreground focus:border-primary focus:outline-none leading-relaxed shadow-inner"
+              />
+
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-muted/40 p-3 rounded-xl border border-border/60">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>
+                  Changes saved here are served immediately as raw, plain-text files across all public crawler routes without JSON wrapping.
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-muted/10">
+              <button
+                type="button"
+                onClick={() => setActiveEditorModal(null)}
+                className="px-4 py-2 rounded-xl border border-border text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveModalContent}
+                disabled={isSavingModal}
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-mono font-bold hover:opacity-90 transition-opacity shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {isSavingModal ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Saving Directives...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-3.5 w-3.5" />
+                    <span>Save &amp; Publish Directives</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

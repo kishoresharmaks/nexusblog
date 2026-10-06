@@ -715,6 +715,10 @@ export const systemSettingsApi = {
       siteUrl: string;
       robotsIndexingMode?: 'allow' | 'disallow_all' | 'custom';
       robotsCustomContent?: string;
+      aiTxtContent?: string;
+      llmsTxtContent?: string;
+      securityTxtContent?: string;
+      humansTxtContent?: string;
       aiSummaryEnabled?: boolean;
       aiSummaryProvider?: string;
     }>('/system-settings/public');

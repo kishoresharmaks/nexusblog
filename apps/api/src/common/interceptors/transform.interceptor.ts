@@ -21,8 +21,21 @@ export class TransformInterceptor<T>
 
     return next.handle().pipe(
       map((data) => {
-        // Bypass JSON wrapping for raw plain text endpoints like ads.txt or robots.txt
-        if (typeof data === 'string' && (url.includes('ads-txt') || url.includes('ads.txt') || url.includes('robots.txt'))) {
+        // Bypass JSON wrapping for raw plain text endpoints (ads.txt, ai.txt, llms.txt, security.txt, humans.txt, robots.txt)
+        if (
+          typeof data === 'string' &&
+          (url.includes('ads-txt') ||
+            url.includes('ads.txt') ||
+            url.includes('ai-txt') ||
+            url.includes('ai.txt') ||
+            url.includes('llms-txt') ||
+            url.includes('llms.txt') ||
+            url.includes('security-txt') ||
+            url.includes('security.txt') ||
+            url.includes('humans-txt') ||
+            url.includes('humans.txt') ||
+            url.includes('robots.txt'))
+        ) {
           return data;
         }
 

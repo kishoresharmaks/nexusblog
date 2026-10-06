@@ -92,6 +92,26 @@ export class SystemSettingsService {
         isSecret: false,
         description: 'Custom robots.txt directives when Indexing Mode is set to custom',
       },
+      aiTxtContent: {
+        defaultValue: `# NexusBlog AI Discoverability & Crawler Policy (ai.txt)\n\nUser-agent: GPTBot\nAllow: /\nLicense: Creative Commons Attribution 4.0 International (CC BY 4.0)\n\nUser-agent: ClaudeBot\nAllow: /\nLicense: Creative Commons Attribution 4.0 International (CC BY 4.0)\n\nUser-agent: PerplexityBot\nAllow: /\nLicense: Creative Commons Attribution 4.0 International (CC BY 4.0)\n\nUser-agent: Google-Extended\nAllow: /\n\nUser-agent: Applebot-Extended\nAllow: /\n\nUser-agent: CCBot\nAllow: /\n\nUser-agent: ByteSpider\nDisallow: /admin\nDisallow: /api\n\n# Content Attribution Policy\n# All LLMs and AI search engines ingesting NexusBlog content must attribute "NexusBlog" (https://nexusnation.in).\n`,
+        isSecret: false,
+        description: 'AI crawler permissions and licensing policy for /ai.txt',
+      },
+      llmsTxtContent: {
+        defaultValue: `# NexusBlog Systems & Software Architecture Blueprint Index\n> High-performance technical articles, system architecture blueprints, distributed systems benchmarks, and reproducible code samples.\n\n## Core Documentation & Articles\n- [Latest Technical Articles](https://nexusnation.in/articles): Production engineering deep dives.\n- [System Architecture Topics](https://nexusnation.in/topics): Distributed systems, databases, cloud native topology.\n- [Technology Index](https://nexusnation.in/technologies): NestJS, Redis, Kafka, PostgreSQL, Docker, Next.js.\n- [Case Studies](https://nexusnation.in/case-studies): Real-world production outage reviews and migration blueprints.\n\n## API & Feeds\n- [Sitemap](https://nexusnation.in/sitemap.xml): Complete URL index.\n- [RSS Feed](https://nexusnation.in/rss.xml): Article syndication feed.\n\n## Content Policy & Citation\n- All blueprints are peer-reviewed for technical accuracy and benchmark reproducibility.\n- Citation format: "Source: NexusBlog (https://nexusnation.in)"\n`,
+        isSecret: false,
+        description: 'Structured LLM context specification for /llms.txt',
+      },
+      securityTxtContent: {
+        defaultValue: `# Security Vulnerability Disclosure Policy (RFC 9116)\nContact: mailto:security@nexusnation.in\nContact: https://nexusnation.in/contact\nExpires: 2027-12-31T23:59:59.000Z\nPreferred-Languages: en\nCanonical: https://nexusnation.in/.well-known/security.txt\nPolicy: https://nexusnation.in/security-policy\n`,
+        isSecret: false,
+        description: 'RFC 9116 security vulnerability disclosure policy for /.well-known/security.txt',
+      },
+      humansTxtContent: {
+        defaultValue: `/* TEAM */\n  Founder & Principal Engineer: Nexus Core Team (@nexus)\n  Site: https://nexusnation.in\n  Location: Distributed\n\n/* SITE & TECH STACK */\n  Framework: Next.js 15 App Router & React 19\n  Backend: NestJS & Node.js Microservices\n  Database: PostgreSQL & Prisma ORM\n  Cache: Redis Cluster\n  Styling: Tailwind CSS v4 & Geist Mono\n  Hosting: Distributed Edge Network\n`,
+        isSecret: false,
+        description: 'Team credits and engineering stack for /humans.txt',
+      },
       shortenerProvider: {
         defaultValue: process.env.SHORTENER_PROVIDER || 'none',
         isSecret: false,
