@@ -17,8 +17,22 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
 
     if (res.ok) {
       const text = await res.text();
-      if (text && text.trim().length > 0) {
-        adsTxtContent = text;
+      let extracted = text;
+      try {
+        const json = JSON.parse(text);
+        if (json && typeof json === 'object') {
+          if (typeof json.data === 'string') {
+            extracted = json.data;
+          } else if (typeof json.message === 'string') {
+            extracted = json.message;
+          }
+        }
+      } catch {
+        // Plain text content already
+      }
+
+      if (extracted && extracted.trim().length > 0) {
+        adsTxtContent = extracted;
       }
     }
   } catch {

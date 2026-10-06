@@ -7,6 +7,7 @@ import {
   Delete,
   Body,
   Param,
+  Header,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -46,6 +47,7 @@ export class AdsController {
 
   @Public()
   @Get('public/ads-txt')
+  @Header('Content-Type', 'text/plain; charset=utf-8')
   @ApiOperation({ summary: 'Get dynamic ads.txt content' })
   getAdsTxt() {
     return this.adsService.getAdsTxtContent();
