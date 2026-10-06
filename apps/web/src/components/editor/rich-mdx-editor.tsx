@@ -173,19 +173,34 @@ Status: 0 packet loss, 100% idempotency verified.`,
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const prevText = textarea.value;
-    const selectedText = prevText.substring(start, end) || defaultPlaceholder;
+    const rawSelected = prevText.substring(start, end);
 
-    const replacement = before + selectedText + after;
+    let selectedText = rawSelected || defaultPlaceholder;
+    let leadingSpace = '';
+    let trailingSpace = '';
+
+    // Handle whitespace trimming inside delimiters (e.g. bold/italic/code)
+    if (rawSelected && (before === '**' || before === '*' || before === '~~' || before === '`')) {
+      const trimmed = rawSelected.trim();
+      if (trimmed) {
+        const leadingMatch = rawSelected.match(/^\s+/);
+        const trailingMatch = rawSelected.match(/\s+$/);
+        leadingSpace = leadingMatch ? leadingMatch[0] : '';
+        trailingSpace = trailingMatch ? trailingMatch[0] : '';
+        selectedText = trimmed;
+      }
+    }
+
+    const replacement = leadingSpace + before + selectedText + after + trailingSpace;
     const newContent = prevText.substring(0, start) + replacement + prevText.substring(end);
 
     updateContentWithHistory(newContent);
 
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(
-        start + before.length,
-        start + before.length + selectedText.length
-      );
+      const selectionStart = start + leadingSpace.length + before.length;
+      const selectionEnd = selectionStart + selectedText.length;
+      textarea.setSelectionRange(selectionStart, selectionEnd);
     }, 10);
   };
 

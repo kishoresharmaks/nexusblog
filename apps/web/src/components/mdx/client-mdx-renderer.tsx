@@ -50,7 +50,14 @@ export function ClientMdxRenderer({
 }: ClientMdxRendererProps) {
   const rawText = content || source || '';
   const processedText = React.useMemo(() => {
-    return autoLinkTopicClusters(rawText);
+    if (!rawText) return '';
+    // Normalize loose markdown delimiters (e.g. **bold ** -> **bold**) so user typing errors render cleanly
+    let normalized = rawText
+      .replace(/\*\*([^\*\n]+?)\s+\*\*/g, '**$1** ')
+      .replace(/\*([^\*\n]+?)\s+\*/g, '*$1* ')
+      .replace(/_([^_\n]+?)\s+_/g, '_$1_ ');
+
+    return autoLinkTopicClusters(normalized);
   }, [rawText]);
 
   const customComponents: any = {
