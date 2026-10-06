@@ -108,7 +108,7 @@ export class SystemSettingsService {
         description: 'RFC 9116 security vulnerability disclosure policy for /.well-known/security.txt',
       },
       humansTxtContent: {
-        defaultValue: `/* TEAM */\n  Founder & Principal Engineer: Nexus Core Team (@nexus)\n  Site: https://nexusnation.in\n  Location: Distributed\n\n/* SITE & TECH STACK */\n  Framework: Next.js 15 App Router & React 19\n  Backend: NestJS & Node.js Microservices\n  Database: PostgreSQL & Prisma ORM\n  Cache: Redis Cluster\n  Styling: Tailwind CSS v4 & Geist Mono\n  Hosting: Distributed Edge Network\n`,
+        defaultValue: `/* TEAM */\n  Founder & Principal Engineer: Nexus Core Team (@nexus)\n  Site: https://nexusnation.in\n  Location: Distributed\n\n/* SITE & TECH STACK */\n  Framework: Next.js 15 App Router & React 19\n  Backend: NestJS & Node.js Microservices\n  Database: MongoDB & Prisma ORM\n  Cache: Redis Cluster\n  Styling: Tailwind CSS v4 & Geist Mono\n  Hosting: Distributed Edge Network\n`,
         isSecret: false,
         description: 'Team credits and engineering stack for /humans.txt',
       },
