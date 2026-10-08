@@ -19,6 +19,16 @@ export function PageTracker() {
     trackEvent('PAGEVIEW', {
       path: fullPath,
     });
+
+    if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+      const gaId =
+        process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ||
+        process.env.NEXT_PUBLIC_GA_ID ||
+        'G-3GBMRPQZ69';
+      (window as any).gtag('config', gaId, {
+        page_path: fullPath,
+      });
+    }
   }, [pathname, searchParams]);
 
   // 2. Reading Scroll Depth Milestones (25%, 50%, 75%, 100%)

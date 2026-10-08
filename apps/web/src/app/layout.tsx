@@ -5,6 +5,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryProvider } from '@/components/query-provider';
 import { AuthProvider } from '@/context/auth-context';
+import { GoogleTag } from '@/components/analytics/google-tag';
 import { PageTracker } from '@/components/analytics/page-tracker';
 import { GoogleAdSenseScript } from '@/components/ads/google-adsense-script';
 import { Toaster } from 'sonner';
@@ -62,6 +63,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <GoogleTag />
+      </head>
       <body
         suppressHydrationWarning
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased min-h-screen flex flex-col bg-background text-foreground`}

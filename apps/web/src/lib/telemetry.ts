@@ -20,6 +20,9 @@ export function getOrCreateVisitorId(): string {
 export function trackEvent(eventType: string, payload: Record<string, any> = {}) {
   if (typeof window === 'undefined') return;
   try {
+    if (typeof (window as any).gtag === 'function') {
+      (window as any).gtag('event', eventType.toLowerCase(), payload);
+    }
     const geo = detectClientLocation();
     const currentPath = window.location.pathname + window.location.search;
 
