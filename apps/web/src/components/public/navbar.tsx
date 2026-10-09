@@ -188,13 +188,13 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
       {/* Top micro-line gradient for high-end aesthetic */}
       <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
-      <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="container mx-auto flex h-16 w-full max-w-[1600px] items-center justify-between px-4 sm:px-6">
         {/* Left: Brand Identity & Desktop Navigation */}
-        <div className="flex items-center space-x-7">
+        <div className="flex min-w-0 flex-1 items-center gap-4 xl:gap-6">
           {/* Brand Logo */}
           <Link
             href="/"
-            className="flex items-center space-x-2.5 group focus:outline-none"
+            className="flex shrink-0 items-center space-x-2.5 group focus:outline-none"
             aria-label={`${siteConfig.name} Home`}
           >
             <BrandLogo
@@ -207,7 +207,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
           </Link>
 
           {/* Desktop Navigation Links with Mega Dropdowns */}
-          <nav className="hidden lg:flex items-center space-x-1 text-sm font-medium">
+          <nav className="hidden 2xl:flex shrink-0 items-center space-x-1 whitespace-nowrap text-sm font-medium">
             {/* Articles */}
             <Link
               href="/articles"
@@ -392,20 +392,20 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
         </div>
 
         {/* Right: Search, Theme Toggle, Contributor Action & Auth */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2.5">
+        <div className="flex shrink-0 items-center space-x-1.5 sm:space-x-2.5">
           {/* Global Search Bar (Keyboard trigger) */}
           <button
             type="button"
             onClick={onOpenSearch}
-            className="group flex items-center justify-between gap-1.5 sm:gap-3 rounded-xl border border-border/80 bg-muted/30 p-2 sm:px-3 sm:py-1.5 text-xs text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground transition-all cursor-pointer shadow-2xs"
+            className="group flex shrink-0 items-center justify-between gap-1.5 sm:gap-3 rounded-xl border border-border/80 bg-muted/30 p-2 sm:px-3 sm:py-1.5 2xl:w-72 text-xs text-muted-foreground whitespace-nowrap hover:bg-muted hover:border-border hover:text-foreground transition-all cursor-pointer shadow-2xs"
             title="Open Command Search"
           >
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Search className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-              <span className="hidden md:inline font-sans text-xs">Search blueprints &amp; stacks...</span>
-              <span className="hidden sm:inline md:hidden text-xs">Search...</span>
+              <span className="hidden xl:inline font-sans text-xs">Search blueprints &amp; stacks...</span>
+              <span className="hidden sm:inline xl:hidden text-xs">Search...</span>
             </div>
-            <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border group-hover:border-primary/40 shadow-2xs">
+            <kbd className="hidden xl:inline-flex items-center gap-0.5 rounded-md bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border group-hover:border-primary/40 shadow-2xs">
               <span>{isMac ? '⌘' : 'Ctrl'}</span>
               <span>K</span>
             </kbd>
@@ -538,16 +538,16 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
               )}
             </div>
           ) : (
-            <div className="hidden sm:flex items-center space-x-2">
+            <div className="hidden lg:flex items-center space-x-2">
               <Link
                 href="/login"
-                className="text-xs font-semibold text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-xl hover:bg-muted/60 transition-colors"
+                className="whitespace-nowrap text-xs font-semibold text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-xl hover:bg-muted/60 transition-colors"
               >
                 Sign In
               </Link>
               <Link
                 href="/register"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold font-mono bg-foreground text-background hover:bg-foreground/90 px-3.5 py-1.5 rounded-xl transition-all shadow-sm hover:scale-[1.02]"
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-semibold font-mono bg-foreground text-background hover:bg-foreground/90 px-3.5 py-1.5 rounded-xl transition-all shadow-sm hover:scale-[1.02]"
               >
                 <span>Join Free</span>
                 <ArrowRight className="h-3 w-3" />
@@ -560,7 +560,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
             type="button"
             aria-label={mobileMenuOpen ? 'Close navigation drawer' : 'Open navigation drawer'}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden rounded-xl border border-border/80 bg-card/60 p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer shadow-2xs"
+            className="2xl:hidden shrink-0 rounded-xl border border-border/80 bg-card/60 p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer shadow-2xs"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -569,7 +569,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
 
       {/* Mobile Navigation Sheet Drawer (Overlay + Slide-over via Portal) */}
       {mounted && mobileMenuOpen && createPortal(
-        <div className="lg:hidden fixed inset-0 z-[9999] flex justify-end overflow-hidden">
+        <div className="2xl:hidden fixed inset-0 z-[9999] flex justify-end overflow-hidden">
           {/* Backdrop Blur Overlay */}
           <div
             className="fixed inset-0 bg-black/75 backdrop-blur-sm animate-backdrop-in"
