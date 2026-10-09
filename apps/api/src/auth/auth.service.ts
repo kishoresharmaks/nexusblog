@@ -116,11 +116,6 @@ export class AuthService {
       parallelism: 4,
     });
 
-    // Count existing users to assign SUPER_ADMIN to the very first user
-    const userCount = await this.prisma.user.count();
-    const isFirstUser = userCount === 0;
-    const initialRole: Role = isFirstUser ? 'SUPER_ADMIN' : 'USER';
-
     const user = await this.prisma.user.create({
       data: {
         name: dto.name.trim(),
@@ -129,9 +124,9 @@ export class AuthService {
         passwordHash,
         avatar: dto.avatar,
         bio: dto.bio,
-        role: initialRole,
-        emailVerified: isFirstUser, // Auto-verify first super admin
-        status: isFirstUser ? 'ACTIVE' : 'PENDING_VERIFICATION',
+        role: 'USER',
+        emailVerified: false,
+        status: 'PENDING_VERIFICATION',
       },
     });
 

@@ -27,12 +27,12 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { getAllowedCorsOrigins, isCorsOriginAllowed } from './common/utils/cors.util';
 
 async function bootstrap() {
   const logger = new Logger('NexusAPI');
   const app = await NestFactory.create(AppModule);
 
-  const clientUrl = process.env.CLIENT_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://nexusnation.in';
   const port = Number(process.env.PORT || process.env.API_PORT || 4000);
 
   // Trust upstream reverse proxies (Cloudflare, Nginx, ALB, Caddy) for accurate client IP resolution
@@ -53,10 +53,10 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // CORS Configuration
+  const allowedOrigins = getAllowedCorsOrigins();
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      // Allow requests with any origin (localhost, 127.0.0.1, custom dev ports, etc.)
-      callback(null, true);
+      callback(null, isCorsOriginAllowed(origin, allowedOrigins));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -98,4 +98,7 @@ async function bootstrap() {
   logger.log(`📚 Swagger Documentation available at http://localhost:${port}/api/docs`);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('NexusAPI failed to start:', error);
+  process.exitCode = 1;
+});

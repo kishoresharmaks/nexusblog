@@ -71,8 +71,7 @@ describe('Production Authentication & Brevo Email Flow (AuthService)', () => {
   });
 
   describe('User Registration Flow', () => {
-    it('should register first user as SUPER_ADMIN with emailVerified: true', async () => {
-      mockPrisma.user.count.mockResolvedValue(0);
+    it('should register every public signup as an unverified USER', async () => {
       mockPrisma.user.findFirst.mockResolvedValue(null);
 
       const fakeCreatedUser = {
@@ -81,9 +80,9 @@ describe('Production Authentication & Brevo Email Flow (AuthService)', () => {
         username: 'founder',
         name: 'Nexus Founder',
         passwordHash: 'hashed_pwd',
-        role: 'SUPER_ADMIN',
-        status: 'ACTIVE',
-        emailVerified: true,
+        role: 'USER',
+        status: 'PENDING_VERIFICATION',
+        emailVerified: false,
         avatar: null,
         bio: null,
         website: null,
@@ -93,6 +92,7 @@ describe('Production Authentication & Brevo Email Flow (AuthService)', () => {
         updatedAt: new Date(),
       };
       mockPrisma.user.create.mockResolvedValue(fakeCreatedUser);
+      mockPrisma.emailVerification.create.mockResolvedValue({});
       mockPrisma.session.create.mockResolvedValue({});
       mockPrisma.auditLog.create.mockResolvedValue({});
 
@@ -104,7 +104,10 @@ describe('Production Authentication & Brevo Email Flow (AuthService)', () => {
       });
 
       expect(result.user.email).toBe('founder@nexusblog.io');
-      expect(result.user.role).toBe('SUPER_ADMIN');
+      expect(result.user.role).toBe('USER');
+      expect(result.user.status).toBe('PENDING_VERIFICATION');
+      expect(result.user.emailVerified).toBe(false);
+      expect(mockPrisma.user.count).not.toHaveBeenCalled();
       expect((result.user as any).passwordHash).toBeUndefined();
       expect(result.accessToken).toBe('mock-access-token-jwt');
       expect(result.refreshToken).toBeDefined();

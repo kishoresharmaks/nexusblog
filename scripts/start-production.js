@@ -6,6 +6,7 @@
 
 const { spawn } = require('child_process');
 const path = require('path');
+const { monitorChildProcess } = require('./production-child');
 
 const rootDir = path.resolve(__dirname, '..');
 const apiPort = process.env.API_PORT || process.env.INTERNAL_API_PORT || '4000';
@@ -78,8 +79,11 @@ webProcess.stderr.on('data', (data) => {
   });
 });
 
-// Clean termination handling
-function shutdown(signal) {
+// Exit the whole service so the hosting process manager can restart both apps together.
+let stopping = false;
+function shutdown(signal, exitCode = 0) {
+  if (stopping) return;
+  stopping = true;
   console.log(`\n🛑 Received ${signal}. Shutting down services...`);
   try {
     apiProcess.kill(signal);
@@ -87,20 +91,17 @@ function shutdown(signal) {
   try {
     webProcess.kill(signal);
   } catch {}
-  setTimeout(() => process.exit(0), 1000);
+  process.exitCode = exitCode;
+  setTimeout(() => process.exit(exitCode), 1000);
 }
 
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
+function childFailed(name, error) {
+  console.error(`[${name}] Process failed: ${error.message}`);
+  shutdown('SIGTERM', 1);
+}
 
-apiProcess.on('close', (code) => {
-  if (code !== 0 && code !== null) {
-    console.error(`[API] Process exited with code ${code}`);
-  }
-});
+monitorChildProcess(apiProcess, 'API', childFailed, () => stopping);
+monitorChildProcess(webProcess, 'WEB', childFailed, () => stopping);
 
-webProcess.on('close', (code) => {
-  if (code !== 0 && code !== null) {
-    console.error(`[WEB] Process exited with code ${code}`);
-  }
-});
+process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once('SIGINT', () => shutdown('SIGINT'));
