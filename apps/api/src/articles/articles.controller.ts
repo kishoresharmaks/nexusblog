@@ -80,7 +80,7 @@ export class ArticlesController {
   ) {
     const isStaff = ['SUPER_ADMIN', 'ADMIN', 'EDITOR'].includes(user.role);
     const targetAuthorId = isStaff && dto.authorId ? dto.authorId : user.id;
-    return this.articlesService.create(dto, targetAuthorId);
+    return this.articlesService.create(dto, targetAuthorId, ['SUPER_ADMIN', 'ADMIN', 'EDITOR'].includes(user.role));
   }
 
   @UseGuards(JwtAuthGuard)

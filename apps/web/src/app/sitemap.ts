@@ -72,6 +72,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/incidents`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/categories`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
@@ -179,7 +185,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const artData = await articlesRes.json();
       const items = artData?.data?.items || artData?.items || artData?.data || [];
       if (Array.isArray(items) && items.length > 0) {
-        articleRoutes = items.map((art: any) => ({
+        articleRoutes = items.filter((art: any) => !art.noIndex).map((art: any) => ({
           url: `${baseUrl}/articles/${art.slug}`,
           lastModified: art.updatedAt ? new Date(art.updatedAt) : new Date(),
           changeFrequency: 'weekly',
@@ -189,6 +195,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch {
     // Fallback if API is offline
+  }
+
+  let incidentRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const incidentsRes = await fetch(`${siteConfig.apiUrl}/incidents?limit=50`, {
+      next: { revalidate: 300 },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (incidentsRes.ok) {
+      const data = await incidentsRes.json();
+      const items = data?.data?.items || data?.items || data?.data || [];
+      if (Array.isArray(items)) {
+        incidentRoutes = items
+          .filter((item: any) => item.slug && !item.noIndex)
+          .map((item: any) => ({
+            url: `${baseUrl}/incidents/${item.slug}`,
+            lastModified: item.incident?.updatedAt ? new Date(item.incident.updatedAt) : item.updatedAt ? new Date(item.updatedAt) : new Date(),
+            changeFrequency: 'monthly' as const,
+            priority: 0.8,
+          }));
+      }
+    }
+  } catch {
+    // Keep the static atlas route when the API is unavailable.
   }
 
   if (articleRoutes.length === 0) {
@@ -239,6 +269,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryRoutes,
     ...techRoutes,
     ...articleRoutes,
+    ...incidentRoutes,
     ...cmsPageRoutes,
   ];
 

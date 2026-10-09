@@ -41,6 +41,8 @@ import {
 import { useAdminSidebar } from '@/context/admin-sidebar-context';
 import { MediaPickerModal } from '@/components/media/media-picker-modal';
 import { RichMdxEditor } from '@/components/editor/rich-mdx-editor';
+import { IncidentDetailsEditor, emptyIncidentDetails } from './incident-details-editor';
+import type { IncidentDetailsInput } from '@nexus/types';
 import { normalizeMediaUrl } from '@nexus/config';
 import { toast } from 'sonner';
 
@@ -129,6 +131,7 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
   );
   const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'ADVANCED');
   const [type, setType] = useState(initialData?.type || 'SYSTEM_DESIGN');
+  const [incidentDetails, setIncidentDetails] = useState<IncidentDetailsInput>(() => emptyIncidentDetails());
   const [status, setStatus] = useState(initialData?.status || 'DRAFT');
   const [coverImage, setCoverImage] = useState(initialData?.coverImage || '');
   const [featured, setFeatured] = useState(initialData?.featured ?? false);
@@ -246,6 +249,40 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
       setCategory(catVal);
       if (data.difficulty !== undefined) setDifficulty(data.difficulty);
       if (data.type !== undefined) setType(data.type);
+      if (data.incident) {
+        setIncidentDetails({
+          ...emptyIncidentDetails(),
+          organization: data.incident.organization || '',
+          domain: data.incident.domain || 'SOFTWARE_INFRASTRUCTURE',
+          failureMode: data.incident.failureMode || 'SOFTWARE_DEFECT',
+          severity: data.incident.severity || 'MODERATE',
+          impacts: data.incident.impacts || [],
+          startedAt: data.incident.startedAt ? new Date(data.incident.startedAt).toISOString() : null,
+          endedAt: data.incident.endedAt ? new Date(data.incident.endedAt).toISOString() : null,
+          datePrecision: data.incident.datePrecision || 'UNKNOWN',
+          detection: data.incident.detection || '',
+          recovery: data.incident.recovery || '',
+          lessons: data.incident.lessons || '',
+          events: (data.incident.events || []).map((event: any, index: number) => ({
+            order: event.order ?? index,
+            occurredAt: event.occurredAt ? new Date(event.occurredAt).toISOString() : null,
+            dateLabel: event.dateLabel || '',
+            timezone: event.timezone || '',
+            precision: event.precision || 'UNKNOWN',
+            summary: event.summary || '',
+            sources: (event.sources || []).map((entry: any) => {
+              const source = entry.source || entry;
+              return {
+                url: source.url || '',
+                publisher: source.publisher || '',
+                publishedAt: source.publishedAt ? new Date(source.publishedAt).toISOString() : null,
+                      sourceType: entry.sourceType || 'PRIMARY',
+                      exceptionReason: entry.exceptionReason || '',
+              };
+            }),
+          })),
+        });
+      }
       if (data.status !== undefined) setStatus(data.status);
       if (data.coverImage !== undefined) setCoverImage(data.coverImage);
       if (data.featured !== undefined) setFeatured(data.featured);
@@ -357,6 +394,16 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
 
   const handleSave = async (publishStatus: 'DRAFT' | 'PUBLISHED') => {
     setIsSaving(true);
+    if (type === 'INCIDENT' && incidentDetails.events.some((event) => event.sources.some((source) => !source.url.trim() || !source.publisher.trim()))) {
+      toast.error('Complete or remove each partial source before saving.');
+      setIsSaving(false);
+      return;
+    }
+    if (type === 'INCIDENT' && articleId && publishStatus === 'PUBLISHED' && !incidentDetails.changeNote?.trim()) {
+      toast.error('Add a change note before publishing this incident revision.');
+      setIsSaving(false);
+      return;
+    }
     const targetSlug = slug || (title ? title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-') : 'untitled-article');
     const targetId = articleId || currentArticle?.id || initialData?.id;
 
@@ -375,6 +422,9 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
       difficulty,
       type,
       status: publishStatus,
+      ...(type === 'INCIDENT'
+        ? { incidentDetails: { ...incidentDetails, events: incidentDetails.events.map((event, order) => ({ ...event, order })), ...(incidentDetails.changeNote?.trim() ? { changeNote: incidentDetails.changeNote.trim() } : {}) } }
+        : {}),
       featured,
       coverImage: coverImage || undefined,
       technologyIds: selectedTechnologyIds,
@@ -398,6 +448,7 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('nexus_articles_updated'));
       }
+      if (type === 'INCIDENT') setIncidentDetails((current) => ({ ...current, changeNote: '' }));
       toast.success(
         publishStatus === 'PUBLISHED'
           ? 'Article published successfully!'
@@ -560,6 +611,7 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
             >
               {/* Rich Visual MDX Editor Pane */}
               <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                {type === 'INCIDENT' && <p className="border-b border-border/50 bg-rose-500/5 px-4 py-2 text-xs text-muted-foreground">Editorial analysis only. Record factual event claims and citations in the incident timeline fields.</p>}
                 <RichMdxEditor
                   value={content}
                   onChange={setContent}
@@ -772,6 +824,7 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
                     ))
                   ) : (
                     <>
+                      <option value="INCIDENT">Production Incident</option>
                       <option value="SYSTEM_DESIGN">System Design</option>
                       <option value="DEEP_DIVE">Deep Dive</option>
                       <option value="TUTORIAL">Tutorial</option>
@@ -786,6 +839,14 @@ export function ArticleEditor({ initialData, articleId, isNew = false }: Article
                   )}
                 </select>
               </div>
+
+              {type === 'INCIDENT' && (
+                <IncidentDetailsEditor
+                  value={incidentDetails}
+                  onChange={setIncidentDetails}
+                  isPublished={Boolean(articleId)}
+                />
+              )}
 
               {/* Technology Hubs Multi-Select */}
               <div className="space-y-2 pt-1 border-t border-border/40">

@@ -86,6 +86,7 @@ interface ArticleJsonLdProps {
   category: string;
   images?: string[];
   keywords?: string[];
+  pathPrefix?: string;
 }
 
 export function ArticleJsonLd({
@@ -99,9 +100,10 @@ export function ArticleJsonLd({
   category,
   images = [],
   keywords = [],
+  pathPrefix = '/articles',
 }: ArticleJsonLdProps) {
   const base = (siteConfig.url || 'https://nexusnation.in').replace(/\/+$/, '');
-  const url = `${base}/articles/${slug}`;
+  const url = `${base}${pathPrefix}/${slug}`;
   const defaultOg = `${base}/api/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(category)}&author=${encodeURIComponent(authorName)}`;
 
   const schema = {

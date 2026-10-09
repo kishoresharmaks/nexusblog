@@ -220,6 +220,17 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
               Articles
             </Link>
 
+            <Link
+              href="/incidents"
+              className={`px-3 py-1.5 rounded-lg transition-colors hover:text-foreground hover:bg-muted/50 ${
+                pathname === '/incidents' || pathname.startsWith('/incidents/')
+                  ? 'text-foreground font-semibold bg-muted/60'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              Incident Atlas
+            </Link>
+
             {/* Topics (with Mega Dropdown) */}
             <div
               className="relative"
@@ -658,6 +669,27 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
                     <div className="space-y-0.5">
                       <p className="font-semibold text-xs leading-none">Articles &amp; Guides</p>
                       <p className="text-[10px] text-muted-foreground">All engineering blueprints</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                </Link>
+
+                <Link
+                  href="/incidents"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between p-2.5 rounded-xl transition-colors ${
+                    pathname === '/incidents' || pathname.startsWith('/incidents/')
+                      ? 'bg-primary/10 text-primary font-bold border border-primary/20'
+                      : 'hover:bg-muted/60 text-foreground'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-7 w-7 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
+                      <Activity className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-xs leading-none">Production Incident Atlas</p>
+                      <p className="text-[10px] text-muted-foreground">Sourced engineering failure timelines</p>
                     </div>
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />

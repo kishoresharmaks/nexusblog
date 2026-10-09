@@ -5,6 +5,13 @@ import { UpdateArticleTypeDto } from './dto/update-article-type.dto';
 
 const DEFAULT_ARTICLE_TYPES = [
   {
+    name: 'Production Incident',
+    slug: 'INCIDENT',
+    description: 'Evidence-backed engineering incident timelines and editorial analysis',
+    badgeColor: 'rose',
+    order: 0,
+  },
+  {
     name: 'System Design',
     slug: 'SYSTEM_DESIGN',
     description: 'Architectural analysis, scaling patterns, and distributed topologies',
@@ -89,6 +96,10 @@ export class ArticleTypesService implements OnModuleInit {
             data: item,
           });
         }
+      }
+      const incidentType = await this.prisma.articleTypeModel.findUnique({ where: { slug: 'INCIDENT' } });
+      if (!incidentType) {
+        await this.prisma.articleTypeModel.create({ data: DEFAULT_ARTICLE_TYPES[0] });
       }
     } catch {
       // Ignored if DB is initializing

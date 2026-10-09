@@ -32,6 +32,62 @@ enum ArticleStatus {
   ARCHIVED
 }
 
+enum IncidentDomain {
+  SOFTWARE_INFRASTRUCTURE
+  HARDWARE
+  CIVIL_STRUCTURAL
+  AEROSPACE_TRANSPORTATION
+  INDUSTRIAL_ENERGY
+  OTHER
+}
+
+enum IncidentFailureMode {
+  DESIGN_FLAW
+  COMPONENT_FAILURE
+  SOFTWARE_DEFECT
+  CAPACITY_OVERLOAD
+  HUMAN_PROCESS
+  EXTERNAL_DEPENDENCY
+  ENVIRONMENTAL_EVENT
+  SECURITY_INCIDENT
+  OTHER
+}
+
+enum IncidentSeverity {
+  LOW
+  MODERATE
+  MAJOR
+  CRITICAL
+}
+
+enum IncidentImpact {
+  SAFETY
+  AVAILABILITY
+  FINANCIAL
+  DATA_INTEGRITY
+  PRIVACY
+  ENVIRONMENTAL
+}
+
+enum IncidentDatePrecision {
+  EXACT
+  DAY
+  MONTH
+  YEAR
+  UNKNOWN
+}
+
+enum IncidentSourceType {
+  PRIMARY
+  APPROVED_EXCEPTION
+}
+
+enum IncidentArchiveStatus {
+  PENDING
+  ARCHIVED
+  FAILED
+}
+
 enum DifficultyLevel {
   BEGINNER
   INTERMEDIATE
@@ -279,11 +335,103 @@ model Article {
   comments         Comment[]
   bookmarks        Bookmark[]
   readingHistories ReadingHistory[]
+  incident         Incident?
 
   @@index([status, publishedAt])
   @@index([categoryId, publishedAt])
   @@index([authorId, publishedAt])
   @@map("articles")
+}
+
+model Incident {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  articleId      String           @unique @db.ObjectId
+  article        Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  organization   String?
+  domain         IncidentDomain?
+  failureMode    IncidentFailureMode?
+  severity       IncidentSeverity?
+  impacts        IncidentImpact[]
+  startedAt      DateTime?
+  endedAt        DateTime?
+  datePrecision  IncidentDatePrecision @default(UNKNOWN)
+  detection      String?
+  recovery       String?
+  lessons        String?
+  events         IncidentEvent[]
+  changes        IncidentChange[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([domain, severity])
+  @@index([failureMode])
+  @@map("incidents")
+}
+
+model IncidentEvent {
+  id          String               @id @default(auto()) @map("_id") @db.ObjectId
+  incidentId  String               @db.ObjectId
+  incident    Incident             @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  order       Int
+  occurredAt  DateTime?
+  dateLabel   String?
+  timezone    String?
+  precision   IncidentDatePrecision @default(UNKNOWN)
+  summary     String?
+  sources     IncidentEventSource[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([incidentId, order])
+  @@map("incident_events")
+}
+
+model IncidentSource {
+  id                String                @id @default(auto()) @map("_id") @db.ObjectId
+  url               String                @unique
+  publisher         String
+  publishedAt       DateTime?
+  archiveUrl        String?
+  archiveStatus     IncidentArchiveStatus @default(PENDING)
+  archiveAttempts   Int                   @default(0)
+  archivedAt        DateTime?
+  archiveCheckedAt  DateTime?
+  archiveAlertedAt  DateTime?
+  linkStatus        String                @default("UNKNOWN")
+  linkStatusCode    Int?
+  linkCheckedAt     DateTime?
+  events            IncidentEventSource[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([archiveStatus, archiveCheckedAt])
+  @@index([linkCheckedAt])
+  @@map("incident_sources")
+}
+
+model IncidentEventSource {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  eventId   String         @db.ObjectId
+  event     IncidentEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sourceId  String         @db.ObjectId
+  source    IncidentSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  sourceType IncidentSourceType @default(PRIMARY)
+  exceptionReason String?
+
+  @@unique([eventId, sourceId])
+  @@index([sourceId])
+  @@map("incident_event_sources")
+}
+
+model IncidentChange {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  incidentId  String   @db.ObjectId
+  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  note        String
+  createdAt   DateTime @default(now())
+
+  @@index([incidentId, createdAt])
+  @@map("incident_changes")
 }
 
 model GuestPost {

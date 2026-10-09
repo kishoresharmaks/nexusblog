@@ -65,7 +65,11 @@ export class IndexNowService {
    * Helper to submit a single published article by slug asynchronously.
    */
   public async submitArticleUrl(slug: string): Promise<void> {
-    const articleUrl = `${this.getHostUrl()}/articles/${slug}`;
+    this.submitContentUrl(`/articles/${slug}`);
+  }
+
+  public async submitContentUrl(path: string): Promise<void> {
+    const articleUrl = `${this.getHostUrl()}${path.startsWith('/') ? path : `/${path}`}`;
     // Run asynchronously in background so client requests are not blocked
     setTimeout(() => {
       this.submitUrls([articleUrl]).catch(() => {});

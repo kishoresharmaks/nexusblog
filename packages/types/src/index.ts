@@ -4,3 +4,4 @@ export * from './article';
 export * from './guest-post';
 export * from './media';
 export * from './api';
+export * from './incident';

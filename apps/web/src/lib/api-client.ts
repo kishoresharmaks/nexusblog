@@ -264,6 +264,29 @@ export const articlesApi = {
     return request<any>(`/articles/${slug}`);
   },
 
+  async getIncidents(params: {
+    page?: number;
+    limit?: number;
+    domain?: string;
+    failureMode?: string;
+    severity?: string;
+    impact?: string;
+    search?: string;
+  } = {}) {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value) query.set(key, String(value));
+    }
+    const result = await request<any>(`/incidents${query.size ? `?${query}` : ''}`);
+    const items = Array.isArray(result) ? result : Array.isArray(result?.items) ? result.items : [];
+    const meta = result?.meta || { total: items.length };
+    return { items, meta, total: meta.total || items.length };
+  },
+
+  async getIncidentBySlug(slug: string) {
+    return request<any>(`/incidents/${encodeURIComponent(slug)}`);
+  },
+
   async create(payload: any) {
     return request<any>('/articles', {
       method: 'POST',

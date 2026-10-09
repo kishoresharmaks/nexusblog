@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,6 +13,10 @@ import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { QueryArticleDto } from './dto/query-article.dto';
 import { ArticleStatus, Role } from '@prisma/client';
+import { IncidentDetailsDto } from './dto/incident-details.dto';
+import { QueryIncidentDto } from './dto/query-incident.dto';
+import { incidentPublishError } from './incident-publishing';
+import { IncidentSourcesService } from './incident-sources.service';
 
 @Injectable()
 export class ArticlesService {
@@ -21,6 +26,7 @@ export class ArticlesService {
     private readonly prisma: PrismaService,
     private readonly systemSettingsService: SystemSettingsService,
     private readonly indexNowService: IndexNowService,
+    private readonly incidentSourcesService: IncidentSourcesService,
   ) {}
 
   public sanitizeUrl(url?: string | null): string {
@@ -101,6 +107,7 @@ export class ArticlesService {
           thumbnail: true,
           difficulty: true,
           type: true,
+          noIndex: true,
           status: true,
           featured: true,
           readingTime: true,
@@ -195,6 +202,12 @@ export class ArticlesService {
               avatar: true,
             },
           },
+          incident: {
+            include: {
+              events: { orderBy: { order: 'asc' }, include: { sources: { include: { source: true } } } },
+              changes: { orderBy: { createdAt: 'desc' } },
+            },
+          },
         },
       }).catch(() => null);
     }
@@ -246,6 +259,8 @@ export class ArticlesService {
 
     if (query.type) {
       where.type = query.type;
+    } else {
+      where.type = { not: 'INCIDENT' };
     }
 
     const filter = (query.filter as string)?.toLowerCase();
@@ -281,6 +296,7 @@ export class ArticlesService {
           thumbnail: true,
           difficulty: true,
           type: true,
+          noIndex: true,
           featured: true,
           readingTime: true,
           viewsCount: true,
@@ -339,7 +355,70 @@ export class ArticlesService {
     };
   }
 
-  async findPublicBySlug(slug: string, userId?: string) {
+  async findPublicIncidents(query: QueryIncidentDto) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
+    const incidentFilter: any = {};
+    if (query.domain) incidentFilter.domain = query.domain;
+    if (query.failureMode) incidentFilter.failureMode = query.failureMode;
+    if (query.severity) incidentFilter.severity = query.severity;
+    if (query.impact) incidentFilter.impacts = { has: query.impact };
+
+    const where: any = {
+      type: 'INCIDENT',
+      status: ArticleStatus.PUBLISHED,
+      incident: { is: incidentFilter },
+    };
+    if (query.search?.trim()) {
+      where.OR = [
+        { title: { contains: query.search.trim(), mode: 'insensitive' } },
+        { excerpt: { contains: query.search.trim(), mode: 'insensitive' } },
+        { incident: { is: { organization: { contains: query.search.trim(), mode: 'insensitive' } } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.article.findMany({
+        where,
+        orderBy: { publishedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          excerpt: true,
+          coverImage: true,
+          readingTime: true,
+          publishedAt: true,
+          updatedAt: true,
+          noIndex: true,
+          incident: {
+            select: {
+              organization: true,
+              domain: true,
+              failureMode: true,
+              severity: true,
+              impacts: true,
+              startedAt: true,
+              endedAt: true,
+              datePrecision: true,
+              updatedAt: true,
+              _count: { select: { events: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.article.count({ where }),
+    ]);
+
+    return {
+      items,
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total },
+    };
+  }
+
+  async findPublicBySlug(slug: string, userId?: string, expectedType?: string) {
     const article = await this.prisma.article.findUnique({
       where: { slug: slug.toLowerCase() },
       include: {
@@ -373,6 +452,23 @@ export class ArticlesService {
             },
           },
         },
+        incident: {
+          include: {
+            events: {
+              orderBy: { order: 'asc' },
+              include: {
+                sources: {
+                  select: {
+                    sourceType: true,
+                    exceptionReason: true,
+                    source: { select: { id: true, url: true, publisher: true, publishedAt: true, archiveUrl: true, archiveStatus: true, linkStatus: true, linkCheckedAt: true } },
+                  },
+                },
+              },
+            },
+            changes: { orderBy: { createdAt: 'desc' }, take: 10 },
+          },
+        },
       },
     });
 
@@ -382,6 +478,9 @@ export class ArticlesService {
 
     if (article.status !== ArticleStatus.PUBLISHED) {
       throw new NotFoundException(`Article is currently not published`);
+    }
+    if (expectedType && article.type !== expectedType) {
+      throw new NotFoundException('Incident not found');
     }
 
     // Increment view count asynchronously
@@ -454,7 +553,7 @@ export class ArticlesService {
     return items.map((item) => this.sanitizeArticle(item));
   }
 
-  async create(dto: CreateArticleDto, authorId: string) {
+  async create(dto: CreateArticleDto, authorId: string, canApproveSourceExceptions = false) {
     const existing = await this.prisma.article.findUnique({
       where: { slug: dto.slug.toLowerCase() },
     });
@@ -477,6 +576,12 @@ export class ArticlesService {
 
     const publishedAt =
       dto.status === ArticleStatus.PUBLISHED ? new Date() : undefined;
+
+    if (dto.type === 'INCIDENT' && dto.status === ArticleStatus.PUBLISHED) {
+      this.assertPublishedIncident(dto.incidentDetails, canApproveSourceExceptions);
+    } else if (dto.type === 'INCIDENT') {
+      this.assertSourceExceptionPermissions(dto.incidentDetails, canApproveSourceExceptions);
+    }
 
     const excerpt = dto.excerpt || (dto.content ? dto.content.replace(/^[#\s\n*`_-]+/, '').slice(0, 160).trim() : 'Technical article.');
 
@@ -507,11 +612,25 @@ export class ArticlesService {
         seoDescription: dto.seoDescription,
         canonicalUrl: dto.canonicalUrl,
         publishedAt,
+        ...(dto.type === 'INCIDENT' && dto.incidentDetails
+          ? { incident: { create: this.buildIncidentCreate({
+              ...dto.incidentDetails,
+              ...(dto.status === ArticleStatus.PUBLISHED && !dto.incidentDetails.changeNote
+                ? { changeNote: 'Initial publication' }
+                : {}),
+            }) } }
+          : {}),
       },
+      include: { incident: true },
     });
 
     if (created.status === ArticleStatus.PUBLISHED) {
-      this.indexNowService.submitArticleUrl(created.slug);
+      if (created.type === 'INCIDENT' && dto.incidentDetails) {
+        this.indexNowService.submitContentUrl(`/incidents/${created.slug}`);
+        void this.incidentSourcesService.archiveNow(dto.incidentDetails.events.flatMap((event) => (event.sources || []).map((source) => this.normalizeSourceUrl(source.url)))).catch((error) => this.logger.warn(`Incident source archive kickoff failed: ${error.message}`));
+      } else {
+        this.indexNowService.submitArticleUrl(created.slug);
+      }
     }
 
     return this.sanitizeArticle(created);
@@ -520,10 +639,30 @@ export class ArticlesService {
   async update(id: string, dto: UpdateArticleDto, user: { id: string; role: Role }) {
     const article = await this.prisma.article.findUnique({
       where: { id },
+      include: {
+        incident: {
+          include: {
+            events: { include: { sources: { include: { source: true } } } },
+          },
+        },
+      },
     });
 
     if (!article) {
       throw new NotFoundException(`Article with ID '${id}' not found`);
+    }
+
+    const nextType = dto.type ?? article.type;
+    const nextStatus = dto.status ?? article.status;
+    const canApproveSourceExceptions = ['SUPER_ADMIN', 'ADMIN', 'EDITOR'].includes(user.role);
+    if (nextType === 'INCIDENT' && dto.incidentDetails) {
+      this.assertSourceExceptionPermissions(dto.incidentDetails, canApproveSourceExceptions);
+    }
+    if (nextType === 'INCIDENT' && nextStatus === ArticleStatus.PUBLISHED) {
+      this.assertPublishedIncident(dto.incidentDetails ?? this.toIncidentInput(article.incident), canApproveSourceExceptions);
+      if (article.type === 'INCIDENT' && article.status === ArticleStatus.PUBLISHED && !dto.incidentDetails?.changeNote?.trim()) {
+        throw new BadRequestException('Add a dated change note when editing a published incident');
+      }
     }
 
     // Permission check: Author can only update own article; Editor/Admin can update any
@@ -592,15 +731,138 @@ export class ArticlesService {
         ...(dto.seoTitle !== undefined && { seoTitle: dto.seoTitle }),
         ...(dto.seoDescription !== undefined && { seoDescription: dto.seoDescription }),
         ...(dto.canonicalUrl !== undefined && { canonicalUrl: dto.canonicalUrl }),
+        ...(nextType === 'INCIDENT' && dto.incidentDetails
+          ? { incident: { upsert: this.buildIncidentUpsert({
+              ...dto.incidentDetails,
+              ...(nextStatus === ArticleStatus.PUBLISHED && article.status !== ArticleStatus.PUBLISHED && !dto.incidentDetails.changeNote
+                ? { changeNote: 'Published to the incident atlas' }
+                : {}),
+            }, Boolean(article.incident)) } }
+          : {}),
         publishedAt,
       },
     });
 
     if (updated.status === ArticleStatus.PUBLISHED) {
-      this.indexNowService.submitArticleUrl(updated.slug);
+      if (updated.type === 'INCIDENT' && dto.incidentDetails) {
+        this.indexNowService.submitContentUrl(`/incidents/${updated.slug}`);
+        void this.incidentSourcesService.archiveNow(dto.incidentDetails.events.flatMap((event) => (event.sources || []).map((source) => this.normalizeSourceUrl(source.url)))).catch((error) => this.logger.warn(`Incident source archive kickoff failed: ${error.message}`));
+      } else {
+        this.indexNowService.submitArticleUrl(updated.slug);
+      }
     }
 
     return this.sanitizeArticle(updated);
+  }
+
+  private toIncidentInput(incident: any): IncidentDetailsDto | undefined {
+    if (!incident) return undefined;
+    return {
+      ...incident,
+      events: incident.events.map((event: any) => ({
+        ...event,
+        sources: event.sources.map(({ source, sourceType, exceptionReason }: any) => ({ ...source, sourceType, exceptionReason })),
+      })),
+    };
+  }
+
+  private assertPublishedIncident(details?: IncidentDetailsDto, canApproveExceptions = false) {
+    const error = incidentPublishError(details, canApproveExceptions);
+    if (error) throw new BadRequestException(error);
+  }
+
+  private assertSourceExceptionPermissions(details: IncidentDetailsDto | undefined, canApproveExceptions: boolean) {
+    if (canApproveExceptions || !details?.events) return;
+    if (details.events.some((event) => event.sources?.some((source) => source.sourceType === 'APPROVED_EXCEPTION'))) {
+      throw new ForbiddenException('Only an editor or administrator can approve historical source exceptions');
+    }
+  }
+
+  private normalizeSourceUrl(raw: string): string {
+    const url = new URL(raw.trim());
+    if (url.protocol !== 'https:' || url.username || url.password) {
+      throw new BadRequestException('Incident sources must use an HTTPS URL without embedded credentials');
+    }
+    url.hash = '';
+    url.hostname = url.hostname.toLowerCase();
+    return url.toString();
+  }
+
+  private buildIncidentCreate(details: IncidentDetailsDto) {
+    const { changeNote, events, ...incident } = details;
+    return {
+      ...incident,
+      startedAt: incident.startedAt ? new Date(incident.startedAt) : null,
+      endedAt: incident.endedAt ? new Date(incident.endedAt) : null,
+      events: {
+        create: (events || []).map((event) => ({
+          ...event,
+          occurredAt: event.occurredAt ? new Date(event.occurredAt) : null,
+          sources: {
+            create: (event.sources || []).map((source) => {
+              const url = this.normalizeSourceUrl(source.url);
+              return {
+                sourceType: source.sourceType,
+                exceptionReason: source.exceptionReason?.trim() || null,
+                source: {
+                  connectOrCreate: {
+                    where: { url },
+                    create: {
+                      url,
+                      publisher: source.publisher.trim(),
+                      publishedAt: source.publishedAt ? new Date(source.publishedAt) : null,
+                    },
+                  },
+                },
+              };
+            }),
+          },
+        })),
+      },
+      ...(changeNote?.trim() ? { changes: { create: { note: changeNote.trim() } } } : {}),
+    };
+  }
+
+  private buildIncidentUpsert(details: IncidentDetailsDto, exists: boolean) {
+    const create = this.buildIncidentCreate(details);
+    const { changes, events, ...fields } = create;
+    return {
+      create,
+      update: {
+        ...fields,
+        startedAt: details.startedAt ? new Date(details.startedAt) : null,
+        endedAt: details.endedAt ? new Date(details.endedAt) : null,
+        events: {
+          deleteMany: {},
+          create: (details.events || []).map((event) => ({
+            ...event,
+            occurredAt: event.occurredAt ? new Date(event.occurredAt) : null,
+            sources: {
+              create: (event.sources || []).map((source) => {
+                const url = this.normalizeSourceUrl(source.url);
+                return {
+                  sourceType: source.sourceType,
+                  exceptionReason: source.exceptionReason?.trim() || null,
+                  source: {
+                    connectOrCreate: {
+                      where: { url },
+                      create: {
+                        url,
+                        publisher: source.publisher.trim(),
+                        publishedAt: source.publishedAt ? new Date(source.publishedAt) : null,
+                      },
+                    },
+                  },
+                };
+              }),
+            },
+          })),
+        },
+        ...(details.changeNote?.trim() && exists
+          ? { changes: { create: { note: details.changeNote.trim() } } }
+          : {}),
+      },
+    };
   }
 
   async delete(id: string, user: { id: string; role: Role }) {

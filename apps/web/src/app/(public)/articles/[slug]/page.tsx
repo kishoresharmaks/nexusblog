@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { siteConfig, normalizeMediaUrl } from '@nexus/config';
 import { MdxRenderer } from '@/components/mdx';
 import { TableOfContents } from '@/components/public/table-of-contents';
@@ -65,7 +65,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     (rawCoverOrOg ? normalizeMediaUrl(rawCoverOrOg) : null) ||
     `/api/og?title=${encodeURIComponent(article.title)}&category=${encodeURIComponent(categoryName)}&author=${encodeURIComponent(authorName)}&readingTime=${article.readingTime || 10}`;
 
-  const canonicalPath = `/articles/${article.slug}`;
+  const canonicalPath = article.type === 'INCIDENT' ? `/incidents/${article.slug}` : `/articles/${article.slug}`;
 
   return {
     title,
@@ -133,6 +133,9 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
 
   if (!article) {
     notFound();
+  }
+  if (article.type === 'INCIDENT') {
+    permanentRedirect(`/incidents/${article.slug}`);
   }
 
   let publishedDate = 'Recently';

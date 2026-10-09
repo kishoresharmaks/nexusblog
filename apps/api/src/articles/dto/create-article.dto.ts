@@ -10,8 +10,17 @@ import {
   Min,
 } from 'class-validator';
 import { ArticleStatus, DifficultyLevel, ArticleType } from '@prisma/client';
+import { IncidentDetailsDto } from './incident-details.dto';
+import { Type } from 'class-transformer';
+import { ValidateIf, ValidateNested } from 'class-validator';
 
 export class CreateArticleDto {
+  @ApiPropertyOptional({ type: IncidentDetailsDto })
+  @ValidateIf((dto: CreateArticleDto) => dto.type === 'INCIDENT' || dto.incidentDetails !== undefined)
+  @ValidateNested()
+  @Type(() => IncidentDetailsDto)
+  incidentDetails?: IncidentDetailsDto;
+
   @ApiProperty({ example: 'Designing a Distributed Rate Limiter with Redis and NestJS' })
   @IsString()
   @IsNotEmpty()
