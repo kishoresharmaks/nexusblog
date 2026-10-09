@@ -9,6 +9,7 @@ import { useAuth } from '@/context/auth-context';
 import { siteConfig } from '@nexus/config';
 import { ThemeToggle } from '@/components/common/theme-toggle';
 import { BrandLogo } from '@/components/common/brand-logo';
+import { DesktopNavigationPanel } from '@/components/public/desktop-navigation-panel';
 import {
   Search,
   PenTool,
@@ -77,7 +78,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
     setActiveDropdown(null);
   }, [pathname]);
 
-  // Lock body scroll when mobile menu is open
+  // Lock body scroll while the navigation dialog is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -89,7 +90,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
     };
   }, [mobileMenuOpen]);
 
-  // Escape key closes mobile menu
+  // Escape closes the active navigation dialog
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && mobileMenuOpen) {
@@ -555,12 +556,15 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
             </div>
           )}
 
-          {/* Mobile Hamburger Toggle */}
+          {/* Navigation workspace and mobile drawer toggle */}
           <button
             type="button"
-            aria-label={mobileMenuOpen ? 'Close navigation drawer' : 'Open navigation drawer'}
+            id="site-navigation-trigger"
+            aria-label={mobileMenuOpen ? 'Close navigation' : 'Open navigation'}
+            aria-haspopup="dialog"
+            aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="2xl:hidden shrink-0 rounded-xl border border-border/80 bg-card/60 p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer shadow-2xs"
+            className="shrink-0 rounded-xl border border-border/80 bg-card/60 p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer shadow-2xs"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -960,6 +964,12 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
         </div>,
         document.body
       )}
+
+      <DesktopNavigationPanel
+        open={mounted && mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        onOpenSearch={() => onOpenSearch?.()}
+      />
     </header>
   );
 }
