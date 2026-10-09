@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     title: `${categoryName} Blueprints & Guides`,
     description,
     openGraph: {
-      title: `${categoryName} | NexusBlog Architecture Domain`,
+      title: `${categoryName} | NexusNation Architecture Domain`,
       description,
       url: `/categories/${decodedSlug}`,
       siteName: siteConfig.name,
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${categoryName} | NexusBlog`,
+      title: `${categoryName} | NexusNation`,
       description,
       images: [
         {

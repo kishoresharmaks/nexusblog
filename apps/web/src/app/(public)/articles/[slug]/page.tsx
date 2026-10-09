@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   }
 
   const title = article.seoTitle || article.title;
-  const description = article.seoDescription || article.excerpt || 'Technical architecture blueprint on NexusBlog.';
+  const description = article.seoDescription || article.excerpt || 'Technical architecture blueprint on NexusNation.';
   const authorName = article.guestAuthorName || article.author?.name || 'Nexus Engineering Team';
   const categoryName = article.category?.name || 'System Design';
 
@@ -107,8 +107,8 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
       card: 'summary_large_image',
       title,
       description,
-      creator: '@nexusblog',
-      site: '@nexusblog',
+      creator: '@nexusnation',
+      site: '@nexusnation',
       images: [
         {
           url: ogImageUrl,
@@ -150,8 +150,8 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
     ? article.guestAuthorName.toLowerCase().replace(/\s+/g, '')
     : (article.author?.username || 'nexusdev');
   const authorBio = isGuestPost
-    ? 'Guest technical contributor to NexusBlog engineering community.'
-    : (article.author?.bio || 'Core technical contributor to NexusBlog.');
+    ? 'Guest technical contributor to NexusNation engineering community.'
+    : (article.author?.bio || 'Core technical contributor to NexusNation.');
   const categoryName = article.category?.name || 'System Design';
   const categorySlug = article.category?.slug || 'system-design';
   const technologies = article.technologies || [];
@@ -208,7 +208,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
       badgeColor: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
       icon: ShieldCheck,
       description:
-        'Staff-written distributed systems architectural explainer adhering to NexusBlog rigorous verification and reproducibility standards.',
+        'Staff-written distributed systems architectural explainer adhering to NexusNation rigorous verification and reproducibility standards.',
       peerReviewed: true,
       methodology: 'Internal Engineering Staff Editorial Verification',
     };

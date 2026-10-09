@@ -109,7 +109,7 @@ export default async function HomePage() {
             <div className="lg:col-span-6 space-y-3.5 sm:space-y-5">
               <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/80 backdrop-blur-md px-3 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-mono text-foreground shadow-2xs max-w-full">
                 <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse ring-4 ring-emerald-500/20 shrink-0" />
-                <span className="font-semibold text-foreground shrink-0">NexusBlog</span>
+                <span className="font-semibold text-foreground shrink-0">NexusNation</span>
                 <span className="text-muted-foreground/60 shrink-0">•</span>
                 <span className="text-muted-foreground font-normal truncate hidden sm:inline">System Design &amp; Technology Portal</span>
                 <span className="text-muted-foreground font-normal truncate sm:hidden">Systems &amp; Architecture</span>
@@ -225,9 +225,9 @@ export default async function HomePage() {
                 <Layers className="h-3.5 w-3.5" />
                 <span>Domain Taxonomy</span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 Browse by Architecture Topic
-              </h3>
+              </h2>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Core domain taxonomy covering system design, backend internals, databases, consensus, and cloud operations.
               </p>
@@ -311,11 +311,11 @@ export default async function HomePage() {
                 <ShieldCheck className="h-3.5 w-3.5 text-primary" />
                 <span>Editorial Transparency &amp; Standards</span>
               </div>
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
                 Rigorous, Peer-Reviewed Engineering Content
-              </h3>
+              </h2>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-2xl">
-                Every publication on NexusBlog adheres to our 5-pillar technical standards: original research, reproducible code samples, concrete latency benchmarks, clear architecture diagrams, and transparent trade-off analysis.
+                Every publication on NexusNation adheres to our 5-pillar technical standards: original research, reproducible code samples, concrete latency benchmarks, clear architecture diagrams, and transparent trade-off analysis.
               </p>
               <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-muted-foreground pt-1">
                 <Link href="/content-policy" className="hover:text-primary underline underline-offset-4">
@@ -337,7 +337,7 @@ export default async function HomePage() {
                 href="/write-for-us"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-3 text-xs font-bold font-mono hover:opacity-90 transition-all shadow-sm"
               >
-                <span>Write for NexusBlog</span>
+                <span>Write for NexusNation</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link

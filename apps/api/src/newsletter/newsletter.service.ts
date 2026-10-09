@@ -58,11 +58,11 @@ export class NewsletterService {
         return; // Auto-welcome email disabled by admin
       }
 
-      const welcomeMarkdown = `## Welcome to the NexusBlog Engineering Dispatch!\n\nThank you for subscribing to our weekly deep-dives into distributed systems, low-level architecture, performance optimizations, and infrastructure blueprints.\n\n### What to expect:\n- **Weekly Blueprints**: In-depth breakdowns of real-world scalable architectures.\n- **Low-level Engineering**: eBPF, Rust, Go concurrency, memory models, and zero-allocation patterns.\n- **Zero Fluff**: 100% signal for engineers and system designers.\n\nHappy building,\n**NexusBlog Core Architecture Team**`;
+      const welcomeMarkdown = `## Welcome to the NexusNation Engineering Dispatch!\n\nThank you for subscribing to our weekly deep-dives into distributed systems, low-level architecture, performance optimizations, and infrastructure blueprints.\n\n### What to expect:\n- **Weekly Blueprints**: In-depth breakdowns of real-world scalable architectures.\n- **Low-level Engineering**: eBPF, Rust, Go concurrency, memory models, and zero-allocation patterns.\n- **Zero Fluff**: 100% signal for engineers and system designers.\n\nHappy building,\n**NexusNation Core Architecture Team**`;
 
       await this.mailService.sendEmail({
         to: email,
-        subject: 'Welcome to NexusBlog Engineering Dispatch',
+        subject: 'Welcome to NexusNation Engineering Dispatch',
         previewText: 'Welcome to high-signal technical deep-dives and architectural blueprints.',
         textContent: welcomeMarkdown,
       });

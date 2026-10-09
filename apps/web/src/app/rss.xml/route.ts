@@ -92,7 +92,7 @@ export async function GET(request: Request) {
           ? new Date(art.publishedAt).toUTCString()
           : new Date().toUTCString();
         const authorName =
-          art.guestAuthorName || art.author?.name || 'NexusBlog Architect';
+          art.guestAuthorName || art.author?.name || 'NexusNation Architect';
         const categoryName = art.category?.name || 'System Design';
 
         return `

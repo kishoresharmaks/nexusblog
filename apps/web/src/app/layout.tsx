@@ -8,8 +8,8 @@ import { AuthProvider } from '@/context/auth-context';
 import { GoogleTag } from '@/components/analytics/google-tag';
 import { PageTracker } from '@/components/analytics/page-tracker';
 import { GoogleAdSenseScript } from '@/components/ads/google-adsense-script';
+import { WebSiteOrgJsonLd } from '@/components/seo/json-ld';
 import { Toaster } from 'sonner';
-import { siteConfig } from '@nexus/config';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -22,37 +22,63 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://nexusnation.in'),
   title: {
-    default: siteConfig.name,
-    template: `%s | ${siteConfig.name}`,
+    default: 'NexusNation — System Design & Backend Engineering',
+    template: '%s — NexusNation',
   },
-  description: siteConfig.description,
-  metadataBase: new URL(siteConfig.url),
+  description:
+    'Explore production-grade system design, backend engineering, distributed systems, and real-world software architecture guides with practical code and engineering insights.',
+  alternates: {
+    canonical: '/',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
     icon: [
-      { url: '/favicon.ico' },
+      { url: '/favicon.ico', sizes: 'any' },
       { url: '/brand/png/transparent-background/nexus-32px-transparent.png', sizes: '32x32', type: 'image/png' },
       { url: '/brand/png/transparent-background/nexus-192px-transparent.png', sizes: '192x192', type: 'image/png' },
     ],
+    shortcut: ['/favicon.ico'],
     apple: [
       { url: '/brand/png/transparent-background/nexus-180px-transparent.png', sizes: '180x180', type: 'image/png' },
     ],
   },
   openGraph: {
-    title: siteConfig.name,
-    description: siteConfig.description,
-    url: siteConfig.url,
-    siteName: siteConfig.name,
+    type: 'website',
+    url: 'https://nexusnation.in/',
+    siteName: 'NexusNation',
+    title: 'NexusNation — System Design & Backend Engineering',
+    description:
+      'Practical engineering guides, architecture blueprints, and deep dives into production software systems.',
     images: [
       {
         url: '/brand/original/nexus-master-original.png',
         width: 1254,
         height: 1254,
-        alt: siteConfig.name,
+        alt: 'NexusNation — System Design & Backend Engineering',
       },
     ],
     locale: 'en_US',
-    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'NexusNation — System Design & Backend Engineering',
+    description:
+      'Explore production-grade system design, backend engineering, distributed systems, and real-world software architecture guides with practical code and engineering insights.',
+    site: '@nexusnation',
+    creator: '@nexusnation',
+    images: ['/brand/original/nexus-master-original.png'],
   },
 };
 
@@ -65,6 +91,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <GoogleTag />
+        <WebSiteOrgJsonLd />
       </head>
       <body
         suppressHydrationWarning

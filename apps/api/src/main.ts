@@ -83,7 +83,7 @@ async function bootstrap() {
 
   // OpenAPI / Swagger Documentation
   const config = new DocumentBuilder()
-    .setTitle('NexusBlog Technical Publishing API')
+    .setTitle('NexusNation Technical Publishing API')
     .setDescription('REST API for technical publishing portal, user management, MDX content, and admin CMS')
     .setVersion('1.0.0')
     .addBearerAuth()
@@ -94,7 +94,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(port);
-  logger.log(`🚀 NexusBlog API listening on http://localhost:${port}/api`);
+  logger.log(`🚀 NexusNation API listening on http://localhost:${port}/api`);
   logger.log(`📚 Swagger Documentation available at http://localhost:${port}/api/docs`);
 }
 

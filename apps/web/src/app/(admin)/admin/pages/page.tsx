@@ -438,7 +438,7 @@ export default function AdminPagesManager() {
                     type="text"
                     value={editingPage.seoTitle || ''}
                     onChange={(e) => setEditingPage({ ...editingPage, seoTitle: e.target.value })}
-                    placeholder="e.g. Privacy Policy & Data Standards | NexusBlog"
+                    placeholder="e.g. Privacy Policy & Data Standards | NexusNation"
                     className="w-full rounded-xl border border-border bg-background px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none shadow-xs"
                   />
                 </div>

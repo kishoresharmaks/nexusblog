@@ -1,11 +1,37 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { siteConfig } from '@nexus/config';
 import { categoriesApi } from '@/lib/api-client';
 import { Layers, ChevronRight, FileText } from 'lucide-react';
 import { IconRenderer } from '@/components/common/icon-renderer';
+import { BreadcrumbJsonLd, CollectionJsonLd } from '@/components/seo/json-ld';
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: 'Architecture Categories & Domain Taxonomy',
+  description:
+    'Structured technical domains covering system design, backend engineering, distributed systems, databases, and cloud infrastructure on NexusNation.',
+  alternates: {
+    canonical: '/categories',
+  },
+  openGraph: {
+    title: 'Architecture Categories & Domain Taxonomy — NexusNation',
+    description:
+      'Structured technical domains covering system design, backend engineering, distributed systems, databases, and cloud infrastructure.',
+    url: 'https://nexusnation.in/categories',
+    siteName: 'NexusNation',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Architecture Categories & Domain Taxonomy — NexusNation',
+    description:
+      'Structured technical domains covering system design, backend engineering, distributed systems, databases, and cloud infrastructure.',
+    site: '@nexusnation',
+    creator: '@nexusnation',
+  },
+};
 
 export default async function CategoriesPage() {
   let categories: any[] = [];
@@ -36,6 +62,18 @@ export default async function CategoriesPage() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-14 space-y-8 font-sans">
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', item: 'https://nexusnation.in' },
+          { name: 'Categories', item: 'https://nexusnation.in/categories' },
+        ]}
+      />
+      <CollectionJsonLd
+        name="Architecture Categories & Domain Taxonomy — NexusNation"
+        description="Structured technical domains covering system design, backend engineering, distributed systems, databases, and cloud infrastructure on NexusNation."
+        url="https://nexusnation.in/categories"
+      />
+
       <div className="space-y-3">
         <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs font-mono text-muted-foreground">
           <Layers className="h-3.5 w-3.5 text-primary" />

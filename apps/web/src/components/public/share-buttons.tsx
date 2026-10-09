@@ -123,7 +123,7 @@ export function ShareButtons({
       try {
         await navigator.share({
           title,
-          text: excerpt || `${title} on NexusBlog`,
+          text: excerpt || `${title} on NexusNation`,
           url: finalUrl,
         });
       } catch (err: any) {

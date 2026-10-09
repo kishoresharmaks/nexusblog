@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
     const title = searchParams.get('title') || 'Technical Engineering & Distributed Systems';
     const category = searchParams.get('category') || 'SYSTEM DESIGN';
-    const author = searchParams.get('author') || 'NexusBlog Staff';
+    const author = searchParams.get('author') || 'NexusNation Staff';
     const readingTime = searchParams.get('readingTime') || '10';
 
     return new ImageResponse(
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span>~{readingTime} min read</span>
               <span>•</span>
-              <span style={{ color: '#60a5fa', fontWeight: 600 }}>Nexus Technical Publishing</span>
+              <span style={{ color: '#60a5fa', fontWeight: 600 }}>NexusNation</span>
             </div>
           </div>
         </div>

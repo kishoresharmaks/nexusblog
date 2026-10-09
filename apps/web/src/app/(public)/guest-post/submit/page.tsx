@@ -653,7 +653,7 @@ function GuestPostSubmitContent() {
                   Guest Post Published & Live
                 </p>
                 <p className="text-xs text-foreground/90">
-                  Your guest post has been approved and published to the NexusBlog technical directory!
+                  Your guest post has been approved and published to the NexusNation technical directory!
                 </p>
               </div>
             </div>

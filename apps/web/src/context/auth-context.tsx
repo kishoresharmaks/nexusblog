@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await authClient.register(data);
       setUser(result.user);
-      toast.success(`Account created! Welcome to NexusBlog, ${result.user.name}`);
+      toast.success(`Account created! Welcome to NexusNation, ${result.user.name}`);
       return result.user;
     } catch (error) {
       toast.error((error as Error).message || 'Registration failed');

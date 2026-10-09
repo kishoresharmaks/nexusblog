@@ -74,19 +74,23 @@ function getApiUrl(): string {
 }
 
 export const siteConfig = {
-  name: 'NexusBlog',
-  description: 'Production-Grade Technical Publishing Platform & Developer Knowledge Portal',
+  name: 'NexusNation',
+  title: 'NexusNation — System Design & Backend Engineering',
+  description:
+    'Explore production-grade system design, backend engineering, distributed systems, and real-world software architecture guides with practical code and engineering insights.',
+  shortDescription:
+    'Explore production-grade system design, backend engineering, distributed systems, and real-world software architecture guides.',
   url: getSiteUrl(),
   get apiUrl() {
     return getApiUrl();
   },
-  ogImage: '/images/og-default.png',
+  ogImage: '/brand/original/nexus-master-original.png',
   links: {
-    github: 'https://github.com/nexusblog',
-    twitter: 'https://twitter.com/nexusblog',
+    github: 'https://github.com/nexusnation',
+    twitter: 'https://twitter.com/nexusnation',
   },
   author: {
-    name: 'Nexus Engineering Team',
+    name: 'NexusNation Engineering',
     website: 'https://nexusnation.in',
   },
   categories: [

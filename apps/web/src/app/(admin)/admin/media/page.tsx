@@ -95,7 +95,7 @@ export default function AdminMediaLibraryPage() {
             height: m.height,
             mimeType: m.mimeType || 'image/webp',
             uploadedAt: m.createdAt ? new Date(m.createdAt).toLocaleDateString() : 'Recently',
-            altText: m.alt || m.originalName || 'NexusBlog Asset',
+            altText: m.alt || m.originalName || 'NexusNation Asset',
             variants: parsedVariants,
           };
         })

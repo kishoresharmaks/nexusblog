@@ -3,7 +3,7 @@ import { siteConfig } from './index';
 
 describe('siteConfig', () => {
   it('should have standard required metadata fields', () => {
-    expect(siteConfig.name).toBe('NexusBlog');
+    expect(siteConfig.name).toBe('NexusNation');
     expect(siteConfig.url).toBeDefined();
     expect(siteConfig.description).toContain('Technical Publishing Platform');
   });

@@ -17,39 +17,45 @@ import {
   TrendingUp,
   FileText,
 } from 'lucide-react';
+import { BreadcrumbJsonLd, CollectionJsonLd } from '@/components/seo/json-ld';
 
 export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Industry Architecture Case Studies & Postmortems',
   description:
-    'Deep architectural teardowns and failure postmortems of high-throughput production systems, distributed databases, and multi-region infrastructure.',
+    'Deep architectural teardowns and failure postmortems of high-throughput production systems, distributed databases, and multi-region infrastructure on NexusNation.',
+  alternates: {
+    canonical: '/case-studies',
+  },
   openGraph: {
-    title: 'Industry Architecture Case Studies & Postmortems | NexusBlog',
+    title: 'Industry Architecture Case Studies & Postmortems — NexusNation',
     description:
       'Deep architectural teardowns and failure postmortems of high-throughput production systems, distributed databases, and multi-region infrastructure.',
-    url: '/case-studies',
-    siteName: siteConfig.name,
+    url: 'https://nexusnation.in/case-studies',
+    siteName: 'NexusNation',
     images: [
       {
         url: '/api/og?title=Industry%20Architecture%20Case%20Studies&category=CASE%20STUDIES',
         width: 1200,
         height: 630,
-        alt: 'Industry Architecture Case Studies',
+        alt: 'Industry Architecture Case Studies — NexusNation',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Industry Architecture Case Studies & Postmortems | NexusBlog',
+    title: 'Industry Architecture Case Studies & Postmortems — NexusNation',
     description:
       'Deep architectural teardowns and failure postmortems of high-throughput production systems, distributed databases, and multi-region infrastructure.',
+    site: '@nexusnation',
+    creator: '@nexusnation',
     images: [
       {
         url: '/api/og?title=Industry%20Architecture%20Case%20Studies&category=CASE%20STUDIES',
         width: 1200,
         height: 630,
-        alt: 'Industry Architecture Case Studies',
+        alt: 'Industry Architecture Case Studies — NexusNation',
       },
     ],
   },
@@ -148,6 +154,17 @@ export default async function CaseStudiesPage({ searchParams }: CaseStudiesPageP
 
   return (
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-16 space-y-12 font-sans">
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', item: 'https://nexusnation.in' },
+          { name: 'Case Studies', item: 'https://nexusnation.in/case-studies' },
+        ]}
+      />
+      <CollectionJsonLd
+        name="Industry Architecture Case Studies & Postmortems — NexusNation"
+        description="Deep architectural teardowns and failure postmortems of high-throughput production systems, distributed databases, and multi-region infrastructure on NexusNation."
+        url="https://nexusnation.in/case-studies"
+      />
       {/* Header */}
       <div className="space-y-4 max-w-3xl">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1 text-xs font-mono text-primary font-semibold">

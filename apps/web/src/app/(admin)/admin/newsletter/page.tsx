@@ -401,7 +401,7 @@ export default function AdminNewsletterPage() {
             <TrendingUp className="h-4 w-4 text-sky-400" />
           </div>
           <p className="text-2xl font-mono font-extrabold text-sky-400">{stats.estimatedCtr}%</p>
-          <span className="text-[11px] font-mono text-muted-foreground block">UTM tracked via nexusblog_newsletter</span>
+          <span className="text-[11px] font-mono text-muted-foreground block">UTM tracked via nexusnation_newsletter</span>
         </div>
       </div>
 
@@ -704,7 +704,7 @@ export default function AdminNewsletterPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. NexusBlog Engineering Dispatch: Distributed Consensus & Multi-Region DBs"
+                  placeholder="e.g. NexusNation Engineering Dispatch: Distributed Consensus & Multi-Region DBs"
                   value={broadcastSubject}
                   onChange={(e) => setBroadcastSubject(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background py-2.5 px-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
@@ -768,7 +768,7 @@ export default function AdminNewsletterPage() {
                   className="w-full rounded-xl border border-border bg-background p-3.5 text-xs text-foreground font-mono placeholder:text-muted-foreground focus:border-primary focus:outline-none leading-relaxed min-h-[260px]"
                 />
               ) : (
-                /* True NexusBlog Dark Theme Email Live Preview */
+                /* True NexusNation Dark Theme Email Live Preview */
                 <div className="rounded-2xl border border-border/80 bg-[#090d16] text-[#e2e8f0] overflow-hidden shadow-2xl">
                   {broadcastHtml ? (
                     <div className="max-h-[380px] overflow-y-auto p-4 bg-[#090d16]">

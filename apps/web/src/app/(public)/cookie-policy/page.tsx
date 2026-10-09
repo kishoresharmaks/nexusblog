@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { pagesApi } from '@/lib/api-client';
 import { DEFAULT_STATIC_PAGES } from '@/lib/static-page-defaults';
 import { StaticPageView } from '@/components/public/static-page-view';
+import { BreadcrumbJsonLd } from '@/components/seo/json-ld';
 
 export const revalidate = 60;
 
@@ -10,18 +11,40 @@ const SLUG = 'cookie-policy';
 const fallback = DEFAULT_STATIC_PAGES[SLUG];
 
 export async function generateMetadata(): Promise<Metadata> {
+  let title = fallback.seoTitle;
+  let description = fallback.seoDescription;
+
   try {
     const page = await pagesApi.getBySlug(SLUG);
-    return {
-      title: page.seoTitle || page.title,
-      description: page.seoDescription || page.excerpt || fallback.seoDescription,
-    };
+    if (page) {
+      title = page.seoTitle || page.title;
+      description = page.seoDescription || page.excerpt || fallback.seoDescription;
+    }
   } catch {
-    return {
-      title: fallback.seoTitle,
-      description: fallback.seoDescription,
-    };
+    // Fallback
   }
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: '/cookie-policy',
+    },
+    openGraph: {
+      title,
+      description,
+      url: 'https://nexusnation.in/cookie-policy',
+      siteName: 'NexusNation',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      site: '@nexusnation',
+      creator: '@nexusnation',
+    },
+  };
 }
 
 export default async function CookiePolicyPage() {
@@ -33,8 +56,18 @@ export default async function CookiePolicyPage() {
       pageData = remote;
     }
   } catch {
-    // Graceful fallback to default content
+    // Fallback
   }
 
-  return <StaticPageView page={pageData} />;
+  return (
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', item: 'https://nexusnation.in' },
+          { name: 'Cookie Policy', item: 'https://nexusnation.in/cookie-policy' },
+        ]}
+      />
+      <StaticPageView page={pageData} />
+    </>
+  );
 }

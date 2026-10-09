@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
-  let content = `# NexusBlog Systems & Software Architecture Blueprint Index
+  let content = `# NexusNation Systems & Software Architecture Blueprint Index
 > High-performance technical articles, system architecture blueprints, distributed systems benchmarks, and reproducible code samples.
 
 ## Core Documentation & Articles
@@ -19,7 +19,7 @@ export async function GET() {
 
 ## Content Policy & Citation
 - All blueprints are peer-reviewed for technical accuracy and benchmark reproducibility.
-- Citation format: "Source: NexusBlog (https://nexusnation.in)"
+- Citation format: "Source: NexusNation (https://nexusnation.in)"
 `;
 
   try {

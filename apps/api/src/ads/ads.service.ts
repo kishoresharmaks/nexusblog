@@ -75,7 +75,7 @@ export class AdsService implements OnModuleInit {
           format: 'BANNER_728x90',
           customImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=728&h=90&fit=crop&q=80',
           customUrl: 'https://nexusnation.in',
-          customAlt: 'Build High-Scale Distributed Systems with NexusBlog',
+          customAlt: 'Build High-Scale Distributed Systems with NexusNation',
           order: 6,
         },
       ];
@@ -102,7 +102,7 @@ export class AdsService implements OnModuleInit {
         ads_ethical_ads_enabled: 'false',
         ads_ethical_ads_publisher_id: 'nexus-developer-blog',
         ads_hide_for_logged_in: 'false',
-        ads_txt_content: `# NexusBlog Ads.txt Verification File
+        ads_txt_content: `# NexusNation Ads.txt Verification File
 google.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0
 buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
 `,
@@ -196,7 +196,7 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
 
     return (
       setting?.value ||
-      `# NexusBlog Ads.txt\ngoogle.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0\n`
+      `# NexusNation Ads.txt\ngoogle.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0\n`
     );
   }
 

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
-  let adsTxtContent = `# NexusBlog Ads.txt Verification File
+  let adsTxtContent = `# NexusNation Ads.txt Verification File
 google.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0
 buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
 `;

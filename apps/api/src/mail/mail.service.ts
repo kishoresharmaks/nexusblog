@@ -342,10 +342,10 @@ export class MailService {
    */
   async sendTestEmail(recipientEmail: string) {
     const config = await this.getConfig();
-    const subject = `[Test Dispatch] NexusBlog Brevo Configuration Verification`;
+    const subject = `[Test Dispatch] NexusNation Brevo Configuration Verification`;
     const previewText = `Verification test sent on ${new Date().toLocaleTimeString()}`;
 
-    const testMarkdown = `## Brevo Email Integration Test\n\nThis is a verification email from your **NexusBlog Developer Configuration** panel.\n\n- **Sender Name**: ${config.brevoSenderName}\n- **Sender Email**: ${config.brevoSenderEmail}\n- **Timestamp**: ${new Date().toISOString()}\n- **Mail Provider**: Brevo API v3\n\nIf you received this message, your Brevo API key, verified sender, and transactional email pipeline are **100% operational**!`;
+    const testMarkdown = `## Brevo Email Integration Test\n\nThis is a verification email from your **NexusNation Developer Configuration** panel.\n\n- **Sender Name**: ${config.brevoSenderName}\n- **Sender Email**: ${config.brevoSenderEmail}\n- **Timestamp**: ${new Date().toISOString()}\n- **Mail Provider**: Brevo API v3\n\nIf you received this message, your Brevo API key, verified sender, and transactional email pipeline are **100% operational**!`;
 
     const result = await this.sendEmail({
       to: recipientEmail,
@@ -364,12 +364,12 @@ export class MailService {
   async sendVerificationEmail(recipientEmail: string, name: string, rawToken: string) {
     const config = await this.getConfig();
     const verificationUrl = `${config.siteUrl}/verify-email?token=${encodeURIComponent(rawToken)}`;
-    const subject = `Verify your ${config.brevoSenderName || 'NexusBlog'} account`;
+    const subject = `Verify your ${config.brevoSenderName || 'NexusNation'} account`;
     const previewText = `Confirm your email address to complete your registration.`;
 
     const content = `Hello **${name || 'there'}**,
 
-Thank you for registering on **NexusBlog** — the production-grade publishing platform for systems architecture and backend engineering.
+Thank you for registering on **NexusNation** — the production-grade publishing platform for systems architecture and backend engineering.
 
 Please confirm your email address by clicking the button below:
 
@@ -380,7 +380,7 @@ Please confirm your email address by clicking the button below:
 If the button above does not work, copy and paste this link into your browser:
 ${verificationUrl}
 
-If you did not create an account on NexusBlog, you can safely ignore this email.`;
+If you did not create an account on NexusNation, you can safely ignore this email.`;
 
     return this.sendEmail({
       to: recipientEmail,
@@ -397,12 +397,12 @@ If you did not create an account on NexusBlog, you can safely ignore this email.
   async sendPasswordResetEmail(recipientEmail: string, name: string, rawToken: string) {
     const config = await this.getConfig();
     const resetUrl = `${config.siteUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
-    const subject = `Reset your NexusBlog password`;
-    const previewText = `Secure password reset request for your NexusBlog account.`;
+    const subject = `Reset your NexusNation password`;
+    const previewText = `Secure password reset request for your NexusNation account.`;
 
     const content = `Hello **${name || 'there'}**,
 
-We received a request to reset the password for your **NexusBlog** account associated with **${recipientEmail}**.
+We received a request to reset the password for your **NexusNation** account associated with **${recipientEmail}**.
 
 Click the link below to set a new secure password:
 
@@ -430,17 +430,17 @@ If you did not request a password reset, please ignore this email. Your current 
   async sendPasswordChangedAlert(recipientEmail: string, name: string) {
     const config = await this.getConfig();
     const loginUrl = `${config.siteUrl}/login`;
-    const subject = `Security Alert: Your NexusBlog password was changed`;
+    const subject = `Security Alert: Your NexusNation password was changed`;
     const previewText = `Your account password has been successfully updated.`;
 
     const timestamp = new Date().toUTCString();
     const content = `Hello **${name || 'there'}**,
 
-The password for your **NexusBlog** account (**${recipientEmail}**) was changed on **${timestamp}**.
+The password for your **NexusNation** account (**${recipientEmail}**) was changed on **${timestamp}**.
 
 All existing active sessions across other devices and browsers have been terminated as a security precaution.
 
-[Sign In to NexusBlog](${loginUrl})
+[Sign In to NexusNation](${loginUrl})
 
 > **Didn't do this?** If you did not make this change, please immediately reset your password using the [Forgot Password link](${config.siteUrl}/forgot-password) or contact our security team.`;
 

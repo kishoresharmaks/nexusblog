@@ -119,7 +119,7 @@ export function ArticleSummarizer({
 
   const handleCopySummary = () => {
     if (bullets.length === 0) return;
-    const textToCopy = `📌 Executive Summary: ${title}\n\n${bullets.map((b, i) => `${i + 1}. ${b}`).join('\n')}\n\nSource: NexusBlog AI Summary`;
+    const textToCopy = `📌 Executive Summary: ${title}\n\n${bullets.map((b, i) => `${i + 1}. ${b}`).join('\n')}\n\nSource: NexusNation AI Summary`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     toast.success('Summary copied to clipboard!');

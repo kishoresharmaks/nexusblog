@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: TechnologyPageProps): Promise
     title: `${techName} Stack Architecture & Blueprints`,
     description,
     openGraph: {
-      title: `${techName} Architecture Stack | NexusBlog`,
+      title: `${techName} Architecture Stack | NexusNation`,
       description,
       url: `/technologies/${decodedSlug}`,
       siteName: siteConfig.name,
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: TechnologyPageProps): Promise
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${techName} Stack | NexusBlog`,
+      title: `${techName} Stack | NexusNation`,
       description,
       images: [
         {

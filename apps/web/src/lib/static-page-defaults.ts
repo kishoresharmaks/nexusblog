@@ -11,15 +11,15 @@ export const DEFAULT_STATIC_PAGES: Record<string, DefaultStaticPage> = {
   'privacy-policy': {
     title: 'Privacy Policy',
     slug: 'privacy-policy',
-    excerpt: 'Learn how NexusBlog protects, processes, and respects user personal data under GDPR and CCPA standards.',
-    seoTitle: 'Privacy Policy | NexusBlog',
+    excerpt: 'Learn how NexusNation protects, processes, and respects user personal data under GDPR and CCPA standards.',
+    seoTitle: 'Privacy Policy | NexusNation',
     seoDescription: 'Read our transparent privacy policy, data protection standards, and GDPR/CCPA compliance commitments.',
     content: `# Privacy Policy
 
 **Effective Date:** October 2, 2026  
 **Last Revised:** October 2, 2026
 
-At **NexusBlog** (operated by the Nexus Engineering Group, "we", "our", or "us"), we are deeply dedicated to transparency, data minimization, and protecting your digital privacy. This Privacy Policy details how we gather, process, retain, and safeguard personal information when you access our technical publications, interact with our architecture blueprints, subscribe to our technical dispatch, or register for a developer account.
+At **NexusNation** (operated by the Nexus Engineering Group, "we", "our", or "us"), we are deeply dedicated to transparency, data minimization, and protecting your digital privacy. This Privacy Policy details how we gather, process, retain, and safeguard personal information when you access our technical publications, interact with our architecture blueprints, subscribe to our technical dispatch, or register for a developer account.
 
 We adhere strictly to international data privacy regulations, including the **General Data Protection Regulation (GDPR)** (EU/EEA), the **UK General Data Protection Regulation (UK GDPR)**, and the **California Consumer Privacy Act as amended by the California Privacy Rights Act (CCPA/CPRA)**.
 
@@ -102,7 +102,7 @@ To submit a data access or deletion request, please reach out directly to **priv
 
 ## 8. Children's Privacy
 
-NexusBlog is an engineering and technical platform intended for software engineers, system architects, and professionals. We do not knowingly collect personal information from individuals under the age of 16. If you believe a minor has registered an account, contact us immediately for prompt removal.
+NexusNation is an engineering and technical platform intended for software engineers, system architects, and professionals. We do not knowingly collect personal information from individuals under the age of 16. If you believe a minor has registered an account, contact us immediately for prompt removal.
 
 ---
 
@@ -119,15 +119,15 @@ Inquiries: [Contact Page](/contact)`,
   'terms-of-service': {
     title: 'Terms of Service',
     slug: 'terms-of-service',
-    excerpt: 'General terms, intellectual property rules, and conditions governing the access and use of NexusBlog.',
-    seoTitle: 'Terms of Service | NexusBlog',
-    seoDescription: 'Understand the terms, responsibilities, and intellectual property conditions for using NexusBlog.',
+    excerpt: 'General terms, intellectual property rules, and conditions governing the access and use of NexusNation.',
+    seoTitle: 'Terms of Service | NexusNation',
+    seoDescription: 'Understand the terms, responsibilities, and intellectual property conditions for using NexusNation.',
     content: `# Terms of Service
 
 **Effective Date:** October 2, 2026  
 **Last Revised:** October 2, 2026
 
-Welcome to **NexusBlog** ("NexusBlog", "the Platform", "we", "our", or "us"). By accessing our website, interacting with our APIs, utilizing our developer dashboard, subscribing to our publications, or contributing engineering blueprints, you agree to comply with and be bound by the following Terms of Service ("Terms").
+Welcome to **NexusNation** ("NexusNation", "the Platform", "we", "our", or "us"). By accessing our website, interacting with our APIs, utilizing our developer dashboard, subscribing to our publications, or contributing engineering blueprints, you agree to comply with and be bound by the following Terms of Service ("Terms").
 
 Please read these Terms carefully before utilizing our platform. If you disagree with any part of these Terms, you must discontinue use of the platform immediately.
 
@@ -135,7 +135,7 @@ Please read these Terms carefully before utilizing our platform. If you disagree
 
 ## 1. Acceptance & Eligibility
 
-By accessing NexusBlog, you represent and warrant that:
+By accessing NexusNation, you represent and warrant that:
 1. You are at least 16 years of age or possess legal parental/guardian consent where required by law.
 2. You possess the legal capacity to enter into these binding Terms.
 3. Your use of the platform complies with all applicable local, national, and international laws, regulations, and export controls.
@@ -154,11 +154,11 @@ By accessing NexusBlog, you represent and warrant that:
 
 ### A. Contributor & Author Rights
 - **Ownership:** Authors retain moral and intellectual ownership of their original submitted articles, case studies, and engineering blueprints.
-- **License Grant to NexusBlog:** By submitting or publishing content on NexusBlog, you grant us a worldwide, non-exclusive, royalty-free, perpetual license to host, format, syndicate, translate, and display the content across our web applications, RSS feeds, and newsletters.
+- **License Grant to NexusNation:** By submitting or publishing content on NexusNation, you grant us a worldwide, non-exclusive, royalty-free, perpetual license to host, format, syndicate, translate, and display the content across our web applications, RSS feeds, and newsletters.
 - **Attribution:** We commit to providing prominent author attribution, profile showcasing, and canonical URL indexing for all contributed works.
 
 ### B. Code Snippets & Architecture Blueprints
-- Unless explicitly annotated with a distinct license (such as Apache 2.0, BSD-3, or GPLv3), all code samples, configuration scripts, and architecture snippets published on NexusBlog are provided under the **MIT License**.
+- Unless explicitly annotated with a distinct license (such as Apache 2.0, BSD-3, or GPLv3), all code samples, configuration scripts, and architecture snippets published on NexusNation are provided under the **MIT License**.
 - Readers are permitted to inspect, fork, and incorporate published code snippets into their personal or commercial software projects in accordance with the MIT License.
 
 ---
@@ -177,7 +177,7 @@ Violations of this policy will result in immediate suspension or permanent termi
 
 ## 5. Technical Disclaimer & "As-Is" Provision
 
-- The engineering blueprints, benchmark results, database migration strategies, and architectural designs on NexusBlog are provided solely for **educational, instructional, and reference purposes**.
+- The engineering blueprints, benchmark results, database migration strategies, and architectural designs on NexusNation are provided solely for **educational, instructional, and reference purposes**.
 - **No Production Guarantee:** Systems architecture involves complex trade-offs. What performs optimally in a benchmark or isolated environment may fail under specific production workloads, traffic patterns, or cloud networking constraints.
 - You assume full responsibility for evaluating, load testing, and auditing any code or architecture before applying it in production environments.
 
@@ -198,7 +198,7 @@ You may terminate your account at any time by contacting **support@nexusnation.i
 
 ## 7. Limitation of Liability
 
-To the maximum extent permitted by applicable law, NexusBlog, its authors, editors, directors, and affiliates shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages, including but not limited to:
+To the maximum extent permitted by applicable law, NexusNation, its authors, editors, directors, and affiliates shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages, including but not limited to:
 - Loss of data, server downtime, system outages, or cloud infrastructure costs.
 - Performance degradation, security vulnerabilities, or database corruption resulting from applying published guides.
 - Unauthorized access to or alteration of your user transmissions or data.
@@ -207,7 +207,7 @@ To the maximum extent permitted by applicable law, NexusBlog, its authors, edito
 
 ## 8. Indemnification
 
-You agree to defend, indemnify, and hold harmless NexusBlog, its officers, directors, contributors, and employees against any claims, liabilities, damages, losses, and expenses (including legal fees) arising out of or in any way connected with your breach of these Terms, your submitted content, or your violation of third-party rights.
+You agree to defend, indemnify, and hold harmless NexusNation, its officers, directors, contributors, and employees against any claims, liabilities, damages, losses, and expenses (including legal fees) arising out of or in any way connected with your breach of these Terms, your submitted content, or your violation of third-party rights.
 
 ---
 
@@ -231,14 +231,14 @@ Inquiries: [Contact Us](/contact)`,
     title: 'Disclaimer & Technical Notice',
     slug: 'disclaimer',
     excerpt: 'Technical reference, architectural accuracy, and liability disclaimer for published blueprints.',
-    seoTitle: 'Disclaimer & Technical Notice | NexusBlog',
-    seoDescription: 'Read the technical and liability disclaimer for architecture patterns and benchmarks published on NexusBlog.',
+    seoTitle: 'Disclaimer & Technical Notice | NexusNation',
+    seoDescription: 'Read the technical and liability disclaimer for architecture patterns and benchmarks published on NexusNation.',
     content: `# Disclaimer & Technical Notice
 
 **Effective Date:** October 2, 2026  
 **Last Revised:** October 2, 2026
 
-The technical articles, distributed systems blueprints, benchmark evaluations, database migration playbooks, and code implementations published on **NexusBlog** are created by staff architects and independent engineering contributors for **educational, informational, and architectural reference purposes only**.
+The technical articles, distributed systems blueprints, benchmark evaluations, database migration playbooks, and code implementations published on **NexusNation** are created by staff architects and independent engineering contributors for **educational, informational, and architectural reference purposes only**.
 
 Please read this disclaimer thoroughly before adopting or implementing any techniques described on this platform.
 
@@ -252,7 +252,7 @@ Software engineering and distributed systems design depend heavily on operating 
 - Configuration parameters, kernel tunings (e.g., \`sysctl\` TCP buffers, connection pools), and database storage engine flags described in our articles are tuned for specific benchmark scenarios and must not be blindly applied to production workloads.
 
 ### B. Independent Verification & Load Testing
-NexusBlog and its authors make no representations or warranties, express or implied, regarding the reliability, completeness, accuracy, or operational fitness of any guide or blueprint. You are solely responsible for:
+NexusNation and its authors make no representations or warranties, express or implied, regarding the reliability, completeness, accuracy, or operational fitness of any guide or blueprint. You are solely responsible for:
 - Conducting comprehensive peer reviews and security audits of all code snippets.
 - Executing isolated staging load tests, chaos engineering experiments, and benchmark verifications under your actual production traffic profiles.
 - Formulating rollback plans and failure recovery strategies before applying schema migrations or infrastructure modifications.
@@ -261,7 +261,7 @@ NexusBlog and its authors make no representations or warranties, express or impl
 
 ## 2. Benchmark Methodology & Latency Metrics
 
-- Benchmarks published on NexusBlog (e.g., p95/p99 latency percentiles, requests-per-second throughput, memory allocations, CPU core saturation) are measured under controlled hardware conditions, specific operating system kernels, and isolated network topologies.
+- Benchmarks published on NexusNation (e.g., p95/p99 latency percentiles, requests-per-second throughput, memory allocations, CPU core saturation) are measured under controlled hardware conditions, specific operating system kernels, and isolated network topologies.
 - Differences in cloud VM instance families (e.g., AWS Graviton, GCP Compute Engine, bare-metal servers), network jitter, hypervisor noisy-neighbor effects, and disk IOPS will produce differing metrics in real-world deployments.
 - Benchmark charts are illustrative of comparative architectural patterns and should not be treated as contractual performance SLAs.
 
@@ -271,15 +271,15 @@ NexusBlog and its authors make no representations or warranties, express or impl
 
 - Our guides frequently utilize open-source frameworks, database engines, container runtimes, and cloud services (e.g., Redis, Kafka, PostgreSQL, Docker, Kubernetes, NestJS, Next.js, Go, Rust, Spring Boot).
 - We have no control over upstream open-source releases, semantic version breaks, licensing changes, security vulnerabilities, or deprecated API endpoints in third-party software.
-- The inclusion of a software library or tool in our guides does not constitute an official endorsement by NexusBlog or the upstream vendor.
+- The inclusion of a software library or tool in our guides does not constitute an official endorsement by NexusNation or the upstream vendor.
 
 ---
 
 ## 4. Trademarks & Fair Use Notice
 
-- All trademarks, service marks, trade names, product names, and company logos referenced on NexusBlog are the property of their respective owners.
+- All trademarks, service marks, trade names, product names, and company logos referenced on NexusNation are the property of their respective owners.
 - The use of product names, logos, and technologies (e.g., Redis, Apache Kafka, PostgreSQL, Docker, Kubernetes, AWS, Google Cloud, Microsoft Azure) is strictly for **identification, fair use commentary, technical critique, and educational comparison**.
-- NexusBlog is an independent technical engineering publication and is not officially affiliated with, endorsed by, or sponsored by any third-party trademark holders unless explicitly disclosed.
+- NexusNation is an independent technical engineering publication and is not officially affiliated with, endorsed by, or sponsored by any third-party trademark holders unless explicitly disclosed.
 
 ---
 
@@ -287,13 +287,13 @@ NexusBlog and its authors make no representations or warranties, express or impl
 
 - Database schema migration patterns (e.g., PostgreSQL lock-free expand-contract, concurrent indexing) and distributed consensus recipes (e.g., Raft leader elections, Redis Lua locks) carry inherent risks if executed improperly.
 - Applying DDL changes during high-traffic intervals or misconfiguring lock timeouts can lead to connection exhaustion, query queueing, or database downtime.
-- NexusBlog and its contributing authors shall not be held liable for system downtime, data loss, degraded performance, cloud billing overages, or security incidents resulting from applying techniques described on this portal.
+- NexusNation and its contributing authors shall not be held liable for system downtime, data loss, degraded performance, cloud billing overages, or security incidents resulting from applying techniques described on this portal.
 
 ---
 
 ## 6. Limitation of Liability
 
-In no event shall NexusBlog, its parent entity, authors, reviewers, or affiliated engineers be liable for any direct, indirect, special, incidental, consequential, or punitive damages arising out of the use of, or inability to use, the information, code snippets, or architectural blueprints provided on this platform.
+In no event shall NexusNation, its parent entity, authors, reviewers, or affiliated engineers be liable for any direct, indirect, special, incidental, consequential, or punitive damages arising out of the use of, or inability to use, the information, code snippets, or architectural blueprints provided on this platform.
 
 **Editorial Inquiries & Inaccuracy Reports:**  
 If you identify a technical inaccuracy, outdated benchmark parameter, or code defect in any published article, please submit an issue to **editorial@nexusnation.in** or reach out via our [Contact Page](/contact).`,
@@ -303,14 +303,14 @@ If you identify a technical inaccuracy, outdated benchmark parameter, or code de
     title: 'Content Policy & Editorial Standards',
     slug: 'content-policy',
     excerpt: 'Our rigorous technical editorial standards, plagiarism rules, and code verification policies.',
-    seoTitle: 'Content Policy & Editorial Standards | NexusBlog',
-    seoDescription: 'Discover how NexusBlog ensures high-signal, peer-reviewed engineering content.',
+    seoTitle: 'Content Policy & Editorial Standards | NexusNation',
+    seoDescription: 'Discover how NexusNation ensures high-signal, peer-reviewed engineering content.',
     content: `# Content Policy & Editorial Standards
 
 **Effective Date:** October 2, 2026  
 **Last Revised:** October 2, 2026
 
-**NexusBlog** is dedicated to publishing high-signal, rigorous, and actionable engineering content. Our readership comprises distributed systems engineers, software architects, platform leads, and technical founders. To maintain the highest editorial and technical bar, all published articles and community contributions are governed by this Content Policy.
+**NexusNation** is dedicated to publishing high-signal, rigorous, and actionable engineering content. Our readership comprises distributed systems engineers, software architects, platform leads, and technical founders. To maintain the highest editorial and technical bar, all published articles and community contributions are governed by this Content Policy.
 
 ---
 
@@ -325,7 +325,7 @@ If you identify a technical inaccuracy, outdated benchmark parameter, or code de
 
 ## 2. Mandatory Structural Standards for Articles
 
-Every technical guide and architecture blueprint submitted to NexusBlog must satisfy our 5-pillar structure:
+Every technical guide and architecture blueprint submitted to NexusNation must satisfy our 5-pillar structure:
 
 1. **Concrete Problem Statement:** Articulate the precise scalability bottleneck, latency threshold, concurrency collision, or architectural challenge being solved.
 2. **System Topology & Architecture Diagrams:** Include clear system diagrams (Mermaid flowcharts, sequence diagrams, state machines, or vector architecture schemas) illustrating component interactions and data flow.
@@ -345,7 +345,7 @@ Every technical guide and architecture blueprint submitted to NexusBlog must sat
 
 ## 4. Commercial Transparency & Conflict of Interest
 
-- **No Covert Marketing:** NexusBlog is an educational engineering publication. Articles that serve as disguised promotional advertorials, sales pitches, or SEO link-building schemes will be rejected.
+- **No Covert Marketing:** NexusNation is an educational engineering publication. Articles that serve as disguised promotional advertorials, sales pitches, or SEO link-building schemes will be rejected.
 - **Tool Neutrality:** Authors may reference open-source tools, commercial cloud offerings, or specialized SaaS infrastructure only when they serve a genuine technical role in the architectural case study.
 - **Mandatory Disclosure:** Authors must disclose any financial affiliation, employment relationship, or material sponsorship with software tools or companies referenced in their articles.
 
@@ -375,21 +375,21 @@ We cultivate a collegial, high-signal engineering forum. Comments posted on arti
 - If you believe an editorial decision was made in error or wish to appeal a rejection, you may contact **editorial@nexusnation.in** with your rationale.
 
 **Reporting Violations & Plagiarism:**  
-If you suspect an article published on NexusBlog infringes copyright, contains plagiarized material, or violates these standards, please submit a formal report to **editorial@nexusnation.in** or via our [Contact Form](/contact).`,
+If you suspect an article published on NexusNation infringes copyright, contains plagiarized material, or violates these standards, please submit a formal report to **editorial@nexusnation.in** or via our [Contact Form](/contact).`,
   },
 
   'cookie-policy': {
     title: 'Cookie & Storage Policy',
     slug: 'cookie-policy',
-    excerpt: 'Transparent explanation of cookies, storage tokens, and session management on NexusBlog.',
-    seoTitle: 'Cookie & Storage Policy | NexusBlog',
-    seoDescription: 'Learn about how NexusBlog uses cookies and session storage without third-party ad tracking.',
+    excerpt: 'Transparent explanation of cookies, storage tokens, and session management on NexusNation.',
+    seoTitle: 'Cookie & Storage Policy | NexusNation',
+    seoDescription: 'Learn about how NexusNation uses cookies and session storage without third-party ad tracking.',
     content: `# Cookie & Storage Policy
 
 **Effective Date:** October 2, 2026  
 **Last Revised:** October 2, 2026
 
-This Cookie Policy explains how **NexusBlog** ("we", "our", or "us") utilizes cookies and local browser storage technologies across our web platform. We believe in minimal data footprint, zero third-party tracking, and absolute transparency regarding browser storage.
+This Cookie Policy explains how **NexusNation** ("we", "our", or "us") utilizes cookies and local browser storage technologies across our web platform. We believe in minimal data footprint, zero third-party tracking, and absolute transparency regarding browser storage.
 
 ---
 
@@ -425,7 +425,7 @@ These storage items remember your personalized user interface selections:
 
 ## 3. What We Do NOT Use (Zero Ad Tracking)
 
-Unlike conventional media sites, NexusBlog maintains an ad-free, high-signal engineering portal:
+Unlike conventional media sites, NexusNation maintains an ad-free, high-signal engineering portal:
 - **No Third-Party Advertising Cookies:** We do not embed Google AdSense, DoubleClick, Facebook Pixels, or programmatic ad exchange beacons.
 - **No Cross-Site Behavioral Tracking:** We never track your browsing behavior across other websites or sell your reading habits to marketing syndicates.
 - **No Fingerprinting:** We do not construct device fingerprint profiles or monitor unauthenticated users.
@@ -457,14 +457,14 @@ Please direct any inquiries regarding our cookie or storage practices to **priva
     title: 'Author Guidelines & Posting Rules',
     slug: 'author-guidelines',
     excerpt: 'Comprehensive rules, formatting guidelines, code conventions, and submission workflow for authors.',
-    seoTitle: 'Author Guidelines & Posting Rules | NexusBlog',
-    seoDescription: 'Step-by-step contributor rules, MDX formatting guide, diagram standards, and review lifecycle for NexusBlog authors.',
+    seoTitle: 'Author Guidelines & Posting Rules | NexusNation',
+    seoDescription: 'Step-by-step contributor rules, MDX formatting guide, diagram standards, and review lifecycle for NexusNation authors.',
     content: `# Author Guidelines & Posting Rules
 
 **Effective Date:** October 2, 2026  
 **Last Revised:** October 2, 2026
 
-Thank you for your interest in contributing to **NexusBlog**! We welcome software architects, distributed systems engineers, database specialists, and infrastructure leads who want to share battle-tested blueprints and empirical insights with our global engineering audience.
+Thank you for your interest in contributing to **NexusNation**! We welcome software architects, distributed systems engineers, database specialists, and infrastructure leads who want to share battle-tested blueprints and empirical insights with our global engineering audience.
 
 ---
 
@@ -517,9 +517,9 @@ Ready to share your engineering case study? [Submit your draft now](/guest-post/
   'contact': {
     title: 'Contact Us',
     slug: 'contact',
-    excerpt: 'Get in touch with the NexusBlog editorial, engineering, security, and support team.',
-    seoTitle: 'Contact Us | NexusBlog',
-    seoDescription: 'Reach out to the NexusBlog editorial and infrastructure team for inquiries, feedback, or partnerships.',
+    excerpt: 'Get in touch with the NexusNation editorial, engineering, security, and support team.',
+    seoTitle: 'Contact Us | NexusNation',
+    seoDescription: 'Reach out to the NexusNation editorial and infrastructure team for inquiries, feedback, or partnerships.',
     content: `# Contact Us
 
 **Effective Date:** October 2, 2026
@@ -562,7 +562,7 @@ Our engineering and editorial teams aim to respond to inquiries according to the
 
 ## 3. Global Engineering Hubs
 
-NexusBlog is operated by a globally distributed engineering collective:
+NexusNation is operated by a globally distributed engineering collective:
 
 - **Headquarters & Technical Operations:**  
   Nexus Engineering Group  
@@ -578,8 +578,8 @@ NexusBlog is operated by a globally distributed engineering collective:
 ## 4. Community & Social Channels
 
 Connect with our engineering community across the following developer networks:
-- **GitHub:** [github.com/nexusblog](https://github.com)
-- **X / Twitter:** [@NexusBlogDev](https://twitter.com)
-- **LinkedIn:** [NexusBlog Engineering](https://linkedin.com)`,
+- **GitHub:** [github.com/nexusnation](https://github.com/nexusnation)
+- **X / Twitter:** [@nexusnation](https://twitter.com/nexusnation)
+- **LinkedIn:** [NexusNation Engineering](https://linkedin.com/company/nexusnation)`,
   },
 };

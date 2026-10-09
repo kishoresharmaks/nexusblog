@@ -14,13 +14,13 @@ export async function generateMetadata({ params }: DynamicPageProps): Promise<Me
   const { slug } = await params;
   try {
     const page = await pagesApi.getBySlug(slug);
-    if (!page) return { title: 'Page Not Found | NexusBlog' };
+    if (!page) return { title: 'Page Not Found | NexusNation' };
     return {
       title: page.seoTitle || page.title,
-      description: page.seoDescription || page.excerpt || 'Technical guide and policy page on NexusBlog.',
+      description: page.seoDescription || page.excerpt || 'Technical guide and policy page on NexusNation.',
     };
   } catch {
-    return { title: 'Legal & Static Page | NexusBlog' };
+    return { title: 'Legal & Static Page | NexusNation' };
   }
 }
 

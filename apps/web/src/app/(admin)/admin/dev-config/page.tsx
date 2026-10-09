@@ -170,7 +170,7 @@ export default function AdminDevConfigPage() {
       if (settingsData) {
         setBrevoApiKey(settingsData.brevoApiKey?.value || '');
         setBrevoSenderEmail(settingsData.brevoSenderEmail?.value || 'newsletter@nexusnation.in');
-        setBrevoSenderName(settingsData.brevoSenderName?.value || 'NexusBlog Engineering Dispatch');
+        setBrevoSenderName(settingsData.brevoSenderName?.value || 'NexusNation Engineering Dispatch');
         const resolvedSiteUrl =
           settingsData.siteUrl?.value && !settingsData.siteUrl.value.includes('localhost') && !settingsData.siteUrl.value.includes('127.0.0.1')
             ? settingsData.siteUrl.value.trim().replace(/\/+$/, '')
@@ -178,7 +178,7 @@ export default function AdminDevConfigPage() {
               ? window.location.origin.replace(/\/+$/, '')
               : 'https://nexusnation.in';
         setSiteUrl(resolvedSiteUrl);
-        setSiteName(settingsData.siteName?.value || 'NexusBlog');
+        setSiteName(settingsData.siteName?.value || 'NexusNation');
         setNewsletterAutoWelcome(settingsData.newsletterAutoWelcome?.value !== 'false');
         setMaintenanceMode(settingsData.maintenanceMode?.value === 'true');
         setRobotsIndexingMode((settingsData.robotsIndexingMode?.value as any) || 'allow');
@@ -449,7 +449,7 @@ export default function AdminDevConfigPage() {
   };
 
   const handleCopyEnvSnippet = () => {
-    const snippet = `# NexusBlog Production Runtime Configuration
+    const snippet = `# NexusNation Production Runtime Configuration
 BREVO_API_KEY=${brevoApiKey && !brevoApiKey.includes('...') ? brevoApiKey : 'xkeysib-YOUR_API_KEY_HERE'}
 BREVO_SENDER_EMAIL=${brevoSenderEmail}
 BREVO_SENDER_NAME=${brevoSenderName}
@@ -650,7 +650,7 @@ ROBOTS_INDEXING_MODE=${robotsIndexingMode}
                 <input
                   type="text"
                   required
-                  placeholder="e.g. NexusBlog Engineering Dispatch"
+                  placeholder="e.g. NexusNation Engineering Dispatch"
                   value={brevoSenderName}
                   onChange={(e) => setBrevoSenderName(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
@@ -1410,7 +1410,7 @@ ROBOTS_INDEXING_MODE=${robotsIndexingMode}
                 <input
                   type="text"
                   required
-                  placeholder="NexusBlog"
+                  placeholder="NexusNation"
                   value={siteName}
                   onChange={(e) => setSiteName(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background py-2.5 px-4 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"

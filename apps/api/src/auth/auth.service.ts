@@ -442,7 +442,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'Your email address has been successfully verified! You now have full access to NexusBlog.',
+      message: 'Your email address has been successfully verified! You now have full access to NexusNation.',
     };
   }
 

@@ -5,7 +5,7 @@ export class AppService {
   getHealth() {
     return {
       status: 'ok',
-      service: 'NexusBlog API',
+      service: 'NexusNation API',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     };

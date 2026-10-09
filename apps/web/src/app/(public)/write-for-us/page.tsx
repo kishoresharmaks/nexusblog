@@ -2,6 +2,7 @@ import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { siteConfig } from '@nexus/config';
+import { BreadcrumbJsonLd } from '@/components/seo/json-ld';
 import {
   PenTool,
   CheckCircle,
@@ -20,35 +21,40 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Contribute & Write for NexusBlog',
+  title: 'Contribute & Write for NexusNation',
   description:
-    'Contribute technical blueprints, distributed systems deep dives, and performance benchmarks to NexusBlog. Learn about our peer-review process and author compensation.',
+    'Contribute technical blueprints, distributed systems deep dives, and performance benchmarks to NexusNation. Learn about our peer-review process and author compensation.',
+  alternates: {
+    canonical: '/write-for-us',
+  },
   openGraph: {
-    title: 'Contribute & Write for NexusBlog',
+    title: 'Contribute & Write for NexusNation — Systems Engineering',
     description:
-      'Contribute technical blueprints, distributed systems deep dives, and performance benchmarks to NexusBlog.',
-    url: '/write-for-us',
-    siteName: siteConfig.name,
+      'Contribute technical blueprints, distributed systems deep dives, and performance benchmarks to NexusNation.',
+    url: 'https://nexusnation.in/write-for-us',
+    siteName: 'NexusNation',
     images: [
       {
-        url: '/api/og?title=Contribute%20to%20NexusBlog&category=GUEST%20CONTRIBUTION',
+        url: '/api/og?title=Contribute%20to%20NexusNation&category=GUEST%20CONTRIBUTION',
         width: 1200,
         height: 630,
-        alt: 'Contribute to NexusBlog',
+        alt: 'Contribute to NexusNation',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Contribute & Write for NexusBlog',
+    title: 'Contribute & Write for NexusNation — Systems Engineering',
     description:
-      'Contribute technical blueprints, distributed systems deep dives, and performance benchmarks to NexusBlog.',
+      'Contribute technical blueprints, distributed systems deep dives, and performance benchmarks to NexusNation.',
+    site: '@nexusnation',
+    creator: '@nexusnation',
     images: [
       {
-        url: '/api/og?title=Contribute%20to%20NexusBlog&category=GUEST%20CONTRIBUTION',
+        url: '/api/og?title=Contribute%20to%20NexusNation&category=GUEST%20CONTRIBUTION',
         width: 1200,
         height: 630,
-        alt: 'Contribute to NexusBlog',
+        alt: 'Contribute to NexusNation',
       },
     ],
   },
@@ -122,6 +128,13 @@ export default function WriteForUsPage() {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 sm:px-6 py-12 sm:py-16 space-y-16 font-sans">
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', item: 'https://nexusnation.in' },
+          { name: 'Write for Us', item: 'https://nexusnation.in/write-for-us' },
+        ]}
+      />
+
       {/* Hero */}
       <div className="text-center space-y-4 max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1 text-xs font-mono text-primary font-semibold">
@@ -129,7 +142,7 @@ export default function WriteForUsPage() {
           <span>Contributor Program • Technical Writing</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground leading-tight">
-          Write for NexusBlog
+          Write for NexusNation
         </h1>
         <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
           Share your real-world engineering experiences, architecture blueprints, and performance benchmarks with tens of thousands of staff engineers and distributed systems architects.

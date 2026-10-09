@@ -18,7 +18,7 @@ interface MaintenanceViewProps {
 }
 
 export function MaintenanceView({
-  siteName = 'NexusBlog',
+  siteName = 'NexusNation',
   onRefreshStatus,
 }: MaintenanceViewProps) {
   const [isChecking, setIsChecking] = useState(false);

@@ -105,7 +105,7 @@ function VerifyEmailContent() {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Email Verified!</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            {statusMessage || 'Your email address has been verified. You now have full access to NexusBlog.'}
+            {statusMessage || 'Your email address has been verified. You now have full access to NexusNation.'}
           </p>
         </div>
         <div className="pt-2 flex flex-col gap-2.5">

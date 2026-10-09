@@ -22,7 +22,7 @@ export default function PublicLayout({
   const { user, isLoading: authLoading } = useAuth();
 
   const [maintenanceMode, setMaintenanceMode] = useState<boolean>(false);
-  const [siteName, setSiteName] = useState<string>('NexusBlog');
+  const [siteName, setSiteName] = useState<string>('NexusNation');
   const [hasCheckedSettings, setHasCheckedSettings] = useState<boolean>(false);
 
   const isStaff =

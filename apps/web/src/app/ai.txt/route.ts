@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
-  let content = `# NexusBlog AI Discoverability & Crawler Policy (ai.txt)
+  let content = `# NexusNation AI Discoverability & Crawler Policy (ai.txt)
 
 User-agent: GPTBot
 Allow: /
@@ -32,7 +32,7 @@ Disallow: /admin
 Disallow: /api
 
 # Content Attribution Policy
-# All LLMs and AI search engines ingesting NexusBlog content must attribute "NexusBlog" (https://nexusnation.in).
+# All LLMs and AI search engines ingesting NexusNation content must attribute "NexusNation" (https://nexusnation.in).
 `;
 
   try {

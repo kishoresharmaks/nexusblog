@@ -107,7 +107,7 @@ export class WeeklyDigestStrategy implements INewsletterGeneratorStrategy {
 
     const subject =
       dto.customSubject ||
-      `NexusBlog Engineering Dispatch: ${hero.title}`;
+      `NexusNation Engineering Dispatch: ${hero.title}`;
     const previewText =
       hero.excerpt ? hero.excerpt.slice(0, 120) : 'Weekly architectural deep-dives and engineering blueprints.';
 
@@ -116,7 +116,7 @@ export class WeeklyDigestStrategy implements INewsletterGeneratorStrategy {
       .setPreviewText(previewText)
       .setHeader({
         siteUrl,
-        siteName: 'NexusBlog',
+        siteName: 'NexusNation',
         editionTag: 'Weekly Dispatch',
       });
 
@@ -241,15 +241,15 @@ export class SpotlightStrategy implements INewsletterGeneratorStrategy {
       .setPreviewText(previewText)
       .setHeader({
         siteUrl,
-        siteName: 'NexusBlog',
+        siteName: 'NexusNation',
         editionTag: 'Deep-Dive Spotlight',
       });
 
     const intro =
       dto.customIntro ||
-      `Hi Engineers,\n\nWelcome to a specialized **NexusBlog Deep-Dive Spotlight**. Today we examine **${article.title}** from first principles to production readiness.`;
+      `Hi Engineers,\n\nWelcome to a specialized **NexusNation Deep-Dive Spotlight**. Today we examine **${article.title}** from first principles to production readiness.`;
     builder.setIntro(
-      `<p style="margin:0 0 14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">Hi Engineers,</p><p style="margin:0 0 14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">Welcome to a specialized <strong>NexusBlog Deep-Dive Spotlight</strong>. Today we break down <strong>${article.title}</strong> from core principles to high-throughput production deployment.</p>`,
+      `<p style="margin:0 0 14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">Hi Engineers,</p><p style="margin:0 0 14px 0;line-height:1.7;color:#cbd5e1;font-size:14px;">Welcome to a specialized <strong>NexusNation Deep-Dive Spotlight</strong>. Today we break down <strong>${article.title}</strong> from core principles to high-throughput production deployment.</p>`,
       intro,
     );
 

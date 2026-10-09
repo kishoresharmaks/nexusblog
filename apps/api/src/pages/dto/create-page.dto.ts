@@ -27,12 +27,12 @@ export class CreatePageDto {
   @IsOptional()
   published?: boolean;
 
-  @ApiPropertyOptional({ example: 'Privacy Policy | NexusBlog' })
+  @ApiPropertyOptional({ example: 'Privacy Policy | NexusNation' })
   @IsString()
   @IsOptional()
   seoTitle?: string;
 
-  @ApiPropertyOptional({ example: 'Comprehensive privacy policy and security practices for NexusBlog.' })
+  @ApiPropertyOptional({ example: 'Comprehensive privacy policy and security practices for NexusNation.' })
   @IsString()
   @IsOptional()
   seoDescription?: string;
