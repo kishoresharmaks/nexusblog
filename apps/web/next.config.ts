@@ -18,6 +18,21 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.nexusnation.in',
+          },
+        ],
+        destination: 'https://nexusnation.in/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     const defaultApiPort = process.env.API_PORT || process.env.INTERNAL_API_PORT || 4000;
     let apiTarget = (
