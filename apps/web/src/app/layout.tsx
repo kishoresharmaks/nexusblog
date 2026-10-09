@@ -7,7 +7,7 @@ import { QueryProvider } from '@/components/query-provider';
 import { AuthProvider } from '@/context/auth-context';
 import { GoogleTag } from '@/components/analytics/google-tag';
 import { PageTracker } from '@/components/analytics/page-tracker';
-import { GoogleAdSenseScript } from '@/components/ads/google-adsense-script';
+import { AdNetworkScripts } from '@/components/ads/ad-network-scripts';
 import { WebSiteOrgJsonLd } from '@/components/seo/json-ld';
 import { Toaster } from 'sonner';
 
@@ -105,7 +105,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthProvider>
-              <GoogleAdSenseScript />
+              <AdNetworkScripts />
               <Suspense fallback={null}>
                 <PageTracker />
               </Suspense>

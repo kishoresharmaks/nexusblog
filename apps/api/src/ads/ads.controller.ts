@@ -11,6 +11,7 @@ import {
   UseGuards,
   UsePipes,
   ValidationPipe,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdsService } from './ads.service';
@@ -41,8 +42,8 @@ export class AdsController {
   @Public()
   @Get('public/placements')
   @ApiOperation({ summary: 'Get all active ad placements for rendering' })
-  getPublicPlacements() {
-    return this.adsService.getPublicPlacements();
+  getPublicPlacements(@Query('path') path?: string) {
+    return this.adsService.getPublicPlacements(path);
   }
 
   @Public()

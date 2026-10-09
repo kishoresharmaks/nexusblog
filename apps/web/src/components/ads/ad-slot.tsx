@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { adsApi } from '@/lib/api-client';
+import { loadEthicalAds } from './ad-network-scripts';
 import { useAuth } from '@/context/auth-context';
 import { ExternalLink, Sparkles, Megaphone } from 'lucide-react';
 
@@ -25,19 +26,27 @@ export function AdSlot({
   const [globalConfig, setGlobalConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const carbonContainerRef = useRef<HTMLDivElement>(null);
+  const adsterraContainerRef = useRef<HTMLDivElement>(null);
   const hasTrackedImpression = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
     Promise.all([
       adsApi.getPublicConfig().catch(() => null),
-      adsApi.getPublicPlacements().catch(() => []),
+      adsApi.getPublicPlacements(typeof window !== 'undefined' ? window.location.pathname : undefined).catch(() => []),
     ])
       .then(([config, placements]) => {
         if (!isMounted) return;
         setGlobalConfig(config);
         if (config?.globalEnabled && placements && Array.isArray(placements)) {
-          const matched = placements.find((p) => p.slug === placementSlug && p.status === 'ACTIVE');
+          const matched = placements.find((p) => {
+            if (p.slug !== placementSlug || p.status !== 'ACTIVE') return false;
+            if (p.network === 'GOOGLE_ADSENSE') return config.googleAdsense?.enabled;
+            if (p.network === 'CARBON_ADS') return config.carbon?.enabled;
+            if (p.network === 'ETHICAL_ADS') return config.ethicalAds?.enabled;
+            if (p.network === 'ADSTERRA') return config.adsterra?.enabled;
+            return true;
+          });
           if (matched) {
             setPlacement(matched);
           }
@@ -83,7 +92,42 @@ export function AdSlot({
       script.src = `//cdn.carbonads.com/carbon.js?serve=${serveId}&placement=${placementName}`;
       script.async = true;
       carbonContainerRef.current.appendChild(script);
+
+      return () => carbonContainerRef.current?.replaceChildren();
     }
+    return undefined;
+  }, [placement, globalConfig]);
+
+  useEffect(() => {
+    if (placement?.network === 'ETHICAL_ADS' && globalConfig?.ethicalAds?.enabled) loadEthicalAds();
+  }, [placement, globalConfig]);
+
+  useEffect(() => {
+    if (placement?.network !== 'ADSTERRA' || !globalConfig?.adsterra?.enabled || !adsterraContainerRef.current) return;
+
+    const scriptUrl = placement.slotId;
+    const containerId = placement.clientOrPublisherId;
+    if (!scriptUrl || !containerId) return;
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(scriptUrl);
+    } catch {
+      return;
+    }
+    if (parsedUrl.protocol !== 'https:' || !parsedUrl.pathname.endsWith('/invoke.js') || !/^container-[a-z0-9_-]+$/i.test(containerId)) return;
+
+    const container = adsterraContainerRef.current;
+    container.replaceChildren();
+    const unit = document.createElement('div');
+    unit.id = containerId;
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = parsedUrl.href;
+    script.setAttribute('data-cfasync', 'false');
+    container.append(unit, script);
+
+    return () => container.replaceChildren();
   }, [placement, globalConfig]);
 
   // If user is authenticated and "hide for logged in" is active, hide all ads
@@ -144,8 +188,16 @@ export function AdSlot({
           <div
             data-ea-publisher={placement.clientOrPublisherId || globalConfig?.ethicalAds?.publisherId || 'nexus-developer-blog'}
             data-ea-type={placement.format === 'RECTANGLE_300x250' ? 'image' : 'text'}
+            data-ea-manual="true"
             className="w-full text-center"
           />
+        </div>
+      )}
+
+      {/* Adsterra Native Banner only; no Popunder, Social Bar, or floating units. */}
+      {placement?.network === 'ADSTERRA' && globalConfig?.adsterra?.enabled && (
+        <div className="flex min-h-[250px] min-w-0 items-center justify-center overflow-hidden py-2">
+          <div ref={adsterraContainerRef} className="w-full min-w-0 max-w-full overflow-hidden" />
         </div>
       )}
 

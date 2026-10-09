@@ -1083,10 +1083,14 @@ export const adsApi = {
         enabled: boolean;
         publisherId: string;
       };
+      adsterra: {
+        enabled: boolean;
+      };
     }>('/ads/public/config', {}, false);
   },
-  async getPublicPlacements() {
-    return request<any[]>('/ads/public/placements', {}, false);
+  async getPublicPlacements(path?: string) {
+    const query = path ? `?path=${encodeURIComponent(path)}` : '';
+    return request<any[]>(`/ads/public/placements${query}`, {}, false);
   },
   async trackImpression(placementSlug: string, visitorId?: string, path?: string) {
     return request<any>('/ads/public/track-impression', {

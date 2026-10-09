@@ -101,6 +101,7 @@ export class AdsService implements OnModuleInit {
         ads_carbon_placement: 'nexusnationin',
         ads_ethical_ads_enabled: 'false',
         ads_ethical_ads_publisher_id: 'nexus-developer-blog',
+        ads_adsterra_enabled: 'false',
         ads_hide_for_logged_in: 'false',
         ads_txt_content: `# NexusNation Ads.txt Verification File
 google.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0
@@ -159,22 +160,45 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
         enabled: configMap['ads_ethical_ads_enabled'] === 'true',
         publisherId: configMap['ads_ethical_ads_publisher_id'] || '',
       },
+      adsterra: {
+        enabled: configMap['ads_adsterra_enabled'] === 'true',
+      },
     };
   }
 
   /**
    * 2. Public active placements
    */
-  async getPublicPlacements() {
+  async getPublicPlacements(path?: string) {
     const globalConfig = await this.getPublicConfig();
     if (!globalConfig.globalEnabled) {
       return [];
     }
 
-    return this.prisma.adPlacement.findMany({
+    const enabledNetworks = new Set([
+      ...(globalConfig.googleAdsense.enabled ? ['GOOGLE_ADSENSE'] : []),
+      ...(globalConfig.carbon.enabled ? ['CARBON_ADS'] : []),
+      ...(globalConfig.ethicalAds.enabled ? ['ETHICAL_ADS'] : []),
+      ...(globalConfig.adsterra.enabled ? ['ADSTERRA'] : []),
+      'CUSTOM_HTML',
+      'CUSTOM_IMAGE',
+    ]);
+
+    const placements = (await this.prisma.adPlacement.findMany({
       where: { status: 'ACTIVE' },
       orderBy: { order: 'asc' },
+    })).filter((placement) => {
+      if (!enabledNetworks.has(placement.network)) return false;
+      if (!path?.startsWith('/') || path.startsWith('//')) return true;
+      return !(placement.excludePaths || []).some((excludedPath) => {
+        const excluded = excludedPath.replace(/\/+$/, '') || '/';
+        return path === excluded || (excluded !== '/' && path.startsWith(`${excluded}/`));
+      });
     });
+
+    // EthicalAds requires one unit and no competing third-party ads on a page.
+    const ethicalPlacement = placements.find((placement) => placement.network === 'ETHICAL_ADS');
+    return ethicalPlacement ? [ethicalPlacement] : placements;
   }
 
   /**
@@ -293,6 +317,7 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
    * 8. Admin: Create new placement
    */
   async createPlacement(dto: CreateAdPlacementDto) {
+    this.validateAdsterraPlacement(dto.network, dto.format, dto.slotId, dto.clientOrPublisherId);
     const existing = await this.prisma.adPlacement.findUnique({ where: { slug: dto.slug } });
     if (existing) {
       throw new BadRequestException(`Placement with slug '${dto.slug}' already exists`);
@@ -324,6 +349,13 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
     const placement = await this.prisma.adPlacement.findUnique({ where: { id } });
     if (!placement) throw new NotFoundException(`Placement with ID ${id} not found`);
 
+    this.validateAdsterraPlacement(
+      dto.network || placement.network,
+      dto.format || placement.format,
+      dto.slotId === undefined ? placement.slotId : dto.slotId,
+      dto.clientOrPublisherId === undefined ? placement.clientOrPublisherId : dto.clientOrPublisherId,
+    );
+
     if (dto.slug && dto.slug !== placement.slug) {
       const conflict = await this.prisma.adPlacement.findUnique({ where: { slug: dto.slug } });
       if (conflict) {
@@ -349,6 +381,27 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
         ...(dto.order !== undefined && { order: dto.order }),
       },
     });
+  }
+
+  private validateAdsterraPlacement(network?: string, format?: string, scriptUrl?: string | null, containerId?: string | null) {
+    if (network !== 'ADSTERRA') return;
+    if (format !== 'IN_FEED') {
+      throw new BadRequestException('Adsterra is configured for inline Native Banner placements only');
+    }
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(scriptUrl || '');
+    } catch {
+      throw new BadRequestException('Adsterra placements require the HTTPS invoke.js URL from the publisher dashboard');
+    }
+
+    if (parsedUrl.protocol !== 'https:' || !parsedUrl.pathname.endsWith('/invoke.js') || parsedUrl.username || parsedUrl.password) {
+      throw new BadRequestException('Adsterra placements require a secure HTTPS invoke.js URL');
+    }
+    if (!containerId || !/^container-[a-z0-9_-]+$/i.test(containerId)) {
+      throw new BadRequestException('Adsterra Native Banner placements require a container ID beginning with "container-"');
+    }
   }
 
   /**
@@ -380,6 +433,7 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
       ads_carbon_placement: '',
       ads_ethical_ads_enabled: false,
       ads_ethical_ads_publisher_id: '',
+      ads_adsterra_enabled: false,
       ads_hide_for_logged_in: false,
     };
 

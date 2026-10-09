@@ -47,6 +47,11 @@ export class UpdateGlobalAdsConfigDto {
   @IsString()
   ads_ethical_ads_publisher_id?: string;
 
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  ads_adsterra_enabled?: boolean;
+
   @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()

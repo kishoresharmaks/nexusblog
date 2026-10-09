@@ -48,6 +48,7 @@ export default function AdminAdsPage() {
     ads_carbon_placement: '',
     ads_ethical_ads_enabled: false,
     ads_ethical_ads_publisher_id: '',
+    ads_adsterra_enabled: false,
     ads_hide_for_logged_in: false,
   });
 
@@ -122,6 +123,7 @@ export default function AdminAdsPage() {
         ads_carbon_placement: String(globalConfig.ads_carbon_placement || ''),
         ads_ethical_ads_enabled: Boolean(globalConfig.ads_ethical_ads_enabled),
         ads_ethical_ads_publisher_id: String(globalConfig.ads_ethical_ads_publisher_id || ''),
+        ads_adsterra_enabled: Boolean(globalConfig.ads_adsterra_enabled),
         ads_hide_for_logged_in: Boolean(globalConfig.ads_hide_for_logged_in),
       };
       const updated = await adsApi.updateAdminConfig(payload);
@@ -249,7 +251,7 @@ export default function AdminAdsPage() {
             Ad Networks &amp; Placement Engine
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Manage Google AdSense, Carbon Ads, EthicalAds, direct sponsorships, ad slots, and ads.txt verification.
+            Manage Google AdSense, Carbon Ads, EthicalAds, Adsterra, direct sponsorships, ad slots, and ads.txt verification.
           </p>
         </div>
 
@@ -448,7 +450,7 @@ export default function AdminAdsPage() {
           </div>
 
           {/* Ad Providers Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-4">
             {/* Provider 1: Google AdSense */}
             <div className="rounded-3xl border border-border/80 bg-card/90 p-6 space-y-4 shadow-sm flex flex-col justify-between">
               <div className="space-y-3">
@@ -649,7 +651,37 @@ export default function AdminAdsPage() {
               </div>
 
               <div className="pt-3 border-t border-border/40 text-[10px] text-muted-foreground">
-                Zero tracking cookies from <a href="https://ethicalads.io" target="_blank" className="text-primary hover:underline">ethicalads.io</a>
+                One EthicalAds unit must be the only third-party ad on that page. <a href="https://www.ethicalads.io/publisher-policy/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Publisher policy ↗</a>
+              </div>
+            </div>
+
+            {/* Provider 4: Adsterra inline native placements */}
+            <div className="rounded-3xl border border-border/80 bg-card/90 p-6 space-y-4 shadow-sm flex flex-col justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-xs font-bold text-violet-400">A</div>
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground">Adsterra</h4>
+                      <p className="text-[10px] font-mono text-muted-foreground">Inline native banner units</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`${globalConfig.ads_adsterra_enabled ? 'Disable' : 'Enable'} Adsterra`}
+                    aria-pressed={Boolean(globalConfig.ads_adsterra_enabled)}
+                    onClick={() => setGlobalConfig((prev) => ({ ...prev, ads_adsterra_enabled: !prev.ads_adsterra_enabled }))}
+                    className="cursor-pointer"
+                  >
+                    {globalConfig.ads_adsterra_enabled ? <ToggleRight className="h-7 w-7 text-emerald-400" /> : <ToggleLeft className="h-7 w-7 text-muted-foreground" />}
+                  </button>
+                </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Enable this network, then add a Native Banner placement using its HTTPS invoke.js URL and container ID. Popunder and Social Bar formats are intentionally excluded to prevent interruptions and overlays.
+                </p>
+              </div>
+              <div className="border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
+                <a href="https://help-publishers.adsterra.com/en/collections/2274770-ad-units-and-code-snippets" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Adsterra publisher setup guide ↗</a>
               </div>
             </div>
           </div>
@@ -997,12 +1029,13 @@ export default function AdminAdsPage() {
                   <label className="text-muted-foreground font-bold">Ad Network</label>
                   <select
                     value={formData.network}
-                    onChange={(e) => setFormData({ ...formData, network: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, network: e.target.value, ...(e.target.value === 'ADSTERRA' ? { format: 'IN_FEED' } : {}) })}
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs cursor-pointer"
                   >
                     <option value="GOOGLE_ADSENSE">Google AdSense</option>
                     <option value="CARBON_ADS">Carbon Ads</option>
                     <option value="ETHICAL_ADS">EthicalAds</option>
+                    <option value="ADSTERRA">Adsterra Native Banner</option>
                     <option value="CUSTOM_IMAGE">Custom Sponsor Image</option>
                     <option value="CUSTOM_HTML">Custom HTML / Script</option>
                   </select>
@@ -1020,6 +1053,7 @@ export default function AdminAdsPage() {
                     <option value="RECTANGLE_300x250">Medium Rectangle 300x250</option>
                     <option value="SKYSCRAPER_160x600">Skyscraper 160x600</option>
                     <option value="IN_ARTICLE">In-Article Native</option>
+                    {formData.network === 'ADSTERRA' && <option value="IN_FEED">Native Banner</option>}
                   </select>
                 </div>
 
@@ -1055,6 +1089,34 @@ export default function AdminAdsPage() {
                     <input
                       type="text"
                       placeholder="ca-pub-9847291823746501"
+                      value={formData.clientOrPublisherId}
+                      onChange={(e) => setFormData({ ...formData, clientOrPublisherId: e.target.value })}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formData.network === 'ADSTERRA' && (
+                <div className="space-y-3 border-t border-border/40 pt-3">
+                  <p className="text-xs leading-5 text-muted-foreground">From your Adsterra publisher dashboard, create a Native Banner unit and copy its script URL and container ID. Use a different unit for each placement.</p>
+                  <div className="space-y-1">
+                    <label className="text-muted-foreground">Native banner invoke.js URL</label>
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://pl…/invoke.js"
+                      value={formData.slotId}
+                      onChange={(e) => setFormData({ ...formData, slotId: e.target.value })}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-muted-foreground">Native banner container ID</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="container-…"
                       value={formData.clientOrPublisherId}
                       onChange={(e) => setFormData({ ...formData, clientOrPublisherId: e.target.value })}
                       className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground text-xs"
