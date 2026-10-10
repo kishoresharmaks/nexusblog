@@ -50,6 +50,14 @@ export default function AdminAdsPage() {
     ads_ethical_ads_publisher_id: '',
     ads_adsterra_enabled: false,
     ads_hide_for_logged_in: false,
+    ads_interstitial_enabled: false,
+    ads_interstitial_timer_seconds: 5,
+    ads_interstitial_frequency_minutes: 10,
+    ads_interstitial_network: 'CUSTOM_HTML',
+    ads_interstitial_custom_html: '',
+    ads_interstitial_custom_image: '',
+    ads_interstitial_custom_url: '',
+    ads_interstitial_title: 'Sponsored Architecture Briefing',
   });
 
   const [placements, setPlacements] = useState<any[]>([]);
@@ -125,6 +133,14 @@ export default function AdminAdsPage() {
         ads_ethical_ads_publisher_id: String(globalConfig.ads_ethical_ads_publisher_id || ''),
         ads_adsterra_enabled: Boolean(globalConfig.ads_adsterra_enabled),
         ads_hide_for_logged_in: Boolean(globalConfig.ads_hide_for_logged_in),
+        ads_interstitial_enabled: Boolean(globalConfig.ads_interstitial_enabled),
+        ads_interstitial_timer_seconds: Number(globalConfig.ads_interstitial_timer_seconds || 5),
+        ads_interstitial_frequency_minutes: Number(globalConfig.ads_interstitial_frequency_minutes || 10),
+        ads_interstitial_network: String(globalConfig.ads_interstitial_network || 'CUSTOM_HTML'),
+        ads_interstitial_custom_html: String(globalConfig.ads_interstitial_custom_html || ''),
+        ads_interstitial_custom_image: String(globalConfig.ads_interstitial_custom_image || ''),
+        ads_interstitial_custom_url: String(globalConfig.ads_interstitial_custom_url || ''),
+        ads_interstitial_title: String(globalConfig.ads_interstitial_title || 'Sponsored Architecture Briefing'),
       };
       const updated = await adsApi.updateAdminConfig(payload);
       if (updated) setGlobalConfig(updated);
@@ -682,6 +698,163 @@ export default function AdminAdsPage() {
               </div>
               <div className="border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
                 <a href="https://help-publishers.adsterra.com/en/collections/2274770-ad-units-and-code-snippets" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Adsterra publisher setup guide ↗</a>
+              </div>
+            </div>
+
+            {/* Provider 5: Interstitial / Vignette Full-Page Ads */}
+            <div className="rounded-3xl border border-border/80 bg-card/90 p-6 space-y-4 shadow-sm flex flex-col justify-between col-span-1 md:col-span-2">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 text-xs font-bold text-amber-400">
+                      V
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground">Full-Page Interstitial / Vignette Ads</h4>
+                      <p className="text-[10px] font-mono text-muted-foreground">Full-screen overlay ad with countdown timer &amp; close skip button before reading</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setGlobalConfig((prev) => ({
+                        ...prev,
+                        ads_interstitial_enabled: !prev.ads_interstitial_enabled,
+                      }))
+                    }
+                    className="cursor-pointer"
+                  >
+                    {globalConfig.ads_interstitial_enabled ? (
+                      <ToggleRight className="h-7 w-7 text-emerald-400" />
+                    ) : (
+                      <ToggleLeft className="h-7 w-7 text-muted-foreground" />
+                    )}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
+                  <div className="space-y-1">
+                    <label className="text-muted-foreground font-bold">Timer Seconds (Countdown)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={60}
+                      value={globalConfig.ads_interstitial_timer_seconds ?? 5}
+                      onChange={(e) =>
+                        setGlobalConfig((prev) => ({
+                          ...prev,
+                          ads_interstitial_timer_seconds: parseInt(e.target.value, 10) || 0,
+                        }))
+                      }
+                      className="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                    <span className="text-[10px] text-muted-foreground">Seconds before Skip button activates</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-muted-foreground font-bold">Frequency Cap (Minutes)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={1440}
+                      value={globalConfig.ads_interstitial_frequency_minutes ?? 10}
+                      onChange={(e) =>
+                        setGlobalConfig((prev) => ({
+                          ...prev,
+                          ads_interstitial_frequency_minutes: parseInt(e.target.value, 10) || 0,
+                        }))
+                      }
+                      className="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                    <span className="text-[10px] text-muted-foreground">Min gap between interstitials per user</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-muted-foreground font-bold">Ad Format Mode</label>
+                    <select
+                      value={globalConfig.ads_interstitial_network || 'CUSTOM_HTML'}
+                      onChange={(e) =>
+                        setGlobalConfig((prev) => ({
+                          ...prev,
+                          ads_interstitial_network: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs cursor-pointer"
+                    >
+                      <option value="CUSTOM_HTML">Custom HTML / Script / Adsterra</option>
+                      <option value="CUSTOM_IMAGE">Custom Sponsor Image Banner</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-3 font-mono text-xs pt-2 border-t border-border/40">
+                  <div className="space-y-1">
+                    <label className="text-muted-foreground font-bold">Vignette Header Title</label>
+                    <input
+                      type="text"
+                      placeholder="Sponsored Architecture Briefing"
+                      value={globalConfig.ads_interstitial_title || ''}
+                      onChange={(e) =>
+                        setGlobalConfig((prev) => ({
+                          ...prev,
+                          ads_interstitial_title: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
+                    />
+                  </div>
+
+                  {globalConfig.ads_interstitial_network !== 'CUSTOM_IMAGE' ? (
+                    <div className="space-y-1">
+                      <label className="text-muted-foreground font-bold">Interstitial Script / HTML Embed Code</label>
+                      <textarea
+                        rows={3}
+                        placeholder="<script src='https://bendspecimen.com/.../invoke.js'></script><div id='container-...'></div>"
+                        value={globalConfig.ads_interstitial_custom_html || ''}
+                        onChange={(e) =>
+                          setGlobalConfig((prev) => ({
+                            ...prev,
+                            ads_interstitial_custom_html: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-xl border border-border bg-zinc-950 p-3 text-emerald-400 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-muted-foreground font-bold">Sponsor Image URL</label>
+                        <input
+                          type="text"
+                          placeholder="https://images.unsplash.com/..."
+                          value={globalConfig.ads_interstitial_custom_image || ''}
+                          onChange={(e) =>
+                            setGlobalConfig((prev) => ({
+                              ...prev,
+                              ads_interstitial_custom_image: e.target.value,
+                            }))
+                          }
+                          className="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-foreground text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-muted-foreground font-bold">Destination Target URL</label>
+                        <input
+                          type="text"
+                          placeholder="https://partner.com"
+                          value={globalConfig.ads_interstitial_custom_url || ''}
+                          onChange={(e) =>
+                            setGlobalConfig((prev) => ({
+                              ...prev,
+                              ads_interstitial_custom_url: e.target.value,
+                            }))
+                          }
+                          className="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-foreground text-xs"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

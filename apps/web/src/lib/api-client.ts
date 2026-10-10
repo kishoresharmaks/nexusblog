@@ -1088,6 +1088,16 @@ export const adsApi = {
       adsterra: {
         enabled: boolean;
       };
+      interstitial?: {
+        enabled: boolean;
+        timerSeconds: number;
+        frequencyMinutes: number;
+        network: string;
+        customHtml: string;
+        customImage: string;
+        customUrl: string;
+        title: string;
+      };
     }>('/ads/public/config', {}, false);
   },
   async getPublicPlacements(path?: string) {

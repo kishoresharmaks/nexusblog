@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { adsApi } from '@/lib/api-client';
-import { loadEthicalAds } from './ad-network-scripts';
+import { loadEthicalAds, patchDuplicateContainerGetElementById } from './ad-network-scripts';
 import { useAuth } from '@/context/auth-context';
 import { ExternalLink, Sparkles, Megaphone } from 'lucide-react';
 
@@ -28,6 +28,10 @@ export function AdSlot({
   const carbonContainerRef = useRef<HTMLDivElement>(null);
   const adsterraContainerRef = useRef<HTMLDivElement>(null);
   const hasTrackedImpression = useRef(false);
+
+  useEffect(() => {
+    patchDuplicateContainerGetElementById();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -144,7 +148,7 @@ export function AdSlot({
     return () => container.replaceChildren();
   }, [placement, globalConfig]);
 
-  // Effect to safely render CUSTOM_HTML and execute embedded script tags (e.g. Adsterra or third-party ad scripts)
+  // Effect to safely render CUSTOM_HTML and execute embedded script tags across all ad formats
   useEffect(() => {
     if (placement?.network !== 'CUSTOM_HTML' || !placement.customHtml || !customHtmlContainerRef.current) return;
 
@@ -155,9 +159,34 @@ export function AdSlot({
     range.selectNode(container);
     const fragment = range.createContextualFragment(placement.customHtml);
 
-    // Replace script elements with newly created ones so the browser executes them
-    const oldScripts = Array.from(fragment.querySelectorAll('script'));
-    oldScripts.forEach((oldScript) => {
+    // 1. Separate scripts and non-script DOM elements
+    const scripts: HTMLScriptElement[] = [];
+    const nonScripts: Node[] = [];
+
+    Array.from(fragment.childNodes).forEach((node) => {
+      if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === 'SCRIPT') {
+        scripts.push(node as HTMLScriptElement);
+      } else {
+        nonScripts.push(node);
+      }
+    });
+
+    // Extract any nested script tags inside container markup elements
+    nonScripts.forEach((ns) => {
+      if (ns.nodeType === Node.ELEMENT_NODE) {
+        const nestedScripts = Array.from((ns as HTMLElement).querySelectorAll('script'));
+        nestedScripts.forEach((s) => {
+          scripts.push(s);
+          s.remove();
+        });
+      }
+    });
+
+    // 2. Append all HTML markup & container DIVs FIRST so they are present in the DOM
+    nonScripts.forEach((node) => container.appendChild(node));
+
+    // 3. Create and append executable script elements SECOND so scripts find their container DIVs
+    scripts.forEach((oldScript) => {
       const newScript = document.createElement('script');
       Array.from(oldScript.attributes).forEach((attr) => {
         newScript.setAttribute(attr.name, attr.value);
@@ -165,15 +194,33 @@ export function AdSlot({
       if (oldScript.textContent) {
         newScript.textContent = oldScript.textContent;
       }
-      oldScript.parentNode?.replaceChild(newScript, oldScript);
+      container.appendChild(newScript);
     });
-
-    container.appendChild(fragment);
 
     return () => {
       container.replaceChildren();
     };
   }, [placement]);
+
+  // Compute format styling & minHeight dynamically across all 5 standard ad formats
+  const formatConfig = React.useMemo(() => {
+    const fmt = placement?.format;
+    switch (fmt) {
+      case 'BANNER_728x90':
+        return { minH: 90, formatClass: 'max-w-[728px]' };
+      case 'RECTANGLE_300x250':
+        return { minH: 250, formatClass: 'max-w-[336px]' };
+      case 'SKYSCRAPER_160x600':
+        return { minH: 600, formatClass: 'max-w-[200px]' };
+      case 'IN_ARTICLE':
+        return { minH: 120, formatClass: 'max-w-3xl' };
+      case 'RESPONSIVE':
+      default:
+        return { minH: minHeight, formatClass: 'w-full' };
+    }
+  }, [placement?.format, minHeight]);
+
+  const effectiveMinHeight = Math.max(minHeight, formatConfig.minH);
 
   // If user is authenticated and "hide for logged in" is active, hide all ads
   if (globalConfig?.hideForLoggedIn && user) {
@@ -193,8 +240,8 @@ export function AdSlot({
 
   return (
     <div
-      className={`relative my-6 mx-auto w-full overflow-hidden rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3 transition-all ${className}`}
-      style={{ minHeight: `${minHeight}px` }}
+      className={`relative my-6 mx-auto w-full overflow-hidden rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3 transition-all ${formatConfig.formatClass} ${className}`}
+      style={{ minHeight: `${effectiveMinHeight}px` }}
     >
       {/* Subtle Ad Badge Label */}
       <div className="flex items-center justify-between pb-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground/80 border-b border-border/30 mb-2">
@@ -210,7 +257,7 @@ export function AdSlot({
         <div className="flex items-center justify-center overflow-hidden py-1">
           <ins
             className="adsbygoogle"
-            style={{ display: 'block', textAlign: 'center', minHeight: `${minHeight - 30}px`, width: '100%' }}
+            style={{ display: 'block', textAlign: 'center', minHeight: `${effectiveMinHeight - 30}px`, width: '100%' }}
             data-ad-client={placement.clientOrPublisherId || globalConfig?.googleAdsense?.clientId}
             data-ad-slot={placement.slotId || '1234567890'}
             data-ad-format={placement.format === 'RESPONSIVE' ? 'auto' : 'rectangle'}

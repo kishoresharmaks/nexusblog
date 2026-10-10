@@ -10,6 +10,7 @@ import { MaintenanceView } from '@/components/public/maintenance-view';
 import { useAuth } from '@/context/auth-context';
 import { systemSettingsApi } from '@/lib/api-client';
 import { AlertTriangle, Sliders } from 'lucide-react';
+import { InterstitialAd } from '@/components/ads/interstitial-ad';
 
 export default function PublicLayout({
   children,
@@ -82,6 +83,7 @@ export default function PublicLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <InterstitialAd />
       {/* Staff Maintenance Warning Banner */}
       {maintenanceMode && isStaff && (
         <div className="sticky top-0 z-[60] bg-amber-500/15 backdrop-blur-md border-b border-amber-500/30 px-4 py-2 text-xs text-amber-300 flex flex-wrap items-center justify-between gap-2 font-mono">

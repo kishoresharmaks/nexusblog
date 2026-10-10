@@ -103,6 +103,14 @@ export class AdsService implements OnModuleInit {
         ads_ethical_ads_publisher_id: 'nexus-developer-blog',
         ads_adsterra_enabled: 'false',
         ads_hide_for_logged_in: 'false',
+        ads_interstitial_enabled: 'false',
+        ads_interstitial_timer_seconds: '5',
+        ads_interstitial_frequency_minutes: '10',
+        ads_interstitial_network: 'CUSTOM_HTML',
+        ads_interstitial_custom_html: '<script async="async" data-cfasync="false" src="https://bendspecimen.com/bd678b45243cf1ba0c91ec1cfad866d2/invoke.js"></script>\n<div id="container-bd678b45243cf1ba0c91ec1cfad866d2"></div>',
+        ads_interstitial_custom_image: '',
+        ads_interstitial_custom_url: '',
+        ads_interstitial_title: 'Sponsored Architecture Briefing',
         ads_txt_content: `# NexusNation Ads.txt Verification File
 google.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0
 buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
@@ -162,6 +170,16 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
       },
       adsterra: {
         enabled: configMap['ads_adsterra_enabled'] === 'true',
+      },
+      interstitial: {
+        enabled: configMap['ads_interstitial_enabled'] === 'true',
+        timerSeconds: Number(configMap['ads_interstitial_timer_seconds'] || '5'),
+        frequencyMinutes: Number(configMap['ads_interstitial_frequency_minutes'] || '10'),
+        network: configMap['ads_interstitial_network'] || 'CUSTOM_HTML',
+        customHtml: configMap['ads_interstitial_custom_html'] || '',
+        customImage: configMap['ads_interstitial_custom_image'] || '',
+        customUrl: configMap['ads_interstitial_custom_url'] || '',
+        title: configMap['ads_interstitial_title'] || 'Sponsored Architecture Briefing',
       },
     };
   }
@@ -435,6 +453,14 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
       ads_ethical_ads_publisher_id: '',
       ads_adsterra_enabled: false,
       ads_hide_for_logged_in: false,
+      ads_interstitial_enabled: false,
+      ads_interstitial_timer_seconds: 5,
+      ads_interstitial_frequency_minutes: 10,
+      ads_interstitial_network: 'CUSTOM_HTML',
+      ads_interstitial_custom_html: '<script async="async" data-cfasync="false" src="https://bendspecimen.com/bd678b45243cf1ba0c91ec1cfad866d2/invoke.js"></script>\n<div id="container-bd678b45243cf1ba0c91ec1cfad866d2"></div>',
+      ads_interstitial_custom_image: '',
+      ads_interstitial_custom_url: '',
+      ads_interstitial_title: 'Sponsored Architecture Briefing',
     };
 
     settings.forEach((s) => {

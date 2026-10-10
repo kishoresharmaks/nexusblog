@@ -57,6 +57,44 @@ export class UpdateGlobalAdsConfigDto {
   @IsBoolean()
   ads_hide_for_logged_in?: boolean;
 
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  ads_interstitial_enabled?: boolean;
+
+  @ApiPropertyOptional({ example: 5 })
+  @IsOptional()
+  ads_interstitial_timer_seconds?: number;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  ads_interstitial_frequency_minutes?: number;
+
+  @ApiPropertyOptional({ example: 'ADSTERRA' })
+  @IsOptional()
+  @IsString()
+  ads_interstitial_network?: string;
+
+  @ApiPropertyOptional({ example: '<script...></script>' })
+  @IsOptional()
+  @IsString()
+  ads_interstitial_custom_html?: string;
+
+  @ApiPropertyOptional({ example: 'https://images.unsplash.com/...' })
+  @IsOptional()
+  @IsString()
+  ads_interstitial_custom_image?: string;
+
+  @ApiPropertyOptional({ example: 'https://partner.com' })
+  @IsOptional()
+  @IsString()
+  ads_interstitial_custom_url?: string;
+
+  @ApiPropertyOptional({ example: 'Sponsored Architecture Briefing' })
+  @IsOptional()
+  @IsString()
+  ads_interstitial_title?: string;
+
   @ApiPropertyOptional({ example: 'google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0' })
   @IsOptional()
   @IsString()
