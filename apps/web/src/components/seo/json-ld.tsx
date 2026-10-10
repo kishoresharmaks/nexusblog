@@ -148,6 +148,70 @@ export function ArticleJsonLd({
   );
 }
 
+interface AuthorProfileJsonLdProps {
+  name: string;
+  username: string;
+  description: string;
+  url: string;
+  pageUrl?: string;
+  image?: string;
+  sameAs?: string[];
+}
+
+export function AuthorProfileJsonLd({
+  name,
+  username,
+  description,
+  url,
+  pageUrl = url,
+  image,
+  sameAs = [],
+}: AuthorProfileJsonLdProps) {
+  const base = (siteConfig.url || 'https://nexusnation.in').replace(/\/+$/, '');
+  const personId = `${url}#person`;
+  const schema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'ProfilePage',
+        '@id': `${pageUrl}#profile`,
+        url: pageUrl,
+        name: `${name} — Author Profile`,
+        description,
+        inLanguage: 'en',
+        isPartOf: { '@id': `${base}/#website` },
+        mainEntity: { '@id': personId },
+        breadcrumb: { '@id': `${pageUrl}#breadcrumbs` },
+      },
+      {
+        '@type': 'Person',
+        '@id': personId,
+        name,
+        url: `${base}/authors/${encodeURIComponent(username)}`,
+        description,
+        ...(image ? { image } : {}),
+        ...(sameAs.length ? { sameAs } : {}),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': `${pageUrl}#breadcrumbs`,
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
+          { '@type': 'ListItem', position: 2, name: 'Articles', item: `${base}/articles` },
+          { '@type': 'ListItem', position: 3, name, item: `${base}/authors/${encodeURIComponent(username)}` },
+        ],
+      },
+    ],
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  );
+}
+
 interface BreadcrumbItem {
   name: string;
   item: string;

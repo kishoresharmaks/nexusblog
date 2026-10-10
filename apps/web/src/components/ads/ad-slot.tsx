@@ -98,6 +98,8 @@ export function AdSlot({
     return undefined;
   }, [placement, globalConfig]);
 
+  const customHtmlContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (placement?.network === 'ETHICAL_ADS' && globalConfig?.ethicalAds?.enabled) loadEthicalAds();
   }, [placement, globalConfig]);
@@ -105,8 +107,20 @@ export function AdSlot({
   useEffect(() => {
     if (placement?.network !== 'ADSTERRA' || !globalConfig?.adsterra?.enabled || !adsterraContainerRef.current) return;
 
-    const scriptUrl = placement.slotId;
-    const containerId = placement.clientOrPublisherId;
+    let scriptUrl = placement.slotId || '';
+    let containerId = placement.clientOrPublisherId || '';
+
+    // If slotId or customHtml contains full HTML snippet, extract script URL and container ID
+    const combinedSource = `${scriptUrl} ${placement.customHtml || ''} ${containerId}`;
+    if (!scriptUrl || !scriptUrl.startsWith('http')) {
+      const srcMatch = combinedSource.match(/src=["'](https?:[^"']+\/invoke\.js)["']/i);
+      if (srcMatch) scriptUrl = srcMatch[1];
+    }
+    if (!containerId || !containerId.startsWith('container-')) {
+      const idMatch = combinedSource.match(/id=["'](container-[a-z0-9_-]+)["']/i);
+      if (idMatch) containerId = idMatch[1];
+    }
+
     if (!scriptUrl || !containerId) return;
 
     let parsedUrl: URL;
@@ -129,6 +143,37 @@ export function AdSlot({
 
     return () => container.replaceChildren();
   }, [placement, globalConfig]);
+
+  // Effect to safely render CUSTOM_HTML and execute embedded script tags (e.g. Adsterra or third-party ad scripts)
+  useEffect(() => {
+    if (placement?.network !== 'CUSTOM_HTML' || !placement.customHtml || !customHtmlContainerRef.current) return;
+
+    const container = customHtmlContainerRef.current;
+    container.replaceChildren();
+
+    const range = document.createRange();
+    range.selectNode(container);
+    const fragment = range.createContextualFragment(placement.customHtml);
+
+    // Replace script elements with newly created ones so the browser executes them
+    const oldScripts = Array.from(fragment.querySelectorAll('script'));
+    oldScripts.forEach((oldScript) => {
+      const newScript = document.createElement('script');
+      Array.from(oldScript.attributes).forEach((attr) => {
+        newScript.setAttribute(attr.name, attr.value);
+      });
+      if (oldScript.textContent) {
+        newScript.textContent = oldScript.textContent;
+      }
+      oldScript.parentNode?.replaceChild(newScript, oldScript);
+    });
+
+    container.appendChild(fragment);
+
+    return () => {
+      container.replaceChildren();
+    };
+  }, [placement]);
 
   // If user is authenticated and "hide for logged in" is active, hide all ads
   if (globalConfig?.hideForLoggedIn && user) {
@@ -228,9 +273,9 @@ export function AdSlot({
       {/* 5. Custom HTML / Affiliate Embed */}
       {placement?.network === 'CUSTOM_HTML' && placement.customHtml && (
         <div
+          ref={customHtmlContainerRef}
           onClick={handleCustomClick}
-          className="w-full overflow-x-auto text-sm"
-          dangerouslySetInnerHTML={{ __html: placement.customHtml }}
+          className="w-full overflow-x-auto text-sm min-h-[90px]"
         />
       )}
     </div>

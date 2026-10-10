@@ -287,7 +287,7 @@ export function Navbar({ onOpenSearch }: NavbarProps) {
                           >
                             <IconComponent className="h-4 w-4" />
                           </div>
-                          <div className="space-y-0.5">
+                          <div className="min-w-0 flex-1 space-y-0.5">
                             <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
                               {cat.name}
                             </p>

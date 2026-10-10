@@ -16,6 +16,11 @@ export class QueryArticleDto {
   @IsOptional()
   search?: string;
 
+  @ApiPropertyOptional({ example: 'author-id' })
+  @IsString()
+  @IsOptional()
+  authorId?: string;
+
   @ApiPropertyOptional({ example: 'system-design' })
   @IsString()
   @IsOptional()

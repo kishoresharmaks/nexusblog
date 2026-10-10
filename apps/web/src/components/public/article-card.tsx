@@ -211,7 +211,11 @@ export function ArticleCard({ article, featured = false }: ArticleCardProps) {
                 </div>
               )}
               <span className="font-medium text-foreground truncate max-w-[100px] sm:max-w-[130px]">
-                {authorDisplayName}
+                {article.author?.username && !isGuest ? (
+                  <Link href={`/authors/${encodeURIComponent(article.author.username)}`} className="hover:text-primary transition-colors">
+                    {authorDisplayName}
+                  </Link>
+                ) : authorDisplayName}
               </span>
               {isGuest && (
                 <span className="rounded bg-amber-500/10 text-amber-500 border border-amber-500/30 px-1 py-0.2 text-[9px] font-mono font-semibold shrink-0">

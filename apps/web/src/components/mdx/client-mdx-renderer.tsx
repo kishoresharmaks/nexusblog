@@ -35,6 +35,44 @@ function getHeadingId(children: any): string | undefined {
   return text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
 }
 
+function ExecutableScript({ src, children, node, ...props }: any) {
+  const containerRef = React.useRef<HTMLSpanElement>(null);
+
+  React.useEffect(() => {
+    if (!containerRef.current) return;
+    const parent = containerRef.current.parentElement || document.body;
+    const script = document.createElement('script');
+
+    if (src) script.src = src;
+
+    Object.keys(props).forEach((key) => {
+      if (key.startsWith('data-') || key === 'async' || key === 'defer' || key === 'type' || key === 'data-cfasync') {
+        const attrName = key;
+        const attrValue = props[key];
+        if (typeof attrValue === 'boolean') {
+          if (attrValue) script.setAttribute(attrName, '');
+        } else if (attrValue !== undefined && attrValue !== null) {
+          script.setAttribute(attrName, String(attrValue));
+        }
+      }
+    });
+
+    if (typeof children === 'string' && children.trim()) {
+      script.textContent = children;
+    } else if (Array.isArray(children)) {
+      script.textContent = children.join('');
+    }
+
+    parent.appendChild(script);
+
+    return () => {
+      script.remove();
+    };
+  }, [src, children, props]);
+
+  return <span ref={containerRef} style={{ display: 'none' }} />;
+}
+
 export interface ClientMdxRendererProps {
   content?: string;
   source?: string;
@@ -385,6 +423,11 @@ export function ClientMdxRenderer({
           {...props}
         />
       </div>
+    ),
+    script: ({ src, children, node, ...props }: any) => (
+      <ExecutableScript src={src} node={node} {...props}>
+        {children}
+      </ExecutableScript>
     ),
     ...(externalComponents || {}),
   };

@@ -72,7 +72,7 @@ export class UsersService {
         _count: {
           select: {
             articles: {
-              where: { status: 'PUBLISHED' },
+              where: { status: 'PUBLISHED', type: { not: 'INCIDENT' } },
             },
           },
         },
@@ -94,6 +94,22 @@ export class UsersService {
         articlesCount: user._count.articles,
       },
     };
+  }
+
+  async getPublicAuthors() {
+    return this.prisma.user.findMany({
+      where: {
+        status: 'ACTIVE',
+        articles: {
+          some: { status: 'PUBLISHED', type: { not: 'INCIDENT' } },
+        },
+      },
+      select: {
+        username: true,
+        updatedAt: true,
+      },
+      orderBy: { username: 'asc' },
+    });
   }
 
   async updateProfile(userId: string, dto: UpdateUserProfileDto) {
@@ -384,4 +400,3 @@ export class UsersService {
     return { success: true, message: `User @${user.username} has been successfully removed` };
   }
 }
-

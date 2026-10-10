@@ -83,6 +83,7 @@ Allow: /technologies
 Allow: /series
 Allow: /case-studies
 Allow: /tags
+Allow: /authors/*
 Allow: /write-for-us
 Allow: /privacy-policy
 Allow: /terms-of-service

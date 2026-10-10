@@ -196,6 +196,7 @@ export const articlesApi = {
     page?: number;
     limit?: number;
     search?: string;
+    authorId?: string;
     categorySlug?: string;
     technologySlug?: string;
     tagSlug?: string;
@@ -207,6 +208,7 @@ export const articlesApi = {
     if (params.page) query.set('page', String(params.page));
     if (params.limit) query.set('limit', String(params.limit));
     if (params.search) query.set('search', params.search);
+    if (params.authorId) query.set('authorId', params.authorId);
     if (params.categorySlug) query.set('categorySlug', params.categorySlug);
     if (params.technologySlug) query.set('technologySlug', params.technologySlug);
     if (params.tagSlug) query.set('tagSlug', params.tagSlug);
@@ -1224,7 +1226,6 @@ export const shortenerApi = {
     }, true);
   },
 };
-
 
 
 

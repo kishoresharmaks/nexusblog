@@ -174,6 +174,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  let authorRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const authorsRes = await fetch(`${siteConfig.apiUrl}/users/authors`, {
+      next: { revalidate: 300 },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (authorsRes.ok) {
+      const authorData = await authorsRes.json();
+      const authors = Array.isArray(authorData?.data)
+        ? authorData.data
+        : Array.isArray(authorData) ? authorData : [];
+      authorRoutes = authors
+        .filter((author: any) => author.username)
+        .map((author: any) => ({
+          url: `${baseUrl}/authors/${encodeURIComponent(author.username)}`,
+          lastModified: author.updatedAt ? new Date(author.updatedAt) : new Date(),
+          changeFrequency: 'monthly' as const,
+          priority: 0.6,
+        }));
+    }
+  } catch {
+    // Author profiles remain discoverable through article bylines if the API is unavailable.
+  }
+
   // Dynamic published articles
   let articleRoutes: MetadataRoute.Sitemap = [];
   try {
@@ -268,6 +292,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticRoutes,
     ...categoryRoutes,
     ...techRoutes,
+    ...authorRoutes,
     ...articleRoutes,
     ...incidentRoutes,
     ...cmsPageRoutes,

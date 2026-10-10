@@ -87,6 +87,13 @@ export class UsersController {
   }
 
   @Public()
+  @Get('authors')
+  @ApiOperation({ summary: 'List public profiles with published technical articles' })
+  getPublicAuthors() {
+    return this.usersService.getPublicAuthors();
+  }
+
+  @Public()
   @Get('author/:username')
   @ApiOperation({ summary: 'Get public author profile by username' })
   getPublicAuthor(@Param('username') username: string) {
@@ -129,4 +136,3 @@ export class UsersController {
     return this.usersService.revokeAllOtherSessions(userId);
   }
 }
-

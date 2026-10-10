@@ -152,6 +152,9 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
   const authorUsername = article.guestAuthorName
     ? article.guestAuthorName.toLowerCase().replace(/\s+/g, '')
     : (article.author?.username || 'nexusdev');
+  const authorProfileUrl = !isGuestPost && article.author?.username
+    ? `/authors/${encodeURIComponent(article.author.username)}`
+    : null;
   const authorBio = isGuestPost
     ? 'Guest technical contributor to NexusNation engineering community.'
     : (article.author?.bio || 'Core technical contributor to NexusNation.');
@@ -253,6 +256,7 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
         slug={article.slug}
         datePublished={article.publishedAt && !isNaN(new Date(article.publishedAt).getTime()) ? new Date(article.publishedAt).toISOString() : new Date().toISOString()}
         authorName={authorName}
+        authorUrl={authorProfileUrl ? `${(siteConfig.url || 'https://nexusnation.in').replace(/\/+$/, '')}${authorProfileUrl}` : undefined}
         category={categoryName}
       />
       <BreadcrumbJsonLd
@@ -349,7 +353,11 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground">{authorName}</span>
+                    {authorProfileUrl ? (
+                      <Link href={authorProfileUrl} className="font-semibold text-foreground hover:text-primary transition-colors">{authorName}</Link>
+                    ) : (
+                      <span className="font-semibold text-foreground">{authorName}</span>
+                    )}
                     {isGuestPost && (
                       <span className="rounded bg-amber-500/10 text-amber-500 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-mono font-semibold">
                         Guest Contributor
@@ -657,7 +665,9 @@ export default async function ArticleDetailPage({ params }: ArticlePageProps) {
                   {authorName.charAt(0)}
                 </div>
                 <div>
-                  <h4 className="font-bold text-foreground text-sm">{authorName}</h4>
+                  <h4 className="font-bold text-sm text-foreground">
+                    {authorProfileUrl ? <Link href={authorProfileUrl} className="hover:text-primary transition-colors">{authorName}</Link> : authorName}
+                  </h4>
                   <p className="text-xs text-muted-foreground font-mono">@{authorUsername}</p>
                 </div>
               </div>

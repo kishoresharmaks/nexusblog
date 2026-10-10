@@ -228,6 +228,10 @@ export class ArticlesService {
       status: ArticleStatus.PUBLISHED,
     };
 
+    if (query.authorId) {
+      where.authorId = query.authorId;
+    }
+
     if (query.search && query.search.trim().length > 0) {
       const term = query.search.trim();
       where.OR = [
