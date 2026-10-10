@@ -4,10 +4,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
-  let adsTxtContent = `# NexusNation Ads.txt Verification File
-google.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0
-buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
-`;
+  let adsTxtContent = '# NexusNation Ads.txt — add only seller accounts authorized for this domain\n';
 
   try {
     const res = await fetch(`${siteConfig.apiUrl}/ads/public/ads-txt`, {
@@ -43,7 +40,7 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
     status: 200,
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
+      'Cache-Control': 'no-store, max-age=0',
     },
   });
 }

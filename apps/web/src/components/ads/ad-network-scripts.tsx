@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { adsApi } from '@/lib/api-client';
+import { useAuth } from '@/context/auth-context';
+import { usePathname } from 'next/navigation';
 
 export function patchDuplicateContainerGetElementById() {
   if (typeof window === 'undefined' || (window as any).__nexus_ad_id_patched) return;
@@ -53,14 +55,21 @@ export function loadEthicalAds() {
 }
 
 export function AdNetworkScripts() {
+  const { user, isLoading: authLoading } = useAuth();
+  const pathname = usePathname();
   const [config, setConfig] = useState<Awaited<ReturnType<typeof adsApi.getPublicConfig>> | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     patchDuplicateContainerGetElementById();
-    adsApi.getPublicConfig().then(setConfig).catch(() => {});
-  }, []);
+    if (authLoading) return () => { isMounted = false; };
+    adsApi.getPublicConfig().then((nextConfig) => {
+      if (isMounted) setConfig(nextConfig);
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, [authLoading, pathname]);
 
-  if (!config?.globalEnabled) return null;
+  if (authLoading || !config?.globalEnabled || (config.hideForLoggedIn && user)) return null;
 
   return (
     <>

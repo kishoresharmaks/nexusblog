@@ -39,10 +39,9 @@ export default function AdminAdsPage() {
 
   // Data states
   const [globalConfig, setGlobalConfig] = useState<Record<string, any>>({
-    ads_global_enabled: true,
-    ads_google_adsense_enabled: true,
+    ads_global_enabled: false,
+    ads_google_adsense_enabled: false,
     ads_google_adsense_client_id: '',
-    ads_google_adsense_auto_ads: false,
     ads_carbon_enabled: false,
     ads_carbon_serve_id: '',
     ads_carbon_placement: '',
@@ -125,7 +124,6 @@ export default function AdminAdsPage() {
         ads_global_enabled: Boolean(globalConfig.ads_global_enabled),
         ads_google_adsense_enabled: Boolean(globalConfig.ads_google_adsense_enabled),
         ads_google_adsense_client_id: String(globalConfig.ads_google_adsense_client_id || ''),
-        ads_google_adsense_auto_ads: Boolean(globalConfig.ads_google_adsense_auto_ads),
         ads_carbon_enabled: Boolean(globalConfig.ads_carbon_enabled),
         ads_carbon_serve_id: String(globalConfig.ads_carbon_serve_id || ''),
         ads_carbon_placement: String(globalConfig.ads_carbon_placement || ''),
@@ -134,8 +132,8 @@ export default function AdminAdsPage() {
         ads_adsterra_enabled: Boolean(globalConfig.ads_adsterra_enabled),
         ads_hide_for_logged_in: Boolean(globalConfig.ads_hide_for_logged_in),
         ads_interstitial_enabled: Boolean(globalConfig.ads_interstitial_enabled),
-        ads_interstitial_timer_seconds: Number(globalConfig.ads_interstitial_timer_seconds || 5),
-        ads_interstitial_frequency_minutes: Number(globalConfig.ads_interstitial_frequency_minutes || 10),
+        ads_interstitial_timer_seconds: Number(globalConfig.ads_interstitial_timer_seconds ?? 5),
+        ads_interstitial_frequency_minutes: Number(globalConfig.ads_interstitial_frequency_minutes ?? 10),
         ads_interstitial_network: String(globalConfig.ads_interstitial_network || 'CUSTOM_HTML'),
         ads_interstitial_custom_html: String(globalConfig.ads_interstitial_custom_html || ''),
         ads_interstitial_custom_image: String(globalConfig.ads_interstitial_custom_image || ''),
@@ -249,9 +247,10 @@ export default function AdminAdsPage() {
 
   // Summary Metrics
   const totalImpressions = placements.reduce((acc, p) => acc + (p.impressionsCount || 0), 0);
-  const totalClicks = placements.reduce((acc, p) => acc + (p.clicksCount || 0), 0);
-  const avgCtr =
-    totalImpressions > 0 ? Number(((totalClicks / totalImpressions) * 100).toFixed(2)) : 0;
+  const clickTrackedPlacements = placements.filter((p) => ['CUSTOM_HTML', 'CUSTOM_IMAGE'].includes(p.network));
+  const totalClicks = clickTrackedPlacements.reduce((acc, p) => acc + (p.clicksCount || 0), 0);
+  const clickTrackedViews = clickTrackedPlacements.reduce((acc, p) => acc + (p.impressionsCount || 0), 0);
+  const avgCtr = clickTrackedViews > 0 ? Number(((totalClicks / clickTrackedViews) * 100).toFixed(2)) : 0;
   const activePlacementsCount = placements.filter((p) => p.status === 'ACTIVE').length;
 
   return (
@@ -333,33 +332,33 @@ export default function AdminAdsPage() {
 
         <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 space-y-2 shadow-2xs">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-mono font-medium">Total Impressions</span>
+            <span className="text-xs font-mono font-medium">Total Slot Views</span>
             <Eye className="h-4 w-4 text-purple-400" />
           </div>
           <div className="text-2xl font-black font-mono text-foreground">
             {totalImpressions.toLocaleString()}
           </div>
-          <div className="text-[11px] font-mono text-muted-foreground">Verified views recorded</div>
+          <div className="text-[11px] font-mono text-muted-foreground">New events: ≥50% visible for 1 second</div>
         </div>
 
         <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 space-y-2 shadow-2xs">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-mono font-medium">Total Clicks</span>
+            <span className="text-xs font-mono font-medium">Measured Sponsor Clicks</span>
             <MousePointerClick className="h-4 w-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-black font-mono text-foreground">
             {totalClicks.toLocaleString()}
           </div>
-          <div className="text-[11px] font-mono text-muted-foreground">Sponsor click-throughs</div>
+          <div className="text-[11px] font-mono text-muted-foreground">Custom sponsor links only</div>
         </div>
 
         <div className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5 space-y-2 shadow-2xs">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span className="text-xs font-mono font-medium">Avg CTR %</span>
+            <span className="text-xs font-mono font-medium">Sponsor CTR %</span>
             <BarChart3 className="h-4 w-4 text-amber-400" />
           </div>
           <div className="text-2xl font-black font-mono text-foreground">{avgCtr}%</div>
-          <div className="text-[11px] font-mono text-muted-foreground">Conversion effectiveness</div>
+          <div className="text-[11px] font-mono text-muted-foreground">Custom placements only</div>
         </div>
       </div>
 
@@ -442,7 +441,7 @@ export default function AdminAdsPage() {
                 <div className="space-y-0.5">
                   <span className="text-sm font-bold text-foreground">Ad-Free For Signed-In Members</span>
                   <p className="text-xs text-muted-foreground">
-                    Automatically suppresses all advertisements for logged-in readers and subscribers.
+                    Hides NexusNation-managed placements. Disable network-level Auto Ads separately in provider dashboards.
                   </p>
                 </div>
                 <button
@@ -503,7 +502,7 @@ export default function AdminAdsPage() {
                     <label className="text-muted-foreground">AdSense Publisher ID</label>
                     <input
                       type="text"
-                      placeholder="ca-pub-9847291823746501"
+                      placeholder="ca-pub-1234567890123456"
                       value={globalConfig.ads_google_adsense_client_id || ''}
                       onChange={(e) =>
                         setGlobalConfig((prev) => ({
@@ -515,28 +514,9 @@ export default function AdminAdsPage() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-border/50 bg-muted/20">
-                    <div className="space-y-0.5">
-                      <span className="text-[11px] font-bold text-foreground">Google Auto Ads</span>
-                      <p className="text-[10px] text-muted-foreground">Automated in-page machine placement</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setGlobalConfig((prev) => ({
-                          ...prev,
-                          ads_google_adsense_auto_ads: !prev.ads_google_adsense_auto_ads,
-                        }))
-                      }
-                      className="cursor-pointer"
-                    >
-                      {globalConfig.ads_google_adsense_auto_ads ? (
-                        <ToggleRight className="h-6 w-6 text-emerald-400" />
-                      ) : (
-                        <ToggleLeft className="h-6 w-6 text-muted-foreground" />
-                      )}
-                    </button>
-                  </div>
+                  <p className="rounded-xl border border-border/50 bg-muted/20 p-2.5 text-[10px] leading-5 text-muted-foreground">
+                    Auto Ads placement is controlled in your AdSense account. This setting manages manually configured placements only.
+                  </p>
                 </div>
               </div>
 
@@ -737,13 +717,13 @@ export default function AdminAdsPage() {
                     <label className="text-muted-foreground font-bold">Timer Seconds (Countdown)</label>
                     <input
                       type="number"
-                      min={0}
+                      min={1}
                       max={60}
                       value={globalConfig.ads_interstitial_timer_seconds ?? 5}
                       onChange={(e) =>
                         setGlobalConfig((prev) => ({
                           ...prev,
-                          ads_interstitial_timer_seconds: parseInt(e.target.value, 10) || 0,
+                          ads_interstitial_timer_seconds: Math.max(1, Math.min(60, Number(e.target.value) || 1)),
                         }))
                       }
                       className="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
@@ -755,18 +735,18 @@ export default function AdminAdsPage() {
                     <label className="text-muted-foreground font-bold">Frequency Cap (Minutes)</label>
                     <input
                       type="number"
-                      min={0}
+                      min={1}
                       max={1440}
                       value={globalConfig.ads_interstitial_frequency_minutes ?? 10}
                       onChange={(e) =>
                         setGlobalConfig((prev) => ({
                           ...prev,
-                          ads_interstitial_frequency_minutes: parseInt(e.target.value, 10) || 0,
+                          ads_interstitial_frequency_minutes: Math.max(1, Math.min(1440, Number(e.target.value) || 1)),
                         }))
                       }
                       className="w-full rounded-xl border border-border/70 bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs"
                     />
-                    <span className="text-[10px] text-muted-foreground">Min gap between interstitials per user</span>
+                    <span className="text-[10px] text-muted-foreground">Minimum gap between interstitials on this browser</span>
                   </div>
 
                   <div className="space-y-1">
@@ -809,7 +789,7 @@ export default function AdminAdsPage() {
                       <label className="text-muted-foreground font-bold">Interstitial Script / HTML Embed Code</label>
                       <textarea
                         rows={3}
-                        placeholder="<script src='https://bendspecimen.com/.../invoke.js'></script><div id='container-...'></div>"
+                        placeholder="<script src='https://publisher-domain.example/invoke.js'></script><div id='container-...'></div>"
                         value={globalConfig.ads_interstitial_custom_html || ''}
                         onChange={(e) =>
                           setGlobalConfig((prev) => ({
@@ -825,7 +805,7 @@ export default function AdminAdsPage() {
                       <div className="space-y-1">
                         <label className="text-muted-foreground font-bold">Sponsor Image URL</label>
                         <input
-                          type="text"
+                          type="url"
                           placeholder="https://images.unsplash.com/..."
                           value={globalConfig.ads_interstitial_custom_image || ''}
                           onChange={(e) =>
@@ -840,7 +820,7 @@ export default function AdminAdsPage() {
                       <div className="space-y-1">
                         <label className="text-muted-foreground font-bold">Destination Target URL</label>
                         <input
-                          type="text"
+                          type="url"
                           placeholder="https://partner.com"
                           value={globalConfig.ads_interstitial_custom_url || ''}
                           onChange={(e) =>
@@ -905,9 +885,9 @@ export default function AdminAdsPage() {
                     <th className="py-3 px-4 font-semibold">Network</th>
                     <th className="py-3 px-4 font-semibold">Format</th>
                     <th className="py-3 px-4 font-semibold text-center">Status</th>
-                    <th className="py-3 px-4 font-semibold text-right">Impressions</th>
-                    <th className="py-3 px-4 font-semibold text-right">Clicks</th>
-                    <th className="py-3 px-4 font-semibold text-right">CTR %</th>
+                    <th className="py-3 px-4 font-semibold text-right">Slot Views</th>
+                    <th className="py-3 px-4 font-semibold text-right">Sponsor Clicks</th>
+                    <th className="py-3 px-4 font-semibold text-right">Sponsor CTR %</th>
                     <th className="py-3 px-4 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
@@ -961,10 +941,10 @@ export default function AdminAdsPage() {
                           {p.impressionsCount?.toLocaleString() || 0}
                         </td>
                         <td className="py-3.5 px-4 text-right font-mono font-bold text-foreground">
-                          {p.clicksCount?.toLocaleString() || 0}
+                          {p.clicksCount == null ? '—' : p.clicksCount.toLocaleString()}
                         </td>
                         <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-400">
-                          {p.ctr || 0}%
+                          {p.ctr == null ? '—' : `${p.ctr}%`}
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -1054,7 +1034,7 @@ export default function AdminAdsPage() {
                 rows={12}
                 value={adsTxtContent}
                 onChange={(e) => setAdsTxtContent(e.target.value)}
-                placeholder="google.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0"
+                placeholder="google.com, pub-1234567890123456, DIRECT, f08c47fec0942fa0"
                 className="w-full rounded-2xl border border-border/80 bg-zinc-950 p-4 text-emerald-400 font-mono text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary shadow-inner"
               />
               <p className="text-[11px] text-muted-foreground">
@@ -1089,7 +1069,7 @@ export default function AdminAdsPage() {
                   <span>Placement Performance Leaderboard</span>
                 </h3>
                 <p className="text-xs text-muted-foreground font-mono">
-                  Ranked by reader impressions, engagement clicks, and click-through efficiency.
+                  New slot views require 50% visibility for 1 second; historical totals include earlier render events. Clicks and CTR cover custom sponsor links only.
                 </p>
               </div>
             </div>
@@ -1101,10 +1081,10 @@ export default function AdminAdsPage() {
                     <th className="py-3 px-4 font-semibold">Rank</th>
                     <th className="py-3 px-4 font-semibold">Slot Name</th>
                     <th className="py-3 px-4 font-semibold">Network</th>
-                    <th className="py-3 px-4 font-semibold text-right">Impressions</th>
-                    <th className="py-3 px-4 font-semibold text-right">Clicks</th>
-                    <th className="py-3 px-4 font-semibold text-right">CTR %</th>
-                    <th className="py-3 px-4 font-semibold">Conversion Velocity</th>
+                    <th className="py-3 px-4 font-semibold text-right">Slot Views</th>
+                    <th className="py-3 px-4 font-semibold text-right">Sponsor Clicks</th>
+                    <th className="py-3 px-4 font-semibold text-right">Sponsor CTR %</th>
+                    <th className="py-3 px-4 font-semibold">Relative CTR</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40 font-sans">
@@ -1122,10 +1102,10 @@ export default function AdminAdsPage() {
                             {p.impressionsCount?.toLocaleString() || 0}
                           </td>
                           <td className="py-3 px-4 text-right font-mono font-bold text-foreground">
-                            {p.clicksCount?.toLocaleString() || 0}
+                            {p.clicksCount == null ? '—' : p.clicksCount.toLocaleString()}
                           </td>
                           <td className="py-3 px-4 text-right font-mono font-bold text-emerald-400">
-                            {p.ctr || 0}%
+                            {p.ctr == null ? '—' : `${p.ctr}%`}
                           </td>
                           <td className="py-3 px-4">
                             <div className="w-32 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -1202,7 +1182,14 @@ export default function AdminAdsPage() {
                   <label className="text-muted-foreground font-bold">Ad Network</label>
                   <select
                     value={formData.network}
-                    onChange={(e) => setFormData({ ...formData, network: e.target.value, ...(e.target.value === 'ADSTERRA' ? { format: 'IN_FEED' } : {}) })}
+                    onChange={(e) => {
+                      const network = e.target.value;
+                      setFormData((previous) => ({
+                        ...previous,
+                        network,
+                        format: network === 'ADSTERRA' ? 'IN_FEED' : previous.format === 'IN_FEED' ? 'RESPONSIVE' : previous.format,
+                      }));
+                    }}
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary text-xs cursor-pointer"
                   >
                     <option value="GOOGLE_ADSENSE">Google AdSense</option>
@@ -1251,17 +1238,18 @@ export default function AdminAdsPage() {
                     <label className="text-muted-foreground">Ad Slot ID (data-ad-slot)</label>
                     <input
                       type="text"
-                      placeholder="1092837465"
+                      required={formData.status === 'ACTIVE'}
+                      placeholder="1234567890"
                       value={formData.slotId}
                       onChange={(e) => setFormData({ ...formData, slotId: e.target.value })}
                       className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground text-xs"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-muted-foreground">Client ID (optional override)</label>
+                    <label className="text-muted-foreground">Publisher override (must match global ID)</label>
                     <input
                       type="text"
-                      placeholder="ca-pub-9847291823746501"
+                      placeholder="ca-pub-1234567890123456"
                       value={formData.clientOrPublisherId}
                       onChange={(e) => setFormData({ ...formData, clientOrPublisherId: e.target.value })}
                       className="w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground text-xs"
@@ -1277,7 +1265,7 @@ export default function AdminAdsPage() {
                     <label className="text-muted-foreground">Native banner invoke.js URL</label>
                     <input
                       type="url"
-                      required
+                      required={formData.status === 'ACTIVE'}
                       placeholder="https://pl…/invoke.js"
                       value={formData.slotId}
                       onChange={(e) => setFormData({ ...formData, slotId: e.target.value })}
@@ -1288,7 +1276,7 @@ export default function AdminAdsPage() {
                     <label className="text-muted-foreground">Native banner container ID</label>
                     <input
                       type="text"
-                      required
+                      required={formData.status === 'ACTIVE'}
                       placeholder="container-…"
                       value={formData.clientOrPublisherId}
                       onChange={(e) => setFormData({ ...formData, clientOrPublisherId: e.target.value })}
@@ -1303,7 +1291,8 @@ export default function AdminAdsPage() {
                   <div className="space-y-1">
                     <label className="text-muted-foreground">Banner Image URL</label>
                     <input
-                      type="text"
+                      type="url"
+                      required={formData.status === 'ACTIVE'}
                       placeholder="https://images.unsplash.com/..."
                       value={formData.customImage}
                       onChange={(e) => setFormData({ ...formData, customImage: e.target.value })}
@@ -1314,7 +1303,8 @@ export default function AdminAdsPage() {
                     <div className="space-y-1">
                       <label className="text-muted-foreground">Destination Target URL</label>
                       <input
-                        type="text"
+                        type="url"
+                        required={formData.status === 'ACTIVE'}
                         placeholder="https://partner.com/?ref=nexus"
                         value={formData.customUrl}
                         onChange={(e) => setFormData({ ...formData, customUrl: e.target.value })}

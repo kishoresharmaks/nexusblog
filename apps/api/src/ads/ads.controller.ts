@@ -12,6 +12,11 @@ import {
   UsePipes,
   ValidationPipe,
   Query,
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdsService } from './ads.service';
@@ -22,6 +27,36 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
+
+@Injectable()
+export class AdsTrackingRateLimitGuard implements CanActivate {
+  private readonly windows = new Map<string, { count: number; expiresAt: number }>();
+  private checks = 0;
+
+  canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest<{ ip?: string; socket?: { remoteAddress?: string }; path?: string }>();
+    const now = Date.now();
+    const key = `${request.ip || request.socket?.remoteAddress || 'unknown'}:${request.path || 'ads-track'}`;
+    const current = this.windows.get(key);
+
+    if (!current || current.expiresAt <= now) {
+      this.windows.set(key, { count: 1, expiresAt: now + 60_000 });
+    } else if (current.count >= 60) {
+      throw new HttpException('Ad event rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+    } else {
+      current.count += 1;
+    }
+
+    // ponytail: per-process fixed-window limiting is enough for a single API instance; use shared edge/Redis limiting when horizontally scaling.
+    if (++this.checks % 1000 === 0) {
+      for (const [entryKey, window] of this.windows) {
+        if (window.expiresAt <= now) this.windows.delete(entryKey);
+      }
+    }
+
+    return true;
+  }
+}
 
 @ApiTags('Ad Monetization & Placements')
 @Controller('ads')
@@ -56,6 +91,7 @@ export class AdsController {
 
   @Public()
   @Post('public/track-impression')
+  @UseGuards(AdsTrackingRateLimitGuard)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true }))
   @ApiOperation({ summary: 'Track ad placement impression' })
   trackImpression(@Body() dto: TrackAdEventDto) {
@@ -64,6 +100,7 @@ export class AdsController {
 
   @Public()
   @Post('public/track-click')
+  @UseGuards(AdsTrackingRateLimitGuard)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false, transform: true }))
   @ApiOperation({ summary: 'Track ad placement click' })
   trackClick(@Body() dto: TrackAdEventDto) {

@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { adsApi } from '@/lib/api-client';
 import { useAuth } from '@/context/auth-context';
 import { X, ExternalLink, Clock } from 'lucide-react';
 
 export function InterstitialAd() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const pathname = usePathname();
   const [config, setConfig] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [countdown, setCountdown] = useState<number>(5);
@@ -16,19 +18,41 @@ export function InterstitialAd() {
 
   useEffect(() => {
     let isMounted = true;
+    if (authLoading) return () => { isMounted = false; };
+
     adsApi
       .getPublicConfig()
       .then((cfg) => {
         if (!isMounted || !cfg) return;
 
         // Check if global ads are enabled and interstitial is active
-        if (!cfg.globalEnabled || !cfg.interstitial?.enabled) return;
+        if (!cfg.globalEnabled || !cfg.interstitial?.enabled) {
+          setIsVisible(false);
+          setConfig(null);
+          return;
+        }
 
         // If hideForLoggedIn is active and user is logged in, skip
-        if (cfg.hideForLoggedIn && user) return;
+        if (cfg.hideForLoggedIn && user) {
+          setIsVisible(false);
+          setConfig(null);
+          return;
+        }
+
+        const hasCreative = cfg.interstitial.network === 'CUSTOM_IMAGE'
+          ? Boolean(cfg.interstitial.customImage && cfg.interstitial.customUrl)
+          : Boolean(cfg.interstitial.customHtml?.trim());
+        if (!hasCreative) {
+          setIsVisible(false);
+          setConfig(null);
+          return;
+        }
 
         // Frequency cap check
-        const freqMinutes = cfg.interstitial.frequencyMinutes || 10;
+        const configuredFrequency = Number(cfg.interstitial.frequencyMinutes);
+        const freqMinutes = Number.isFinite(configuredFrequency) && configuredFrequency >= 1
+          ? Math.min(configuredFrequency, 1440)
+          : 10;
         const storageKey = 'nexus_interstitial_last_shown';
         let lastShownStr: string | null = null;
         try {
@@ -38,18 +62,21 @@ export function InterstitialAd() {
         }
 
         if (lastShownStr) {
-          const lastShown = parseInt(lastShownStr, 10);
+          const lastShown = Number.parseInt(lastShownStr, 10);
           const now = Date.now();
-          if (now - lastShown < freqMinutes * 60 * 1000) {
+          if (Number.isFinite(lastShown) && now - lastShown < freqMinutes * 60 * 1000) {
             return; // Frequency capped
           }
         }
 
         // Active! Show interstitial vignette modal
-        setConfig(cfg.interstitial);
-        const timerSec = Math.max(1, cfg.interstitial.timerSeconds || 5);
+        const configuredTimer = Number(cfg.interstitial.timerSeconds);
+        const timerSec = Number.isFinite(configuredTimer) && configuredTimer >= 1
+          ? Math.min(configuredTimer, 60)
+          : 5;
         setCountdown(timerSec);
-        setCanClose(timerSec <= 0);
+        setCanClose(false);
+        setConfig({ ...cfg.interstitial, hideForLoggedIn: cfg.hideForLoggedIn });
         setIsVisible(true);
 
         // Record timestamp in storage
@@ -66,7 +93,12 @@ export function InterstitialAd() {
     return () => {
       isMounted = false;
     };
-  }, [user]);
+  }, [user, authLoading, pathname]);
+
+  useEffect(() => {
+    if (authLoading && isVisible) setIsVisible(false);
+    if (!authLoading && user && config?.hideForLoggedIn) setIsVisible(false);
+  }, [authLoading, user, config?.hideForLoggedIn, isVisible]);
 
   // Lock body scroll when interstitial modal is active
   useEffect(() => {

@@ -9,8 +9,8 @@ const clientCache = new Map<string, { data: any; expiry: number }>();
 
 // Cache TTL configuration (in ms)
 const CACHE_CONFIG: Record<string, number> = {
-  '/ads/public/config': 5 * 60 * 1000, // 5 minutes
-  '/ads/public/placements': 5 * 60 * 1000, // 5 minutes
+  '/ads/public/config': 15 * 1000,
+  '/ads/public/placements': 15 * 1000,
   '/categories': 3 * 60 * 1000, // 3 minutes
   '/article-types': 3 * 60 * 1000, // 3 minutes
   '/technologies': 3 * 60 * 1000, // 3 minutes
@@ -1074,7 +1074,6 @@ export const adsApi = {
       googleAdsense: {
         enabled: boolean;
         clientId: string;
-        autoAds: boolean;
       };
       carbon: {
         enabled: boolean;
@@ -1236,6 +1235,5 @@ export const shortenerApi = {
     }, true);
   },
 };
-
 
 

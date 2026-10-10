@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { adsApi } from '@/lib/api-client';
 import { loadEthicalAds, patchDuplicateContainerGetElementById } from './ad-network-scripts';
 import { useAuth } from '@/context/auth-context';
-import { ExternalLink, Sparkles, Megaphone } from 'lucide-react';
+import { ExternalLink, Megaphone } from 'lucide-react';
 
 interface AdSlotProps {
   placementSlug: string;
@@ -15,19 +14,30 @@ interface AdSlotProps {
   label?: string;
 }
 
+const ADSENSE_FORMATS: Record<string, string> = {
+  RESPONSIVE: 'auto',
+  AUTO: 'auto',
+  BANNER_728x90: 'horizontal',
+  RECTANGLE_300x250: 'rectangle',
+  SKYSCRAPER_160x600: 'vertical',
+  IN_ARTICLE: 'fluid',
+};
+
 export function AdSlot({
   placementSlug,
   className = '',
   minHeight = 90,
   label = 'Advertisement',
 }: AdSlotProps) {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const pathname = usePathname();
   const [placement, setPlacement] = useState<any>(null);
   const [globalConfig, setGlobalConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const carbonContainerRef = useRef<HTMLDivElement>(null);
   const adsterraContainerRef = useRef<HTMLDivElement>(null);
-  const hasTrackedImpression = useRef(false);
+  const slotRef = useRef<HTMLDivElement>(null);
+  const trackedViewRef = useRef<string | null>(null);
 
   useEffect(() => {
     patchDuplicateContainerGetElementById();
@@ -35,14 +45,22 @@ export function AdSlot({
 
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
+    setPlacement(null);
+    if (authLoading) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
     Promise.all([
       adsApi.getPublicConfig().catch(() => null),
-      adsApi.getPublicPlacements(typeof window !== 'undefined' ? window.location.pathname : undefined).catch(() => []),
+      adsApi.getPublicPlacements(pathname || undefined).catch(() => []),
     ])
       .then(([config, placements]) => {
         if (!isMounted) return;
         setGlobalConfig(config);
-        if (config?.globalEnabled && placements && Array.isArray(placements)) {
+        if (config?.globalEnabled && !(config.hideForLoggedIn && user) && placements && Array.isArray(placements)) {
           const matched = placements.find((p) => {
             if (p.slug !== placementSlug || p.status !== 'ACTIVE') return false;
             if (p.network === 'GOOGLE_ADSENSE') return config.googleAdsense?.enabled;
@@ -63,15 +81,40 @@ export function AdSlot({
     return () => {
       isMounted = false;
     };
-  }, [placementSlug]);
+  }, [placementSlug, pathname, user, authLoading]);
 
-  // Track impression once placement is resolved and rendered
+  // Count a slot view only after it is at least half-visible for one second.
   useEffect(() => {
-    if (placement && !hasTrackedImpression.current) {
-      hasTrackedImpression.current = true;
-      adsApi.trackImpression(placement.slug, undefined, typeof window !== 'undefined' ? window.location.pathname : undefined).catch(() => {});
-    }
-  }, [placement]);
+    if (!placement || loading || (globalConfig?.hideForLoggedIn && user) || !slotRef.current || !('IntersectionObserver' in window)) return;
+
+    const viewKey = `${placement.id}:${pathname}`;
+    if (trackedViewRef.current === viewKey) return;
+
+    let dwellTimer: number | undefined;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.5 && document.visibilityState === 'visible') {
+        if (dwellTimer === undefined) {
+          dwellTimer = window.setTimeout(() => {
+            if (document.visibilityState !== 'visible') {
+              dwellTimer = undefined;
+              return;
+            }
+            trackedViewRef.current = viewKey;
+            adsApi.trackImpression(placement.slug, undefined, pathname || undefined).catch(() => {});
+          }, 1000);
+        }
+      } else if (dwellTimer !== undefined) {
+        window.clearTimeout(dwellTimer);
+        dwellTimer = undefined;
+      }
+    }, { threshold: [0, 0.5, 1] });
+
+    observer.observe(slotRef.current);
+    return () => {
+      observer.disconnect();
+      if (dwellTimer !== undefined) window.clearTimeout(dwellTimer);
+    };
+  }, [placement, loading, globalConfig?.hideForLoggedIn, pathname, user]);
 
   // Google AdSense push initialization
   useEffect(() => {
@@ -232,14 +275,19 @@ export function AdSlot({
     return null;
   }
 
-  const handleCustomClick = () => {
+  const handleCustomClick = (event?: React.MouseEvent<HTMLElement>) => {
+    if (event) {
+      const anchor = event.target instanceof Element ? event.target.closest('a') : null;
+      if (!anchor?.getAttribute('href') || anchor.getAttribute('href') === '#') return;
+    }
     if (placement?.slug) {
-      adsApi.trackClick(placement.slug, undefined, typeof window !== 'undefined' ? window.location.pathname : undefined).catch(() => {});
+      adsApi.trackClick(placement.slug, undefined, pathname || undefined).catch(() => {});
     }
   };
 
   return (
     <div
+      ref={slotRef}
       className={`relative my-6 mx-auto w-full overflow-hidden rounded-2xl border border-border/70 bg-card/60 backdrop-blur-md p-3 transition-all ${formatConfig.formatClass} ${className}`}
       style={{ minHeight: `${effectiveMinHeight}px` }}
     >
@@ -259,8 +307,9 @@ export function AdSlot({
             className="adsbygoogle"
             style={{ display: 'block', textAlign: 'center', minHeight: `${effectiveMinHeight - 30}px`, width: '100%' }}
             data-ad-client={placement.clientOrPublisherId || globalConfig?.googleAdsense?.clientId}
-            data-ad-slot={placement.slotId || '1234567890'}
-            data-ad-format={placement.format === 'RESPONSIVE' ? 'auto' : 'rectangle'}
+            data-ad-slot={placement.slotId}
+            data-ad-format={ADSENSE_FORMATS[placement.format] || 'auto'}
+            data-ad-layout={placement.format === 'IN_ARTICLE' ? 'in-article' : undefined}
             data-full-width-responsive="true"
           />
         </div>
@@ -278,7 +327,7 @@ export function AdSlot({
       {placement?.network === 'ETHICAL_ADS' && (
         <div className="flex items-center justify-center py-2">
           <div
-            data-ea-publisher={placement.clientOrPublisherId || globalConfig?.ethicalAds?.publisherId || 'nexus-developer-blog'}
+            data-ea-publisher={placement.clientOrPublisherId || globalConfig?.ethicalAds?.publisherId}
             data-ea-type={placement.format === 'RECTANGLE_300x250' ? 'image' : 'text'}
             data-ea-manual="true"
             className="w-full text-center"

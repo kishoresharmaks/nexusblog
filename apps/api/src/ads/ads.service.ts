@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateAdPlacementDto, AdNetworkDto, AdFormatDto, AdStatusDto } from './dto/create-ad-placement.dto';
+import { CreateAdPlacementDto } from './dto/create-ad-placement.dto';
 import { UpdateAdPlacementDto } from './dto/update-ad-placement.dto';
 import { UpdateGlobalAdsConfigDto, UpdateAdsTxtDto, TrackAdEventDto } from './dto/update-global-ads-config.dto';
 
@@ -25,25 +25,23 @@ export class AdsService implements OnModuleInit {
           name: 'Home Top Leaderboard Banner',
           slug: 'home-top-banner',
           network: 'GOOGLE_ADSENSE',
-          status: 'ACTIVE',
+          status: 'PAUSED',
           format: 'RESPONSIVE',
-          slotId: '1092837466',
           order: 1,
         },
         {
           name: 'Article Top Leaderboard',
           slug: 'article-header',
           network: 'GOOGLE_ADSENSE',
-          status: 'ACTIVE',
+          status: 'PAUSED',
           format: 'RESPONSIVE',
-          slotId: '1092837465',
           order: 2,
         },
         {
           name: 'Article Sticky Sidebar',
           slug: 'article-sidebar',
           network: 'CARBON_ADS',
-          status: 'ACTIVE',
+          status: 'PAUSED',
           format: 'RECTANGLE_300x250',
           order: 3,
         },
@@ -51,31 +49,24 @@ export class AdsService implements OnModuleInit {
           name: 'In-Article Native Break',
           slug: 'article-in-content-1',
           network: 'GOOGLE_ADSENSE',
-          status: 'ACTIVE',
+          status: 'PAUSED',
           format: 'IN_ARTICLE',
-          slotId: '5647382910',
           order: 4,
         },
         {
           name: 'Home Mid-Feed Sponsor Banner',
           slug: 'home-mid-feed',
           network: 'CUSTOM_IMAGE',
-          status: 'ACTIVE',
+          status: 'PAUSED',
           format: 'BANNER_728x90',
-          customImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=728&h=90&fit=crop&q=80',
-          customUrl: 'https://nexusnation.in',
-          customAlt: 'Explore Next-Gen Distributed Architecture',
           order: 5,
         },
         {
           name: 'Global Footer Sponsor Banner',
           slug: 'footer-banner',
           network: 'CUSTOM_IMAGE',
-          status: 'ACTIVE',
+          status: 'PAUSED',
           format: 'BANNER_728x90',
-          customImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=728&h=90&fit=crop&q=80',
-          customUrl: 'https://nexusnation.in',
-          customAlt: 'Build High-Scale Distributed Systems with NexusNation',
           order: 6,
         },
       ];
@@ -87,34 +78,52 @@ export class AdsService implements OnModuleInit {
             data: slot as any,
           });
           this.logger.log(`Seeded default ad placement: ${slot.name} (${slot.slug})`);
+        } else {
+          const legacySlotIds: Record<string, string> = {
+            'home-top-banner': '1092837466',
+            'article-header': '1092837465',
+            'article-in-content-1': '5647382910',
+          };
+          if (legacySlotIds[slot.slug] === existing.slotId) {
+            await this.prisma.adPlacement.update({
+              where: { id: existing.id },
+              data: { slotId: null, status: 'PAUSED' },
+            });
+          }
+          if (
+            ['home-mid-feed', 'footer-banner'].includes(slot.slug) &&
+            existing.customImage === 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=728&h=90&fit=crop&q=80' &&
+            existing.customUrl === 'https://nexusnation.in'
+          ) {
+            await this.prisma.adPlacement.update({
+              where: { id: existing.id },
+              data: { customImage: null, customUrl: null, status: 'PAUSED' },
+            });
+          }
         }
       }
 
       // 2. Seed default system settings for ad control
       const defaultSettings: Record<string, string> = {
-        ads_global_enabled: 'true',
-        ads_google_adsense_enabled: 'true',
-        ads_google_adsense_client_id: 'ca-pub-9847291823746501',
-        ads_google_adsense_auto_ads: 'false',
+        ads_global_enabled: 'false',
+        ads_google_adsense_enabled: 'false',
+        ads_google_adsense_client_id: '',
         ads_carbon_enabled: 'false',
-        ads_carbon_serve_id: 'CEBD42Q',
-        ads_carbon_placement: 'nexusnationin',
+        ads_carbon_serve_id: '',
+        ads_carbon_placement: '',
         ads_ethical_ads_enabled: 'false',
-        ads_ethical_ads_publisher_id: 'nexus-developer-blog',
+        ads_ethical_ads_publisher_id: '',
         ads_adsterra_enabled: 'false',
         ads_hide_for_logged_in: 'false',
         ads_interstitial_enabled: 'false',
         ads_interstitial_timer_seconds: '5',
         ads_interstitial_frequency_minutes: '10',
         ads_interstitial_network: 'CUSTOM_HTML',
-        ads_interstitial_custom_html: '<script async="async" data-cfasync="false" src="https://bendspecimen.com/bd678b45243cf1ba0c91ec1cfad866d2/invoke.js"></script>\n<div id="container-bd678b45243cf1ba0c91ec1cfad866d2"></div>',
+        ads_interstitial_custom_html: '',
         ads_interstitial_custom_image: '',
         ads_interstitial_custom_url: '',
         ads_interstitial_title: 'Sponsored Architecture Briefing',
-        ads_txt_content: `# NexusNation Ads.txt Verification File
-google.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0
-buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
-`,
+        ads_txt_content: '# NexusNation Ads.txt — add only seller accounts authorized for this domain\n',
       };
 
       for (const [key, value] of Object.entries(defaultSettings)) {
@@ -128,6 +137,74 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
             },
           });
         }
+      }
+
+      // Clean up the exact sample values written by older versions without overwriting admin edits.
+      const legacyPublisher = await this.prisma.systemSetting.findUnique({ where: { key: 'ads_google_adsense_client_id' } });
+      if (legacyPublisher?.value === 'ca-pub-9847291823746501') {
+        await this.prisma.systemSetting.updateMany({
+          where: { key: 'ads_google_adsense_enabled' },
+          data: { value: 'false' },
+        });
+        await this.prisma.systemSetting.update({
+          where: { key: 'ads_google_adsense_client_id' },
+          data: { value: '' },
+        });
+      }
+
+      const legacyAdsTxt = await this.prisma.systemSetting.findUnique({ where: { key: 'ads_txt_content' } });
+      if (legacyAdsTxt) {
+        const cleanedAdsTxt = legacyAdsTxt.value
+          .split(/\r?\n/)
+          .filter((line) =>
+            !line.trim().startsWith('google.com, pub-9847291823746501,') &&
+            !line.trim().startsWith('buysellads.com, pub-19283746,'),
+          )
+          .join('\n');
+        if (cleanedAdsTxt !== legacyAdsTxt.value) {
+          await this.prisma.systemSetting.update({
+            where: { key: 'ads_txt_content' },
+            data: { value: cleanedAdsTxt.trim() ? `${cleanedAdsTxt.trim()}\n` : defaultSettings.ads_txt_content },
+          });
+        }
+      }
+
+      const legacyCarbon = await this.prisma.systemSetting.findUnique({ where: { key: 'ads_carbon_serve_id' } });
+      if (legacyCarbon?.value === 'CEBD42Q') {
+        await this.prisma.systemSetting.updateMany({
+          where: { key: 'ads_carbon_enabled' },
+          data: { value: 'false' },
+        });
+        await this.prisma.systemSetting.updateMany({
+          where: { key: { in: ['ads_carbon_serve_id', 'ads_carbon_placement'] } },
+          data: { value: '' },
+        });
+      }
+
+      const legacyEthicalPublisher = await this.prisma.systemSetting.findUnique({ where: { key: 'ads_ethical_ads_publisher_id' } });
+      if (legacyEthicalPublisher?.value === 'nexus-developer-blog') {
+        await this.prisma.systemSetting.updateMany({
+          where: { key: 'ads_ethical_ads_enabled' },
+          data: { value: 'false' },
+        });
+        await this.prisma.systemSetting.update({
+          where: { key: 'ads_ethical_ads_publisher_id' },
+          data: { value: '' },
+        });
+      }
+
+      const legacyInterstitial = await this.prisma.systemSetting.findUnique({ where: { key: 'ads_interstitial_custom_html' } });
+      if (legacyInterstitial?.value.includes('bendspecimen.com/bd678b45243cf1ba0c91ec1cfad866d2')) {
+        await Promise.all([
+          this.prisma.systemSetting.update({
+            where: { key: 'ads_interstitial_custom_html' },
+            data: { value: '' },
+          }),
+          this.prisma.systemSetting.updateMany({
+            where: { key: 'ads_interstitial_enabled' },
+            data: { value: 'false' },
+          }),
+        ]);
       }
     } catch (err: any) {
       this.logger.debug(`Error initializing ad placements: ${err.message}`);
@@ -155,9 +232,8 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
       globalEnabled: configMap['ads_global_enabled'] === 'true',
       hideForLoggedIn: configMap['ads_hide_for_logged_in'] === 'true',
       googleAdsense: {
-        enabled: configMap['ads_google_adsense_enabled'] === 'true',
+        enabled: configMap['ads_google_adsense_enabled'] === 'true' && /^ca-pub-\d{16}$/.test(configMap['ads_google_adsense_client_id'] || ''),
         clientId: configMap['ads_google_adsense_client_id'] || '',
-        autoAds: configMap['ads_google_adsense_auto_ads'] === 'true',
       },
       carbon: {
         enabled: configMap['ads_carbon_enabled'] === 'true',
@@ -165,7 +241,7 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
         placement: configMap['ads_carbon_placement'] || '',
       },
       ethicalAds: {
-        enabled: configMap['ads_ethical_ads_enabled'] === 'true',
+        enabled: configMap['ads_ethical_ads_enabled'] === 'true' && Boolean(configMap['ads_ethical_ads_publisher_id']?.trim()),
         publisherId: configMap['ads_ethical_ads_publisher_id'] || '',
       },
       adsterra: {
@@ -207,8 +283,11 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
       orderBy: { order: 'asc' },
     })).filter((placement) => {
       if (!enabledNetworks.has(placement.network)) return false;
-      if (!path?.startsWith('/') || path.startsWith('//')) return true;
-      return !(placement.excludePaths || []).some((excludedPath) => {
+      if (!this.isPlacementReadyForServing(placement, globalConfig)) return false;
+      if (typeof path !== 'string' || !path.startsWith('/') || path.startsWith('//')) return true;
+      const excludePaths = Array.isArray(placement.excludePaths) ? placement.excludePaths : [];
+      return !excludePaths.some((excludedPath) => {
+        if (typeof excludedPath !== 'string') return false;
         const excluded = excludedPath.replace(/\/+$/, '') || '/';
         return path === excluded || (excluded !== '/' && path.startsWith(`${excluded}/`));
       });
@@ -217,6 +296,39 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
     // EthicalAds requires one unit and no competing third-party ads on a page.
     const ethicalPlacement = placements.find((placement) => placement.network === 'ETHICAL_ADS');
     return ethicalPlacement ? [ethicalPlacement] : placements;
+  }
+
+  private isPlacementReadyForServing(placement: any, config: Awaited<ReturnType<AdsService['getPublicConfig']>>) {
+    switch (placement.network) {
+      case 'GOOGLE_ADSENSE':
+        return Boolean(
+          /^ca-pub-\d{16}$/.test(config.googleAdsense.clientId) &&
+          (!placement.clientOrPublisherId || placement.clientOrPublisherId === config.googleAdsense.clientId) &&
+          placement.slotId,
+        );
+      case 'CARBON_ADS':
+        return Boolean((placement.slotId || config.carbon.serveId) && (placement.clientOrPublisherId || config.carbon.placement));
+      case 'ETHICAL_ADS':
+        return Boolean(
+          config.ethicalAds.publisherId &&
+          (!placement.clientOrPublisherId || placement.clientOrPublisherId === config.ethicalAds.publisherId),
+        );
+      case 'ADSTERRA':
+        return this.isValidAdsterraPlacement(placement);
+      case 'CUSTOM_HTML':
+        return Boolean(placement.customHtml?.trim());
+      case 'CUSTOM_IMAGE':
+        return this.isHttpUrl(placement.customImage) && this.isHttpUrl(placement.customUrl);
+      default:
+        return false;
+    }
+  }
+
+  private async assertPlacementReady(placement: any) {
+    if (placement.status !== 'ACTIVE') return;
+    if (!this.isPlacementReadyForServing(placement, await this.getPublicConfig())) {
+      throw new BadRequestException(`Complete valid publisher, slot, or creative details before activating this ${placement.network} placement`);
+    }
   }
 
   /**
@@ -236,25 +348,22 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
       where: { key: 'ads_txt_content' },
     });
 
-    return (
-      setting?.value ||
-      `# NexusNation Ads.txt\ngoogle.com, pub-9847291823746501, DIRECT, f08c47fec0942fa0\n`
-    );
+    return setting?.value || '# NexusNation Ads.txt — add only seller accounts authorized for this domain\n';
   }
 
   /**
-   * 5. Track impression non-blocking
+   * 5. Track a viewable ad slot event without blocking the page.
    */
   async trackImpression(dto: TrackAdEventDto) {
     try {
       const placement = await this.prisma.adPlacement.findUnique({
         where: { slug: dto.placementSlug },
-        select: { id: true },
+        select: { id: true, status: true },
       });
 
-      if (!placement) return { success: true };
+      if (!placement || placement.status !== 'ACTIVE') return { success: true };
 
-      await Promise.all([
+      await this.prisma.$transaction([
         this.prisma.adPlacement.update({
           where: { id: placement.id },
           data: { impressionsCount: { increment: 1 } },
@@ -269,7 +378,8 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
       ]);
 
       return { success: true };
-    } catch {
+    } catch (error) {
+      this.logger.warn(`Failed to record ad slot view: ${error instanceof Error ? error.message : String(error)}`);
       return { success: true };
     }
   }
@@ -281,12 +391,14 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
     try {
       const placement = await this.prisma.adPlacement.findUnique({
         where: { slug: dto.placementSlug },
-        select: { id: true },
+        select: { id: true, status: true, network: true },
       });
 
-      if (!placement) return { success: true };
+      if (!placement || placement.status !== 'ACTIVE' || !['CUSTOM_HTML', 'CUSTOM_IMAGE'].includes(placement.network)) {
+        return { success: true };
+      }
 
-      await Promise.all([
+      await this.prisma.$transaction([
         this.prisma.adPlacement.update({
           where: { id: placement.id },
           data: { clicksCount: { increment: 1 } },
@@ -301,7 +413,8 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
       ]);
 
       return { success: true };
-    } catch {
+    } catch (error) {
+      this.logger.warn(`Failed to record sponsor click: ${error instanceof Error ? error.message : String(error)}`);
       return { success: true };
     }
   }
@@ -319,13 +432,14 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
     });
 
     return placements.map((p) => {
-      const ctr =
-        p.impressionsCount > 0
-          ? Number(((p.clicksCount / p.impressionsCount) * 100).toFixed(2))
-          : 0;
+      const tracksFirstPartyClicks = ['CUSTOM_HTML', 'CUSTOM_IMAGE'].includes(p.network);
+      const ctr = tracksFirstPartyClicks && p.impressionsCount > 0
+        ? Number(((p.clicksCount / p.impressionsCount) * 100).toFixed(2))
+        : tracksFirstPartyClicks ? 0 : null;
 
       return {
         ...p,
+        clicksCount: tracksFirstPartyClicks ? p.clicksCount : null,
         ctr,
       };
     });
@@ -335,7 +449,15 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
    * 8. Admin: Create new placement
    */
   async createPlacement(dto: CreateAdPlacementDto) {
-    this.validateAdsterraPlacement(dto.network, dto.format, dto.slotId, dto.clientOrPublisherId);
+    const network = dto.network || 'GOOGLE_ADSENSE';
+    const status = dto.status || 'ACTIVE';
+    const format = dto.format || 'RESPONSIVE';
+    if (status === 'ACTIVE') this.validateAdsterraPlacement(network, format, dto.slotId, dto.clientOrPublisherId);
+    this.validateCustomImageUrls(network, dto.customImage, dto.customUrl, status);
+    if (status === 'ACTIVE' && network === 'GOOGLE_ADSENSE' && format === 'IN_FEED') {
+      throw new BadRequestException('Google AdSense IN_FEED placements require a native layout key, which is not configured here');
+    }
+    await this.assertPlacementReady({ ...dto, network, status, format });
     const existing = await this.prisma.adPlacement.findUnique({ where: { slug: dto.slug } });
     if (existing) {
       throw new BadRequestException(`Placement with slug '${dto.slug}' already exists`);
@@ -367,12 +489,25 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
     const placement = await this.prisma.adPlacement.findUnique({ where: { id } });
     if (!placement) throw new NotFoundException(`Placement with ID ${id} not found`);
 
-    this.validateAdsterraPlacement(
-      dto.network || placement.network,
-      dto.format || placement.format,
-      dto.slotId === undefined ? placement.slotId : dto.slotId,
-      dto.clientOrPublisherId === undefined ? placement.clientOrPublisherId : dto.clientOrPublisherId,
+    const updatedPlacement = { ...placement, ...dto };
+    if (updatedPlacement.status === 'ACTIVE') {
+      this.validateAdsterraPlacement(
+        updatedPlacement.network,
+        updatedPlacement.format,
+        updatedPlacement.slotId,
+        updatedPlacement.clientOrPublisherId,
+      );
+    }
+    this.validateCustomImageUrls(
+      updatedPlacement.network,
+      updatedPlacement.customImage,
+      updatedPlacement.customUrl,
+      updatedPlacement.status,
     );
+    if (updatedPlacement.status === 'ACTIVE' && updatedPlacement.network === 'GOOGLE_ADSENSE' && updatedPlacement.format === 'IN_FEED') {
+      throw new BadRequestException('Google AdSense IN_FEED placements require a native layout key, which is not configured here');
+    }
+    await this.assertPlacementReady(updatedPlacement);
 
     if (dto.slug && dto.slug !== placement.slug) {
       const conflict = await this.prisma.adPlacement.findUnique({ where: { slug: dto.slug } });
@@ -422,6 +557,45 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
     }
   }
 
+  private validateCustomImageUrls(network?: string, imageUrl?: string | null, targetUrl?: string | null, status = 'ACTIVE') {
+    if (network !== 'CUSTOM_IMAGE') return;
+    if (status === 'ACTIVE' && (!this.isHttpUrl(imageUrl) || !this.isHttpUrl(targetUrl))) {
+      throw new BadRequestException('Active custom image placements require an image and destination HTTP(S) URL');
+    }
+    for (const value of [imageUrl, targetUrl]) {
+      if (!value?.trim()) continue;
+      let url: URL;
+      try {
+        url = new URL(value);
+      } catch {
+        throw new BadRequestException('Custom image and destination URLs must be absolute HTTP(S) URLs');
+      }
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+        throw new BadRequestException('Custom image and destination URLs must be absolute HTTP(S) URLs');
+      }
+    }
+  }
+
+  private isHttpUrl(value?: string | null) {
+    if (!value) return false;
+    try {
+      const url = new URL(value);
+      return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password;
+    } catch {
+      return false;
+    }
+  }
+
+  private isValidAdsterraPlacement(placement: any) {
+    if (placement.format !== 'IN_FEED' || !/^container-[a-z0-9_-]+$/i.test(placement.clientOrPublisherId || '')) return false;
+    try {
+      const url = new URL(placement.slotId || '');
+      return url.protocol === 'https:' && url.pathname.endsWith('/invoke.js') && !url.username && !url.password;
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * 10. Admin: Delete placement
    */
@@ -442,10 +616,9 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
     });
 
     const res: Record<string, any> = {
-      ads_global_enabled: true,
-      ads_google_adsense_enabled: true,
+      ads_global_enabled: false,
+      ads_google_adsense_enabled: false,
       ads_google_adsense_client_id: '',
-      ads_google_adsense_auto_ads: false,
       ads_carbon_enabled: false,
       ads_carbon_serve_id: '',
       ads_carbon_placement: '',
@@ -457,14 +630,15 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
       ads_interstitial_timer_seconds: 5,
       ads_interstitial_frequency_minutes: 10,
       ads_interstitial_network: 'CUSTOM_HTML',
-      ads_interstitial_custom_html: '<script async="async" data-cfasync="false" src="https://bendspecimen.com/bd678b45243cf1ba0c91ec1cfad866d2/invoke.js"></script>\n<div id="container-bd678b45243cf1ba0c91ec1cfad866d2"></div>',
+      ads_interstitial_custom_html: '',
       ads_interstitial_custom_image: '',
       ads_interstitial_custom_url: '',
       ads_interstitial_title: 'Sponsored Architecture Briefing',
     };
 
     settings.forEach((s) => {
-      if (s.key.endsWith('_enabled') || s.key.endsWith('_auto_ads') || s.key.endsWith('_logged_in')) {
+      if (s.key === 'ads_google_adsense_auto_ads') return;
+      if (s.key.endsWith('_enabled') || s.key.endsWith('_logged_in')) {
         res[s.key] = s.value === 'true';
       } else {
         res[s.key] = s.value;
@@ -478,6 +652,29 @@ buysellads.com, pub-19283746, DIRECT, 840fec729a1b4
    * 12. Admin: Update global ads settings
    */
   async updateAdminGlobalConfig(dto: UpdateGlobalAdsConfigDto) {
+    const nextConfig = { ...(await this.getAdminGlobalConfig()), ...dto };
+    if (nextConfig.ads_google_adsense_enabled && !/^ca-pub-\d{16}$/.test(nextConfig.ads_google_adsense_client_id || '')) {
+      throw new BadRequestException('Enter a valid AdSense publisher ID before enabling Google AdSense');
+    }
+    if (nextConfig.ads_carbon_enabled && (!nextConfig.ads_carbon_serve_id?.trim() || !nextConfig.ads_carbon_placement?.trim())) {
+      throw new BadRequestException('Enter both Carbon Ads IDs before enabling Carbon Ads');
+    }
+    if (nextConfig.ads_ethical_ads_enabled && !nextConfig.ads_ethical_ads_publisher_id?.trim()) {
+      throw new BadRequestException('Enter an EthicalAds publisher ID before enabling EthicalAds');
+    }
+    if (
+      nextConfig.ads_interstitial_enabled &&
+      nextConfig.ads_interstitial_network === 'CUSTOM_HTML' &&
+      !nextConfig.ads_interstitial_custom_html?.trim()
+    ) {
+      throw new BadRequestException('Add an interstitial embed before enabling the custom HTML interstitial');
+    }
+    this.validateCustomImageUrls(
+      nextConfig.ads_interstitial_network,
+      nextConfig.ads_interstitial_custom_image,
+      nextConfig.ads_interstitial_custom_url,
+      nextConfig.ads_interstitial_enabled ? 'ACTIVE' : 'PAUSED',
+    );
     const updates: Promise<any>[] = [];
 
     for (const [key, value] of Object.entries(dto)) {

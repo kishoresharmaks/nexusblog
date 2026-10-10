@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsArray, IsNumber } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsArray, IsInt, ArrayMaxSize, MaxLength, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum AdNetworkDto {
@@ -29,10 +29,12 @@ export enum AdStatusDto {
 export class CreateAdPlacementDto {
   @ApiProperty({ example: 'Article Header Leaderboard' })
   @IsString()
+  @MaxLength(120)
   name!: string;
 
   @ApiProperty({ example: 'article-header' })
   @IsString()
+  @MaxLength(100)
   slug!: string;
 
   @ApiPropertyOptional({ enum: AdNetworkDto, default: AdNetworkDto.GOOGLE_ADSENSE })
@@ -53,40 +55,50 @@ export class CreateAdPlacementDto {
   @ApiPropertyOptional({ example: '1234567890' })
   @IsOptional()
   @IsString()
+  @MaxLength(300)
   slotId?: string;
 
   @ApiPropertyOptional({ example: 'ca-pub-1234567890123456' })
   @IsOptional()
   @IsString()
+  @MaxLength(300)
   clientOrPublisherId?: string;
 
   @ApiPropertyOptional({ example: '<div class="sponsor">...</div>' })
   @IsOptional()
   @IsString()
+  @MaxLength(20000)
   customHtml?: string;
 
   @ApiPropertyOptional({ example: 'https://images.unsplash.com/...' })
   @IsOptional()
   @IsString()
+  @MaxLength(2048)
   customImage?: string;
 
   @ApiPropertyOptional({ example: 'https://partner.com/?ref=nexus' })
   @IsOptional()
   @IsString()
+  @MaxLength(2048)
   customUrl?: string;
 
   @ApiPropertyOptional({ example: 'Sponsored by Neon Database' })
   @IsOptional()
   @IsString()
+  @MaxLength(300)
   customAlt?: string;
 
   @ApiPropertyOptional({ example: ['/login', '/register', '/admin'] })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  @MaxLength(2048, { each: true })
   excludePaths?: string[];
 
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
+  @Min(0)
   order?: number;
 }
